@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { User, Briefcase, Users } from 'lucide-react'
+import Link from 'next/link'
 
 // Design system types
 interface DesignTokens {
@@ -178,13 +179,14 @@ const FreelancerOnboarding: React.FC = () => {
                   Unlock the full potential of your freelance career with Organaise. Begin a rewarding journey where your skills are valued and your professional growth is inevitable. Start now and pave the path to your success.
                 </p>
               </div>
-
-              <Button 
-                size="lg"
-                className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 rounded-full text-lg font-medium shadow-lg"
-              >
-                Get Started
-              </Button>
+            <Link href='/onboarding/skills'>
+                <Button 
+                    size="lg"
+                    className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 rounded-full text-lg font-medium shadow-lg"
+                >
+                    Get Started
+                </Button>
+            </Link>
             </div>
 
             {/* Right Content - Steps */}

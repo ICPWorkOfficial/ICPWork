@@ -397,28 +397,32 @@ export default function AuthForm() {
               {/* Forgot Password Link - Only for Login */}
               {authMode === 'login' && (
                 <div className="text-right">
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={handleForgotPassword}
-                    className="text-sm text-[#FF3B30] hover:text-red-600 p-0 h-auto font-normal"
-                  >
-                    Forgot Password?
-                  </Button>
+                  <Link href="/forgot-password">
+                    <Button
+                      type="button"
+                      variant="link"
+                      onClick={handleForgotPassword}
+                      className="text-sm text-[#FF3B30] hover:text-red-600 p-0 h-auto font-normal"
+                    >
+                      Forgot Password?
+                    </Button>
+                  </Link>
                 </div>
               )}
 
               {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-14 bg-[#161616] hover:bg-gray-800 text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
-              >
-                {isLoading 
-                  ? (authMode === 'login' ? 'Logging In...' : 'Creating Account...') 
-                  : (authMode === 'login' ? 'Login' : 'Create Account')
-                }
-              </Button>
+              <Link href="/onboarding">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-14 bg-[#161616] hover:bg-gray-800 text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                >
+                  {isLoading 
+                    ? (authMode === 'login' ? 'Logging In...' : 'Creating Account...') 
+                    : (authMode === 'login' ? 'Login' : 'Create Account')
+                  }
+                </Button>
+              </Link>
             </form>
 
             {/* Toggle Auth Mode */}
