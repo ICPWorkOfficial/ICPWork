@@ -300,16 +300,16 @@ const SkillsInputPage: React.FC = () => {
               </span>
             </button>
             
+            <Link href="/onboarding/step3" className="no-underline">
             <button
               onClick={handleNext}
               className="w-[220px] h-16 bg-[#161616] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] flex items-center justify-center hover:bg-gray-800 transition-colors"
             >
               <span className={`${designTokens.typography.headingSmall} text-white`}>
-                <Link href="/onboarding/step3" className="no-underline">
                   Next
-                </Link>
               </span>
             </button>
+            </Link>
           </div>
         </div>
 
