@@ -1,19 +1,16 @@
 {
   "canisters": {
-    "backend_backend": {
-      "main": "src/backend_backend/main.mo",
+    "auth": {
+      "main": "src/auth/src/main.mo",
       "type": "motoko"
     },
-    "internet_identity": {
-      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-      "frontend": {},
-      "remote": {
-        "id": {
-          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-        }
-      },
-      "type": "custom",
-      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    "freelancer_profile": {
+      "main": "src/freelancer_profile/src/main.mo",
+      "type": "motoko"
+    },
+    "client_profile": {
+      "main": "src/client_profile/src/main.mo",
+      "type": "motoko"
     }
   },
   "defaults": {

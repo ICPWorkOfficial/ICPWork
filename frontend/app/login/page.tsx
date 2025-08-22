@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import Link from 'next/link';
@@ -72,7 +71,6 @@ export default function AuthForm() {
   };
 
   const hasPasswordErrors = (validation: PasswordValidation, password: string): boolean => {
-    // Show tooltip if password has content but doesn't meet all requirements
     return password.length > 0 && !isPasswordValid(validation);
   };
 
@@ -87,7 +85,6 @@ export default function AuthForm() {
   };
 
   const handlePasswordFocus = (): void => {
-    // Show validation tooltip only if there are errors when focused
     if (authMode === 'signup') {
       const currentValidation = validatePassword(signupData.password);
       setShowPasswordValidation(hasPasswordErrors(currentValidation, signupData.password));
@@ -95,7 +92,6 @@ export default function AuthForm() {
   };
 
   const handlePasswordBlur = (): void => {
-    // Hide validation after a short delay
     setTimeout(() => {
       setShowPasswordValidation(false);
     }, 200);
@@ -172,40 +168,61 @@ export default function AuthForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
-    
-    const isValid = authMode === 'login' ? validateLoginForm() : validateSignupForm();
-    if (!isValid) return;
+ const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  e.preventDefault();
 
-    setIsLoading(true);
-    try {
-      if (authMode === 'login') {
-        console.log('Logging in with:', loginData);
+  const isValid = authMode === 'login' ? validateLoginForm() : validateSignupForm();
+  if (!isValid) return;
+
+  setIsLoading(true);
+  try {
+    const url = authMode === 'login' ? '/api/login' : '/api/signup';
+    const payload = authMode === 'login' ? loginData : signupData;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      // Handle API errors
+      if (result.errors) {
+        setErrors(result.errors);
       } else {
-        console.log('Creating account with:', signupData);
+        alert(result.message || 'Something went wrong');
       }
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } catch (error) {
-      console.error(`${authMode} failed:`, error);
-    } finally {
-      setIsLoading(false);
+      return;
     }
-  };
 
-  const handleGoogleAuth = (): void => {
-    console.log(`${authMode === 'login' ? 'Signing in' : 'Signing up'} with Google...`);
-  };
+    console.log(`${authMode} successful:`, result);
+    if (authMode === 'login') {
+      window.location.href = '/dashboard';
+    } else {
+      window.location.href = '/onboarding';
+    }
+  } catch (error) {
+    console.error(`${authMode} failed:`, error);
+    alert('Network error. Please try again later.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const toggleAuthMode = (): void => {
-    setAuthMode(prev => prev === 'login' ? 'signup' : 'login');
+
+  function handleForgotPassword(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
+    event.preventDefault();
+    window.location.href = '/forgot-password';
+  }
+
+  function toggleAuthMode(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
+    event.preventDefault();
     setErrors({});
     setShowPasswordValidation(false);
-  };
-
-  const handleForgotPassword = (): void => {
-    console.log('Opening forgot password...');
-  };
+    setAuthMode(prev => (prev === 'login' ? 'signup' : 'login'));
+  }
 
   return (
     <div className="min-h-screen bg-[#fcfcfc]">
@@ -440,21 +457,6 @@ export default function AuthForm() {
             </div>
 
             <Separator className="my-6" />
-
-            {/* Google Auth */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGoogleAuth}
-              className="w-full h-16 bg-white border-gray-300 hover:bg-gray-50 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <div className="flex items-center gap-4">
-                <img src={googleIcon} alt="Google" className="w-8 h-8" />
-                <span className="text-xl text-[#161616] font-normal">
-                  {authMode === 'login' ? 'Or Sign In with Google' : 'Sign Up with Google'}
-                </span>
-              </div>
-            </Button>
 
             {/* Terms and Privacy */}
             <div className="text-center text-lg text-[#7d7d7d] space-y-1">
