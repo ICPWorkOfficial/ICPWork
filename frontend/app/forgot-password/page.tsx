@@ -15,6 +15,7 @@ type FlowStep = 'forgot-password' | 'verify-code' | 'reset-password' | 'success'
 
 interface PasswordResetState {
   email: string;
+  userId: string; // Store user ID for ICP calls
   code: string[];
   newPassword: string;
   confirmPassword: string;
@@ -26,15 +27,24 @@ interface PasswordResetState {
     code?: string;
     password?: string;
     confirmPassword?: string;
+    general?: string;
   };
 }
 
-// Remove the props interface since this is a Page component
+interface PasswordValidation {
+  minLength: boolean;
+  hasUppercase: boolean;
+  hasLowercase: boolean;
+  hasSpecialChar: boolean;
+  hasDigit: boolean;
+}
+
 export default function PasswordResetFlow() {
-  const router = useRouter(); // Use the useRouter hook for navigation
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState<FlowStep>('forgot-password');
   const [state, setState] = useState<PasswordResetState>({
     email: '',
+    userId: '',
     code: Array(6).fill(''),
     newPassword: '',
     confirmPassword: '',
@@ -46,6 +56,15 @@ export default function PasswordResetFlow() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasSpecialChar: false,
+    hasDigit: false
+  });
+  
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Timer countdown effect for verify code step
@@ -67,7 +86,6 @@ export default function PasswordResetFlow() {
       setState(prev => {
         const newCountdown = prev.redirectCountdown - 1;
         if (newCountdown <= 0) {
-          // Use router.push to handle the redirect
           router.push('/login'); 
           return { ...prev, redirectCountdown: 0 };
         }
@@ -92,8 +110,19 @@ export default function PasswordResetFlow() {
     return emailRegex.test(email);
   };
 
-  const validatePassword = (password: string) => {
-    return password.length >= 8;
+  const validatePassword = (password: string): PasswordValidation => {
+    return {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+      hasDigit: /\d/.test(password)
+    };
+  };
+
+  const isPasswordValid = (validation: PasswordValidation): boolean => {
+    return validation.minLength && validation.hasUppercase && 
+           validation.hasLowercase && validation.hasSpecialChar && validation.hasDigit;
   };
 
   const formatTime = (seconds: number) => {
@@ -102,7 +131,7 @@ export default function PasswordResetFlow() {
     return `${minutes.toString().padStart(2, '0')} : ${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Step 1: Forgot Password
+  // Step 1: Find user and send OTP
   const handleSendCode = async () => {
     clearErrors();
     
@@ -119,21 +148,53 @@ export default function PasswordResetFlow() {
     updateState({ isLoading: true });
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // First, find user by email
+      const userResponse = await fetch(`/api/auth/user-by-email?email=${encodeURIComponent(state.email)}`);
+      const userData = await userResponse.json();
+
+      if (!userResponse.ok || !userData.user) {
+        updateState({ 
+          isLoading: false,
+          errors: { email: "No account found with this email address" }
+        });
+        return;
+      }
+
+      // Generate and send OTP for password reset
+      const otpResponse = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userData.user.id })
+      });
+
+      const otpResult = await otpResponse.json();
+
+      if (!otpResponse.ok) {
+        updateState({ 
+          isLoading: false,
+          errors: { email: otpResult.error || "Failed to send reset code" }
+        });
+        return;
+      }
+
+      // Success - move to verification step
       updateState({ 
         isLoading: false,
+        userId: userData.user.id,
         timeLeft: 105 
       });
       setCurrentStep('verify-code');
+
     } catch (error) {
+      console.error('Send code error:', error);
       updateState({ 
         isLoading: false,
-        errors: { email: "Failed to send code. Please try again." }
+        errors: { email: "Network error. Please try again." }
       });
     }
   };
 
-  // Step 2: Verify Code
+  // Step 2: Verify OTP Code
   const handleCodeInput = (index: number, value: string) => {
     if (value.length > 1) return;
     
@@ -164,13 +225,34 @@ export default function PasswordResetFlow() {
     updateState({ isLoading: true });
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: state.userId,
+          otp: fullCode
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        updateState({ 
+          isLoading: false,
+          errors: { code: result.error || "Invalid verification code" }
+        });
+        return;
+      }
+
+      // Success - move to password reset
       updateState({ isLoading: false });
       setCurrentStep('reset-password');
+
     } catch (error) {
+      console.error('Verify code error:', error);
       updateState({ 
         isLoading: false,
-        errors: { code: "Invalid code. Please try again." }
+        errors: { code: "Network error. Please try again." }
       });
     }
   };
@@ -183,20 +265,47 @@ export default function PasswordResetFlow() {
     });
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.userId })
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        updateState({ 
+          isLoading: false,
+          errors: { general: result.error || "Failed to resend code" }
+        });
+        return;
+      }
+
       updateState({ isLoading: false });
+
     } catch (error) {
-      updateState({ isLoading: false });
+      console.error('Resend code error:', error);
+      updateState({ 
+        isLoading: false,
+        errors: { general: "Network error. Please try again." }
+      });
     }
   };
 
-  // Step 3: Reset Password
+  // Step 3: Reset Password with ICP
+  const handlePasswordChange = (value: string) => {
+    updateState({ newPassword: value });
+    const validation = validatePassword(value);
+    setPasswordValidation(validation);
+    setShowPasswordValidation(value.length > 0 && !isPasswordValid(validation));
+  };
+
   const handleResetPassword = async () => {
     clearErrors();
     const errors: any = {};
 
-    if (!validatePassword(state.newPassword)) {
-      errors.password = "Password must be at least 8 characters long";
+    const validation = validatePassword(state.newPassword);
+    if (!isPasswordValid(validation)) {
+      errors.password = "Password must meet all requirements";
     }
 
     if (state.newPassword !== state.confirmPassword) {
@@ -211,16 +320,56 @@ export default function PasswordResetFlow() {
     updateState({ isLoading: true });
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Need to generate new OTP for password change (ICP requirement)
+      const otpResponse = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.userId })
+      });
+
+      if (!otpResponse.ok) {
+        updateState({ 
+          isLoading: false,
+          errors: { password: "Failed to generate verification code for password change" }
+        });
+        return;
+      }
+
+      // Use the same OTP code that was verified earlier
+      const fullCode = state.code.join('');
+      
+      const resetResponse = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: state.userId,
+          otp: fullCode,
+          newPassword: state.newPassword
+        })
+      });
+
+      const result = await resetResponse.json();
+
+      if (!resetResponse.ok) {
+        updateState({ 
+          isLoading: false,
+          errors: { password: result.error || "Failed to reset password" }
+        });
+        return;
+      }
+
+      // Success
       updateState({ 
         isLoading: false,
         redirectCountdown: 5 
       });
       setCurrentStep('success');
+
     } catch (error) {
+      console.error('Reset password error:', error);
       updateState({ 
         isLoading: false,
-        errors: { password: "Failed to reset password. Please try again." }
+        errors: { password: "Network error. Please try again." }
       });
     }
   };
@@ -245,7 +394,7 @@ export default function PasswordResetFlow() {
         <div className="hidden sm:flex items-center gap-2 text-lg lg:text-xl">
           <span className="text-[#101010]">Want to Hire ?</span>
           <Link 
-            href="/join-as-client" 
+            href="/onboarding" 
             className="text-[#28a745] hover:underline"
           >
             Join As Client
@@ -266,6 +415,13 @@ export default function PasswordResetFlow() {
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 lg:py-16 relative z-10">
         <div className="w-full max-w-2xl">
           
+          {/* General Error Message */}
+          {state.errors.general && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-600 text-sm text-center">{state.errors.general}</p>
+            </div>
+          )}
+
           {/* Step 1: Forgot Password */}
           {currentStep === 'forgot-password' && (
             <div className="space-y-8 lg:space-y-12">
@@ -273,6 +429,9 @@ export default function PasswordResetFlow() {
                 <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-semibold text-[#212121] tracking-[-0.4px] leading-tight">
                   Forgot Password
                 </h1>
+                <p className="mt-4 text-gray-600">
+                  Enter your email address and we'll send you a verification code to reset your password.
+                </p>
               </div>
 
               <div className="space-y-6 lg:space-y-8">
@@ -309,15 +468,21 @@ export default function PasswordResetFlow() {
                         Sending...
                       </div>
                     ) : (
-                      "Send Code"
+                      "Send Verification Code"
                     )}
                   </Button>
                 </div>
               </div>
 
+              <div className="text-center">
+                <Link href="/login" className="text-[#28a745] hover:underline">
+                  Back to Login
+                </Link>
+              </div>
+
               <div className="text-center text-[#7d7d7d] text-sm sm:text-lg font-medium max-w-md mx-auto">
                 <p className="mb-1">
-                  by Logging In, i agree with ICPWork{" "}
+                  by using this service, i agree with ICPWork{" "}
                   <Link href="/privacy-policy" className="text-[#7b59ff] underline hover:no-underline">
                     privacy policy
                   </Link>
@@ -337,11 +502,11 @@ export default function PasswordResetFlow() {
             <div className="space-y-8 lg:space-y-12">
               <div className="text-center space-y-4">
                 <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-semibold text-[#212121] tracking-[-0.4px] leading-tight">
-                  Verify Code & Change Password
+                  Verify Code
                 </h1>
                 <p className="text-lg sm:text-xl text-[#393939] leading-relaxed">
-                  A 6-digit OTP <span className="lowercase">sent to</span>{' '}
-                  <span className="lowercase text-[#393939]">{state.email}</span>
+                  A 6-digit verification code has been sent to{' '}
+                  <span className="font-medium text-[#393939]">{state.email}</span>
                 </p>
               </div>
 
@@ -366,6 +531,7 @@ export default function PasswordResetFlow() {
                               : 'border-[#7d7d7d] text-neutral-400'
                           } focus:border-[#161616] focus:ring-0`}
                           placeholder=""
+                          disabled={state.isLoading}
                         />
                       </div>
                     ))}
@@ -398,7 +564,7 @@ export default function PasswordResetFlow() {
                   {formatTime(state.timeLeft)}
                 </div>
                 <div className="text-lg sm:text-xl">
-                  <span className="text-[#101010]">Didn&apos;t Received ?</span>{' '}
+                  <span className="text-[#101010]">Didn&apos;t receive the code?</span>{' '}
                   <button
                     onClick={handleResendCode}
                     disabled={!canResend || state.isLoading}
@@ -420,6 +586,9 @@ export default function PasswordResetFlow() {
                 <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-semibold text-[#212121] tracking-[-0.4px] leading-tight">
                   Create New Password
                 </h1>
+                <p className="mt-4 text-gray-600">
+                  Choose a strong password that you haven't used before.
+                </p>
               </div>
 
               <div className="space-y-6 max-w-md mx-auto">
@@ -427,8 +596,10 @@ export default function PasswordResetFlow() {
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={state.newPassword}
-                    onChange={(e) => updateState({ newPassword: e.target.value })}
-                    placeholder="Enter your password here"
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    onFocus={() => setShowPasswordValidation(state.newPassword.length > 0 && !isPasswordValid(passwordValidation))}
+                    onBlur={() => setTimeout(() => setShowPasswordValidation(false), 200)}
+                    placeholder="Enter your new password"
                     className={`h-14 sm:h-16 pl-6 pr-14 text-base sm:text-lg text-[#161616] border-[0.6px] rounded-xl ${
                       state.errors.password 
                         ? 'border-red-500 focus:border-red-500' 
@@ -443,6 +614,39 @@ export default function PasswordResetFlow() {
                   >
                     {showPassword ? <EyeOff className="w-[18px] h-[14px]" /> : <Eye className="w-[18px] h-[14px]" />}
                   </button>
+                  
+                  {/* Password Validation Tooltip */}
+                  {showPasswordValidation && (
+                    <div className="absolute top-full right-0 mt-2 z-10">
+                      <div className="relative w-[250px]">
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-[#161616]">
+                              Password must have:
+                            </h4>
+                            <div className="space-y-1">
+                              <div className={`text-xs ${passwordValidation.minLength ? 'text-green-600' : 'text-red-500'}`}>
+                                ✓ At least 8 characters
+                              </div>
+                              <div className={`text-xs ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                ✓ One uppercase letter
+                              </div>
+                              <div className={`text-xs ${passwordValidation.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                ✓ One lowercase letter
+                              </div>
+                              <div className={`text-xs ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-red-500'}`}>
+                                ✓ One special character
+                              </div>
+                              <div className={`text-xs ${passwordValidation.hasDigit ? 'text-green-600' : 'text-red-500'}`}>
+                                ✓ One number
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {state.errors.password && (
                     <p className="text-red-500 text-sm mt-2 ml-2">{state.errors.password}</p>
                   )}
@@ -453,7 +657,7 @@ export default function PasswordResetFlow() {
                     type={showConfirmPassword ? "text" : "password"}
                     value={state.confirmPassword}
                     onChange={(e) => updateState({ confirmPassword: e.target.value })}
-                    placeholder="Enter your confirm password here"
+                    placeholder="Confirm your new password"
                     className={`h-14 sm:h-16 pl-6 pr-14 text-base sm:text-lg text-[#161616] border-[0.6px] rounded-xl ${
                       state.errors.confirmPassword 
                         ? 'border-red-500 focus:border-red-500' 
@@ -483,10 +687,10 @@ export default function PasswordResetFlow() {
                   {state.isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Submitting...
+                      Updating...
                     </div>
                   ) : (
-                    "Submit"
+                    "Update Password"
                   )}
                 </Button>
               </div>
@@ -511,11 +715,11 @@ export default function PasswordResetFlow() {
                     </div>
                     <div className="space-y-4">
                       <h1 className="text-2xl sm:text-3xl lg:text-[28px] font-semibold text-[#161616] leading-tight">
-                        Password Change Successfully
+                        Password Reset Successfully
                       </h1>
                       <div className="text-base sm:text-lg lg:text-[18px] text-[#393939] leading-relaxed max-w-[616px] mx-auto">
                         <span className="font-semibold">Congratulations!</span>
-                        <span> You've successfully completed the verification process and are now officially a part of the Organaise community — where excellence meets opportunity.</span>
+                        <span> Your password has been successfully updated. You can now log in with your new password.</span>
                       </div>
                     </div>
                   </div>
@@ -537,3 +741,98 @@ export default function PasswordResetFlow() {
     </div>
   );
 }
+
+// Additional API Routes needed for password reset
+
+// pages/api/auth/user-by-email.ts
+/*
+import { NextApiRequest, NextApiResponse } from 'next';
+import { icpAgent } from '../../../lib/icp-agent';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { email } = req.query;
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await icpAgent.getUserByEmail(email);
+    
+    if (user) {
+      res.status(200).json({ success: true, user });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Get user by email error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+*/
+
+// pages/api/auth/resend-otp.ts  
+/*
+import { NextApiRequest, NextApiResponse } from 'next';
+import { icpAgent } from '../../../lib/icp-agent';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const result = await icpAgent.resendOTP(userId);
+    
+    if ('ok' in result) {
+      res.status(200).json({ success: true, message: result.ok });
+    } else {
+      res.status(400).json({ error: result.err });
+    }
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+*/
+
+// pages/api/auth/change-password.ts
+/*
+import { NextApiRequest, NextApiResponse } from 'next';
+import { icpAgent } from '../../../lib/icp-agent';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { userId, otp, newPassword } = req.body;
+
+    if (!userId || !otp || !newPassword) {
+      return res.status(400).json({ error: 'User ID, OTP, and new password are required' });
+    }
+
+    const result = await icpAgent.changePassword(userId, otp, newPassword);
+    
+    if ('ok' in result) {
+      res.status(200).json({ success: true, message: result.ok });
+    } else {
+      res.status(400).json({ error: result.err });
+    }
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+*/

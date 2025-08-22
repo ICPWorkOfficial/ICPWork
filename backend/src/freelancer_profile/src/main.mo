@@ -49,10 +49,8 @@ persistent actor FreelancerCanister {
   private var profileEntries : [(Text, FreelancerProfile)] = [];
   private transient var profiles = Map.HashMap<Text, FreelancerProfile>(10, Text.equal, Text.hash);
   
-  // Auth canister reference - replace with your actual canister ID
   private transient let authCanister : AuthCanister = actor("uxrrr-q7777-77774-qaaaq-cai"); // Replace with actual canister ID
 
-  // Initialize from stable storage
   system func preupgrade() {
     profileEntries := Iter.toArray(profiles.entries());
   };
@@ -62,12 +60,10 @@ persistent actor FreelancerCanister {
     profileEntries := [];
   };
 
-  // Helper function for text matching
   private func textContains(text: Text, substring: Text) : Bool {
     Text.contains(text, #text substring);
   };
 
-  // Helper function to verify user is freelancer
   private func verifyFreelancer(userId: Text) : async Result.Result<AuthUser, Text> {
     try {
       switch (await authCanister.getUser(userId)) {
@@ -88,12 +84,10 @@ persistent actor FreelancerCanister {
     };
   };
 
-  // Validate skills array
   private func validateSkills(skills: [Text]) : Bool {
     skills.size() == 5 and Array.foldLeft<Text, Bool>(skills, true, func(acc, skill) { acc and skill.size() > 0 });
   };
 
-  // Public functions
   public func createProfile(
     userId: Text,
     firstName: Text,
@@ -104,15 +98,12 @@ persistent actor FreelancerCanister {
     address: Address
   ) : async ProfileResult {
     
-    // Verify user is a verified freelancer
     switch (await verifyFreelancer(userId)) {
       case (#err(msg)) { #err(msg) };
       case (#ok(_)) {
-        // Check if profile already exists
         switch (profiles.get(userId)) {
           case (?_) { #err("Profile already exists") };
           case null {
-            // Validate skills
             if (not validateSkills(skills)) {
               #err("Must provide exactly 5 non-empty skills");
             } else {
@@ -145,14 +136,12 @@ persistent actor FreelancerCanister {
     address: Address
   ) : async ProfileResult {
     
-    // Verify user is a verified freelancer
     switch (await verifyFreelancer(userId)) {
       case (#err(msg)) { #err(msg) };
       case (#ok(_)) {
         switch (profiles.get(userId)) {
           case null { #err("Profile not found") };
           case (?_) {
-            // Validate skills
             if (not validateSkills(skills)) {
               #err("Must provide exactly 5 non-empty skills");
             } else {
