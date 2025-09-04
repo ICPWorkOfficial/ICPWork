@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, MapPin, FileText, User } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Design tokens from Figma
 const designTokens = {
@@ -86,15 +87,8 @@ const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) 
           />
         </svg>
       </div>
-      {/* Progress arc */}
-      <div className="absolute inset-0">
-        <svg width="91" height="92" viewBox="0 0 91 92" fill="none" className="rotate-[277.5deg]">
-          <path 
-            d="M70.0611 0.119893C72.0726 -0.0128202 73.8261 1.51194 73.7986 3.52766C73.6943 11.1718 71.6815 18.6899 67.9175 25.3881C63.5559 33.1499 57.0311 39.4756 49.1379 43.5948C41.2448 47.714 32.3241 49.4487 23.4625 48.5877C15.8152 47.8447 8.49677 45.1962 2.16649 40.9101C0.49723 39.7798 0.249263 37.4694 1.50853 35.8952V35.8952C2.7678 34.321 5.05647 34.0819 6.74254 35.1869C11.9538 38.6022 17.931 40.7156 24.1685 41.3217C31.6207 42.0457 39.1226 40.5869 45.7604 37.1228C52.3982 33.6588 57.8853 28.3391 61.5533 21.8118C64.6233 16.3485 66.3081 10.2366 66.4867 4.00843C66.5445 1.99335 68.0495 0.252606 70.0611 0.119893V0.119893Z" 
-            fill="#161616"
-          />
-        </svg>
-      </div>
+      {/* Progress Bar */}
+      
       {/* Step text */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span className={`${designTokens.typography.bodyRegular} text-[#6F6F6F]`}>
@@ -105,65 +99,65 @@ const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) 
   </div>
 );
 
-const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true }) => (
-  <div className="bg-white rounded-xl shadow-[0px_4px_16px_2px_rgba(0,0,0,0.08)] w-[495px] h-[1012px] p-8">
-    <div className="flex flex-col items-center gap-8">
-      {/* User Avatar */}
-      <div className="w-40 h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center">
-        <User size={80} className="text-[#C6C6C6]" />
-      </div>
-      
-      {/* User Info */}
-      <div className="flex flex-col items-center gap-6">
-        <h2 className={`${designTokens.typography.headingMedium} text-[#041D37]`}>
+const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true }) => {
+  return (
+    <div className="relative w-full max-w-[495px] mx-auto  rounded-xl">
+      <div
+        aria-hidden
+        className="absolute inset-0 rounded-xl pointer-events-none"
+        style={{
+          background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)',
+          opacity: 0.5,
+          transform: 'rotate(3deg) '
+        }}
+      />
+
+      <div className="relative bg-white w-full p-6 lg:p-8 z-10 shadow-lg">
+        <div className="flex flex-col items-center gap-6 lg:gap-8">
+          <div className="w-28 h-28 lg:w-40 lg:h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center">
+        <User size={72} className="text-[#C6C6C6]" />
+          </div>
+
+          <div className="flex flex-col items-center gap-4 lg:gap-6">
+        <h2 className={`${designTokens.typography.headingMedium} text-[#041D37] text-center`}>
           {name}
         </h2>
-        
-        {/* Availability Status */}
+
         <div className="flex items-center gap-2">
           <div className="flex items-center">
-            <div className="w-[25.778px] h-4 bg-[#32CD32] rounded-[10.483px] relative">
-              <div className="absolute right-0 top-0.5 w-3 h-3 bg-white rounded-[10.483px]" />
+            <div className="w-6 h-3 bg-[#32CD32] rounded-full relative">
+          <div className="absolute right-0 top-0.5 w-3 h-3 bg-white rounded-full" />
             </div>
           </div>
-          <span className="text-[16px] font-medium leading-[20px] tracking-[-0.1px] text-[#161616]">
-            Available for work
-          </span>
+          <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
         </div>
-      </div>
-    </div>
-    
-    {/* Skills Section */}
-    <div className="mt-8 pt-8">
-      <div className="border-t border-[#E0E0E0] pt-5">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>
-          Skills
-        </h3>
-        <div className="flex flex-wrap gap-[23px]">
+          </div>
+        </div>
+
+        <div className="mt-6 pt-6 px-4 lg:px-0">
+          <div className="border-t border-[#E0E0E0] pt-5">
+        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Skills</h3>
+        <div className="flex flex-wrap gap-3">
           {skills.slice(0, 3).map((skill) => (
             <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
           ))}
         </div>
-      </div>
-      
-      {/* Location Section */}
-      <div className="border-t border-[#E0E0E0] pt-5 mt-5">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-5`}>
-          Location
-        </h3>
-        <MapPin size={20} className="text-[#A8A8A8]" />
-      </div>
-      
-      {/* Resume Section */}
-      <div className="border-t border-[#E0E0E0] pt-5 mt-6">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-5`}>
-          Resume
-        </h3>
-        <FileText size={20} className="text-[#A8A8A8]" />
+          </div>
+
+          <div className="border-t border-[#E0E0E0] pt-5 mt-5">
+        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Location</h3>
+        <MapPin size={18} className="text-[#A8A8A8]" />
+          </div>
+
+          <div className="border-t border-[#E0E0E0] pt-5 mt-6 pb-6">
+        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Resume</h3>
+        <FileText size={18} className="text-[#A8A8A8]" />
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Logo: React.FC = () => (
   <div className="flex items-center gap-2">
@@ -192,134 +186,247 @@ const Logo: React.FC = () => (
 
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
+  const router = useRouter();
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
   ]);
-  const [inputValue, setInputValue] = useState('UI UX DES');
+  const [inputValue, setInputValue] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[] } | null>(null);
+
+  // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+      if (raw) {
+        const prof = JSON.parse(raw);
+        if (prof?.skills && Array.isArray(prof.skills)) {
+          setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
+        }
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  }, []);
+
+  // Prepare preview data from local dummy storage when modal opens
+  useEffect(() => {
+    if (!showPreview) return;
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+      if (raw) {
+        const prof = JSON.parse(raw);
+        setPreviewProfile({ name: prof.name || 'Preview User', skills: (prof.skills || []).map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })) });
+      } else {
+        setPreviewProfile({ name: 'Preview User', skills });
+      }
+    } catch (e) {
+      setPreviewProfile({ name: 'Preview User', skills });
+    }
+  }, [showPreview]);
 
   const addSkill = (skillName: string) => {
-    if (skillName.trim()) {
-      const newSkill: Skill = {
-        id: Date.now().toString(),
-        name: skillName.trim().toUpperCase()
-      };
-      setSkills([...skills, newSkill]);
-      setInputValue('');
-    }
+    const trimmed = skillName.trim();
+    if (!trimmed) return;
+    const newSkill: Skill = {
+      id: Date.now().toString(),
+      name: trimmed.toUpperCase()
+    };
+    setSkills(prev => [...prev, newSkill]);
+    setInputValue('');
   };
 
   const removeSkill = (id: string) => {
-    setSkills(skills.filter(skill => skill.id !== id));
+    setSkills(prev => prev.filter(skill => skill.id !== id));
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       addSkill(inputValue);
     }
   };
 
   const handleBack = () => {
-    // Handle back navigation
     console.log('Navigate back');
+    router.push('/onboarding/step1');
   };
 
-  const handleNext = () => {
-    // Handle next navigation
-    console.log('Navigate to next step');
+  const handleNext = async () => {
+    setLoading(true);
+    try {
+      // Simulate save by writing to localStorage as JSON. This avoids backend calls / canister issues.
+      const payload = {
+        name: 'Demo User',
+        skills: skills.map(s => ({ name: s.name }))
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('demo_profile', JSON.stringify(payload));
+      }
+      // proceed to next step
+      router.push('/onboarding/step3');
+    } catch (err) {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Pie chart calculations
+  const completedSteps = 2;
+  const totalSteps = 5;
+  const radius = 56; // px
+  const circumference = 2 * Math.PI * radius;
+  const completedLength = (completedSteps / totalSteps) * circumference;
 
   return (
     <div className="min-h-screen bg-[#FCFCFC]">
       {/* Header */}
-      <header className="bg-white h-[84px] border-b border-[#E0E0E0] flex items-center justify-between px-28">
+      <header className="bg-white h-[84px] border-b border-[#E0E0E0] flex items-center justify-between px-4 md:px-28">
         <Logo />
-        <div className={`${designTokens.typography.bodyRegular}`}>
+        <div className={`${designTokens.typography.bodyRegular} hidden md:flex items-center gap-2`}>
           <span className="text-[#101010]">Want to Hire ?</span>
-          <span className="text-[#775da8]"> </span>
           <span className="text-[#28a745]">Join As Client</span>
         </div>
       </header>
-
-      {/* Progress Bar */}
-      <div className="w-[576px] h-0.5 bg-[#F6F6F6] relative">
-        <div className="absolute inset-0 border border-[#44B0FF]" />
+      <div className="w-full h-2 bg-[#f6f6f6] rounded-full">
+        <div 
+          className="h-full bg-[#44b0ff] rounded-full transition-all duration-300"
+          style={{ width: `${(2 / totalSteps) * 100}%`,
+          background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)',
+          // opacity: 0.3,
+        }}
+        />
       </div>
 
       {/* Main Content */}
-      <div className="flex gap-12 px-28 py-12">
-        {/* Left Content */}
-        <div className="flex-1 max-w-[600px]">
-          {/* Step Progress */}
-          <div className="mb-6">
-            <StepProgress currentStep={2} totalSteps={5} />
+      <div className="max-w-6xl mx-auto px-4 md:px-28 py-12">
+        {/* Mobile preview modal */}
+        {showPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            {/* Close button placed on the overlay so it's always visible */}
+            <button aria-label="Close preview" onClick={() => setShowPreview(false)} className="absolute top-4 right-4 z-60 bg-white p-2 rounded-full shadow-lg">
+              <X size={18} />
+            </button>
+
+            <div className="bg-white rounded-xl max-w-[95vw] w-full max-h-[90vh] p-4 sm:p-6 relative overflow-auto shadow-lg">
+              <div className="w-full flex justify-center">
+                {previewProfile ? (
+                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={true} />
+                ) : (
+                  <div className="p-6">Loading preview…</div>
+                )}
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Title */}
-          <h1 className={`${designTokens.typography.headingLarge} text-[#161616] mb-6`}>
-            What are your skills?
-          </h1>
+        <div className="flex flex-col lg:flex-row gap-12">
+          {/* Left Content */}
+          <div className="flex-1">
+            {/* Step label */}
+            <div className="mb-4 flex items-center gap-4">
+              <span className={`${designTokens.typography.headingSmall} text-[#6F6F6F]`}>Step</span>
+              {/* Smaller Pie chart (compact) */}
+              <div className="relative w-16 h-16">
+                <svg width="64" height="64" viewBox="0 0 128 128" className="transform -rotate-90">
+                  <circle cx="64" cy="64" r={radius} fill="none" stroke="#F6F6F6" strokeWidth="8" />
+                  <circle
+                    cx="64"
+                    cy="64"
+                    r={radius}
+                    fill="none"
+                    stroke="#161616"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={`${completedLength} ${circumference - completedLength}`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`${designTokens.typography.bodySmall} text-[#6F6F6F]`}>{completedSteps}/{totalSteps}</span>
+                </div>
+              </div>
+            </div>
 
-          {/* Skills Input */}
-          <div className="mb-8">
-            <div className="relative w-[503px] h-[104px] rounded-xl border-[0.6px] border-[#8D8D8D] p-6">
-              <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-4`}>
-                Skills
-              </label>
-              
-              <div className="flex flex-wrap gap-4 items-center">
-                {skills.map((skill) => (
-                  <SkillTag key={skill.id} skill={skill} onRemove={removeSkill} />
-                ))}
-                
-                <div className="flex items-center">
+            {/* Title + mobile preview button */}
+            <div className="flex items-center justify-between mb-6">
+              <h1 className={`${designTokens.typography.headingLarge} text-[#161616]`}>
+                What are your skills?
+              </h1>
+
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className="md:hidden ml-4 px-3 py-2 rounded bg-[#161616] text-white"
+              >
+                Preview
+              </button>
+            </div>
+
+            {/* Skills Input */}
+            <div className="mb-8">
+              <div className="w-full max-w-[700px] rounded-xl border-[0.6px] border-[#8D8D8D] p-4 md:p-6">
+                <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>
+                  Type skill
+                </label>
+
+                 {/* Input below tags */}
+                <div className="mt-4">
                   <input
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className={`${designTokens.typography.bodySmall} text-[#161616] bg-transparent border-none outline-none`}
-                    placeholder=""
+                    onKeyDown={handleKeyDown}
+                    className={`${designTokens.typography.bodySmall} text-[#161616] bg-transparent border border-transparent focus:border-[#44B0FF] focus:ring-0 rounded w-full p-2`}
+                    placeholder="Type a skill and press Enter"
+                    aria-label="Add a skill"
                   />
-                  <span className="text-[20px] font-light text-[#28a745] ml-1">|</span>
                 </div>
+
+                {/* Tags row */}
+                <div className="flex flex-wrap gap-3 items-center">
+                  {skills.map((skill) => (
+                    <div key={skill.id} className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-[33px] border border-[#E6E6E6]">
+                      <span className={`${designTokens.typography.bodySmall} text-[#161616]`}>{skill.name}</span>
+                      <button onClick={() => removeSkill(skill.id)} aria-label={`Remove ${skill.name}`} className="ml-2 p-1 rounded hover:bg-gray-100">
+                        <X size={14} className="text-[#393939]" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+               
               </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/onboarding/step1" className="no-underline">
+                <button
+                  onClick={handleBack}
+                  className="w-full sm:w-[220px] h-16 bg-white rounded-[30px] border border-[#041D37] flex items-center justify-center hover:bg-gray-50 transition-colors"
+                >
+                  <span className={`${designTokens.typography.headingSmall} text-[#041D37]`}>Back</span>
+                </button>
+              </Link>
+
+              <Link href="/onboarding/step3" className="no-underline">
+                <button
+                  onClick={handleNext}
+                  className="w-full sm:w-[220px] h-16 bg-[#161616] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] flex items-center justify-center hover:bg-gray-800 transition-colors"
+                >
+                  <span className={`${designTokens.typography.headingSmall} text-white`}>Next</span>
+                </button>
+              </Link>
             </div>
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex gap-[25px]">
-            <button
-              onClick={handleBack}
-              className="w-[220px] h-16 bg-white rounded-[30px] border border-[#041D37] flex items-center justify-center hover:bg-gray-50 transition-colors"
-            >
-              <span className={`${designTokens.typography.headingSmall} text-[#041D37]`}>
-              <Link href="/onboarding/step1" className="no-underline">
-                Back
-              </Link>
-              </span>
-            </button>
-            
-            <Link href="/onboarding/step3" className="no-underline">
-            <button
-              onClick={handleNext}
-              className="w-[220px] h-16 bg-[#161616] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] flex items-center justify-center hover:bg-gray-800 transition-colors"
-            >
-              <span className={`${designTokens.typography.headingSmall} text-white`}>
-                  Next
-              </span>
-            </button>
-            </Link>
+          {/* Right Content - Preview Card */}
+          <div className="hidden lg:flex lg:flex-shrink-0 w-full lg:w-[495px]">
+            <UserPreviewCard name="Cyrus Roshan" skills={skills} isAvailable={true} />
           </div>
-        </div>
-
-        {/* Right Content - Preview Card */}
-        <div className="flex-shrink-0">
-          <UserPreviewCard 
-            name="Cyrus Roshan" 
-            skills={skills}
-            isAvailable={true}
-          />
         </div>
       </div>
     </div>
