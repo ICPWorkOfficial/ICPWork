@@ -22,7 +22,7 @@ const designTokens = {
     progressBackground: '#F6F6F6'
   },
   typography: {
-    headingLarge: 'text-[32px] font-semibold leading-[40px] tracking-[-0.4px]',
+    headingLarge: 'md:text-[32px] text-[20px] font-semibold leading-[40px] tracking-[-0.4px]',
     headingMedium: 'text-[42px] font-medium leading-[50px] tracking-[-0.8px]',
     headingSmall: 'text-[18px] font-medium leading-[28px]',
     bodyRegular: 'text-[20px] leading-[28px]',
@@ -60,6 +60,7 @@ interface UserPreviewCardProps {
     country?: string;
     postalCode?: string;
   };
+  profilePhoto?: string;
 }
 
 // Reusable Components
@@ -107,7 +108,20 @@ const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) 
   </div>
 );
 
-const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true, onToggleAvailable, address }) => {
+const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true, onToggleAvailable, address, profilePhoto }) => {
+  // temporary fallback address shown when no address prop provided
+  const tempAddress: UserPreviewCardProps['address'] = {
+    streetAddress: '123 Demo Lane',
+    city: 'London',
+    state: 'England',
+    country: 'UK',
+    postalCode: 'SW1A 1AA'
+  };
+
+  // prefer actual address prop when any field is present, otherwise use tempAddress
+  const hasAddress = address && Object.values(address).some(Boolean);
+  const displayAddress = hasAddress ? address : tempAddress;
+
   return (
     <div className="relative w-full max-w-[495px] mx-auto  rounded-xl">
       <div
@@ -122,8 +136,12 @@ const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvail
 
       <div className="relative bg-white w-full p-6 lg:p-8 z-10 shadow-lg">
         <div className="flex flex-col items-center gap-6 lg:gap-8">
-          <div className="w-28 h-28 lg:w-40 lg:h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center">
-        <User size={72} className="text-[#C6C6C6]" />
+          <div className="w-28 h-28 lg:w-40 lg:h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center overflow-hidden">
+            {profilePhoto ? (
+              <img src={profilePhoto} alt="Profile" className="object-cover w-full h-full" />
+            ) : (
+              <User size={72} className="text-[#C6C6C6]" />
+            )}
           </div>
 
           <div className="flex flex-col items-center gap-4 lg:gap-6">
@@ -160,11 +178,11 @@ const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvail
             <div className="flex items-start gap-3">
               <MapPin size={18} className="text-[#A8A8A8] mt-1" />
               <div className="text-sm text-[#6F6F6F]">
-                {address?.streetAddress ? (
-                  <div className="font-medium text-[#041D37]">{address.streetAddress}</div>
+                {displayAddress?.streetAddress ? (
+                  <div className="font-medium text-[#041D37]">{displayAddress.streetAddress}</div>
                 ) : null}
                 <div>
-                  {[address?.city, address?.state, address?.postalCode, address?.country].filter(Boolean).join(', ')}
+                  {[displayAddress?.city, displayAddress?.state, displayAddress?.postalCode, displayAddress?.country].filter(Boolean).join(', ')}
                 </div>
               </div>
             </div>
@@ -212,40 +230,17 @@ const SkillsInputPage: React.FC = () => {
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
   ]);
-  const [inputValue, setInputValue] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; address?: any } | null>(null);
+  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; address?: any; profilePhoto?: string; phone?: string } | null>(null);
 
-  // Address / Step 3 state
-  const [isPrivate, setIsPrivate] = useState<boolean>(false);
+  // Profile photo + phone verification state (replacing address inputs)
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
-  const [country, setCountry] = useState<string>('USA');
-  const [stateValue, setStateValue] = useState<string>('');
-  const [city, setCity] = useState<string>('');
-  const [postalCode, setPostalCode] = useState<string>('');
-  const [streetAddress, setStreetAddress] = useState<string>('');
-
-  const countryOptions = ['USA', 'UK'];
-  const stateOptionsMap: Record<string, string[]> = {
-    USA: ['California', 'New York', 'Texas'],
-    UK: ['England', 'Scotland', 'Wales']
-  };
-  const cityOptionsMap: Record<string, string[]> = {
-    California: ['Los Angeles', 'San Francisco'],
-    'New York': ['New York City', 'Buffalo'],
-    Texas: ['Houston', 'Dallas'],
-    England: ['London', 'Manchester'],
-    Scotland: ['Edinburgh', 'Glasgow'],
-    Wales: ['Cardiff']
-  };
-
-  // update dependent dropdowns when country changes
-  useEffect(() => {
-    const defaultStates = stateOptionsMap[country] || [];
-    setStateValue(defaultStates[0] || '');
-    setCity('');
-  }, [country]);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string>('');
+  const [verificationCode, setVerificationCode] = useState<string>('');
+  const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [isResending, setIsResending] = useState<boolean>(false);
 
   // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
   useEffect(() => {
@@ -257,7 +252,9 @@ const SkillsInputPage: React.FC = () => {
           setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
         }
         if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
-        if (prof.address && typeof prof.address.private === 'boolean') setIsPrivate(prof.address.private);
+        if (prof.profilePhoto) setProfilePhoto(prof.profilePhoto);
+        if (prof.phone) setPhone(prof.phone);
+        if (prof.phoneVerified) setIsVerified(Boolean(prof.phoneVerified));
       }
     } catch (e) {
       // ignore parse errors
@@ -271,12 +268,17 @@ const SkillsInputPage: React.FC = () => {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
       if (raw) {
         const prof = JSON.parse(raw);
-        setPreviewProfile({ name: prof.name || 'Preview User', skills: (prof.skills || []).map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })), address: prof.address || undefined });
+        setPreviewProfile({
+          name: prof.name || 'Preview User',
+          skills: (prof.skills || []).map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })),
+          profilePhoto: prof.profilePhoto || undefined,
+          phone: prof.phone || undefined
+        });
       } else {
-        setPreviewProfile({ name: 'Preview User', skills, address: { streetAddress, city, state: stateValue, country, postalCode } });
+        setPreviewProfile({ name: 'Preview User', skills, profilePhoto: profilePhoto || undefined, phone });
       }
     } catch (e) {
-      setPreviewProfile({ name: 'Preview User', skills, address: { streetAddress, city, state: stateValue, country, postalCode } });
+      setPreviewProfile({ name: 'Preview User', skills, profilePhoto: profilePhoto || undefined, phone });
     }
   }, [showPreview]);
 
@@ -292,18 +294,13 @@ const SkillsInputPage: React.FC = () => {
     setLoading(true);
     try {
       // Simulate save by writing to localStorage as JSON. This avoids backend calls / canister issues.
-      const payload = {
+      const payload: any = {
         name: 'Demo User',
         skills: skills.map(s => ({ name: s.name })),
         available: isAvailable,
-        address: {
-          private: isPrivate,
-          country,
-          state: stateValue,
-          city,
-          postalCode,
-          streetAddress
-        }
+        profilePhoto: profilePhoto || null,
+        phone: phone || null,
+        phoneVerified: isVerified
       };
       if (typeof window !== 'undefined') {
         localStorage.setItem('demo_profile', JSON.stringify(payload));
@@ -318,7 +315,7 @@ const SkillsInputPage: React.FC = () => {
   };
 
   // Pie chart calculations
-  const completedSteps = 3;
+  const completedSteps = 4;
   const totalSteps = 5;
   const radius = 56; // px
   const circumference = 2 * Math.PI * radius;
@@ -337,7 +334,7 @@ const SkillsInputPage: React.FC = () => {
       <div className="w-full h-2 bg-[#f6f6f6] rounded-full">
         <div 
           className="h-full bg-[#44b0ff] rounded-full transition-all duration-300"
-          style={{ width: `${(3/ totalSteps) * 100}%`,
+          style={{ width: `${(4/ totalSteps) * 100}%`,
           background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)',
           // opacity: 0.3,
         }}
@@ -357,7 +354,7 @@ const SkillsInputPage: React.FC = () => {
             <div className="bg-white rounded-xl max-w-[95vw] w-full max-h-[90vh] p-4 sm:p-6 relative overflow-auto shadow-lg">
               <div className="w-full flex justify-center">
                 {previewProfile ? (
-                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} address={previewProfile.address || { streetAddress, city, state: stateValue, country, postalCode }} />
+                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} profilePhoto={previewProfile.profilePhoto || profilePhoto || undefined} />
                 ) : (
                   <div className="p-6">Loading preview…</div>
                 )}
@@ -394,15 +391,9 @@ const SkillsInputPage: React.FC = () => {
             </div>
 
             {/* Title + mobile preview button */}
-            <div className="md:flex items-center justify-between mb-6">
-              <h2 className={`${designTokens.typography.headingLarge} text-[#161616]`}>Your Address Details</h2>
-                  <button
-                    type="button"
-                    onClick={() => setIsPrivate(prev => !prev)}
-                    className={`px-3 py-2 rounded-full border ${isPrivate ? 'bg-[#161616] text-white border-transparent' : 'bg-white text-[#161616]'}`}
-                  >
-                    {isPrivate ? 'Private' : 'Public'}
-                  </button>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`${designTokens.typography.headingLarge} text-[#161616] `}>Add profile Image and verify your number</h2>
+                  
 
               <button
                 type="button"
@@ -413,84 +404,98 @@ const SkillsInputPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Address Input (Step 3) */}
+            {/* Profile Photo Upload + Phone Verification (replacing address inputs) */}
             <div className="mb-8">
-              <div className="w-full max-w-[700px] ">
-                
+              <div className="w-full max-w-[700px]">
+                {/* Profile Photo */}
+                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white mb-4">
+                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Profile Photo</label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-28 h-28 rounded-full bg-[#F4F4F4] overflow-hidden flex items-center justify-center">
+                      {profilePhoto ? (
+                        <img src={profilePhoto} alt="profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={40} className="text-[#C6C6C6]" />
+                      )}
+                    </div>
 
-                {/* Country/State/City/Postal Code in 2-column grid, each in its own bordered box */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {/* Country */}
-                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Country</label>
-                    <select
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="w-full p-2 rounded"
-                    >
-                      {countryOptions.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* State */}
-                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>State</label>
-                    <select
-                      value={stateValue}
-                      onChange={(e) => setStateValue(e.target.value)}
-                      className="w-full p-2 rounded"
-                    >
-                      {(stateOptionsMap[country] || []).map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* City */}
-                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>City</label>
-                    <select
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="w-full p-2 rounded"
-                    >
-                      {(cityOptionsMap[stateValue] || []).map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Postal Code */}
-                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Postal Code</label>
-                    <input
-                      type="text"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      className="w-full p-2 rounded"
-                    />
+                    <div className="flex flex-col gap-2">
+                      <input
+                        id="photoUpload"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => setProfilePhoto(String(reader.result || ''));
+                          reader.readAsDataURL(file);
+                        }}
+                        className="w-60"
+                      />
+                      <span className="text-sm text-[#6F6F6F]">Recommended size: 400x400px. JPG or PNG.</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Street Address full width below grid */}
-                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Street Address</label>
+                {/* Phone number (optional) */}
+                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
+                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Phone Number (optional)</label>
                   <input
-                    type="text"
-                    value={streetAddress}
-                    onChange={(e) => setStreetAddress(e.target.value)}
-                    className="w-full p-2 rounded"
-                    placeholder="House number, street name"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1 555 555 5555"
+                    className="w-full p-3 rounded mb-3"
                   />
+
+                  {/* When user enters a phone we show the verification area */}
+                  {phone ? (
+                    <div className="mt-2">
+                      <label className={`${designTokens.typography.bodySmall} text-[#6F6F6F] block mb-2`}>Enter verification code</label>
+                      <input
+                        type="text"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        placeholder="123456"
+                        className="w-full p-3 rounded mb-3"
+                      />
+
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => {
+                            // simple client-side verification simulation
+                            if (verificationCode.trim().length > 0) {
+                              setIsVerified(true);
+                            }
+                          }}
+                          className="w-full sm:w-[220px] h-12 bg-[#161616] rounded-[30px] flex items-center justify-center text-white"
+                        >
+                          Verify Code
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setIsResending(true);
+                            // simulate resend
+                            setTimeout(() => setIsResending(false), 1000);
+                          }}
+                          className="w-full sm:w-[220px] h-12 bg-transparent text-[#161616]"
+                        >
+                          {isResending ? 'Resending…' : "Didn't Received ? Resend Code"}
+                        </button>
+                      </div>
+
+                      {isVerified && <div className="mt-3 text-sm text-[#32CD32]">Phone verified</div>}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
 
             {/* Navigation Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/onboarding/step2" className="no-underline">
+              <Link href="/onboarding/step3" className="no-underline">
                 <button
                   onClick={handleBack}
                   className="w-full sm:w-[220px] h-16 bg-white rounded-[30px] border border-[#041D37] flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -499,7 +504,7 @@ const SkillsInputPage: React.FC = () => {
                 </button>
               </Link>
 
-              <Link href="/onboarding/step4" className="no-underline">
+              <Link href="/onboarding/step5" className="no-underline">
                 <button
                   onClick={handleNext}
                   className="w-full sm:w-[220px] h-16 bg-[#161616] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] flex items-center justify-center hover:bg-gray-800 transition-colors"
@@ -512,7 +517,7 @@ const SkillsInputPage: React.FC = () => {
 
           {/* Right Content - Preview Card */}
           <div className="hidden lg:flex lg:flex-shrink-0 w-full lg:w-[495px]">
-            <UserPreviewCard name={previewProfile?.name || 'Preview User'} skills={skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} address={previewProfile?.address || { streetAddress, city, state: stateValue, country, postalCode }} />
+            <UserPreviewCard name={previewProfile?.name || 'Preview User'} skills={skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} profilePhoto={previewProfile?.profilePhoto || profilePhoto || undefined} />
           </div>
         </div>
       </div>
