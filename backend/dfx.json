@@ -1,15 +1,23 @@
 {
   "canisters": {
-    "auth": {
-      "main": "src/auth/src/main.mo",
+    "main": {
+      "main": "src/main.mo",
       "type": "motoko"
     },
-    "freelancer_profile": {
-      "main": "src/freelancer_profile/src/main.mo",
+    "freelancer_data": {
+      "main": "src/freelancer_data/src/main.mo",
       "type": "motoko"
     },
-    "client_profile": {
-      "main": "src/client_profile/src/main.mo",
+    "client_data": {
+      "main": "src/client_data/src/main.mo",
+      "type": "motoko"
+    },
+    "work_store": {
+        "main": "src/work_store/src/main.mo",
+        "type": "motoko"
+    },
+    "escrow": {
+      "main": "src/escrow/src/main.mo",
       "type": "motoko"
     }
   },
