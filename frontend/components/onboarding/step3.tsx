@@ -325,7 +325,7 @@ const SkillsInputPage: React.FC = () => {
   const completedLength = (completedSteps / totalSteps) * circumference;
 
   return (
-    <div className="min-h-screen bg-[#FCFCFC]">
+    <div className="h-screen bg-[#FCFCFC]">
       {/* Header */}
       <header className="bg-white h-[84px] border-b border-[#E0E0E0] flex items-center justify-between px-4 md:px-28">
         <Logo />
@@ -345,7 +345,7 @@ const SkillsInputPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 md:px-28 py-12">
+      <div className="max-w-6xl mx-auto px-4 md:px-28 py-12 h-screen overflow-hidden">
         {/* Mobile preview modal */}
         {showPreview && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

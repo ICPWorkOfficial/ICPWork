@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, FileText, User } from 'lucide-react';
+import { X, MapPin, FileText, User, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -50,7 +50,11 @@ interface StepProgressProps {
 
 interface UserPreviewCardProps {
   name: string;
-  skills: Skill[];
+  skills?: Skill[];
+  role?: 'Client' | 'Freelancer';
+  companyName?: string;
+  companyWebsite?: string;
+  phone?: string;
   isAvailable?: boolean;
 }
 
@@ -72,34 +76,9 @@ const SkillTag: React.FC<SkillTagProps> = ({ skill, onRemove, variant = 'input' 
   </div>
 );
 
-const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) => (
-  <div className="flex items-center gap-4">
-    <span className={`${designTokens.typography.headingSmall} text-[#6F6F6F]`}>
-      Step
-    </span>
-    <div className="relative w-[91px] h-[92px]">
-      {/* Background circle */}
-      <div className="absolute inset-0">
-        <svg width="91" height="92" viewBox="0 0 91 92" fill="none">
-          <path 
-            d="M91 46C91 71.4051 70.629 92 45.5 92C20.371 92 0 71.4051 0 46C0 20.5949 20.371 0 45.5 0C70.629 0 91 20.5949 91 46ZM7.23641 46C7.23641 67.3646 24.3676 84.6841 45.5 84.6841C66.6324 84.6841 83.7636 67.3646 83.7636 46C83.7636 24.6354 66.6324 7.31593 45.5 7.31593C24.3676 7.31593 7.23641 24.6354 7.23641 46Z" 
-            fill="#F5F5F5"
-          />
-        </svg>
-      </div>
-      {/* Progress Bar */}
-      
-      {/* Step text */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className={`${designTokens.typography.bodyRegular} text-[#6F6F6F]`}>
-          {currentStep}/{totalSteps}
-        </span>
-      </div>
-    </div>
-  </div>
-);
 
-const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true }) => {
+
+const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills = [], role = 'Freelancer', companyName, companyWebsite, phone, isAvailable = true }) => {
   return (
     <div className="relative w-full max-w-[495px] mx-auto  rounded-xl">
       <div
@@ -135,23 +114,44 @@ const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvail
         </div>
 
         <div className="mt-6 pt-6 px-4 lg:px-0">
+          {/* For freelancers show skills; for clients show company name */}
           <div className="border-t border-[#E0E0E0] pt-5">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Skills</h3>
-        <div className="flex flex-wrap gap-3">
-          {skills.slice(0, 3).map((skill) => (
-            <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
-          ))}
-        </div>
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{role === 'Client' ? 'Company' : 'Skills'}</h3>
+            <div className="flex flex-wrap gap-3">
+              {role === 'Client' ? (
+                <div className="inline-flex items-center gap-2  py-2 rounded-[8px] ">
+                  <span className={`${designTokens.typography.bodySmall} text-[#161616]`}>{companyName || '—'}</span>
+                </div>
+              ) : (
+                skills.slice(0, 3).map((skill) => (
+                  <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
+                ))
+              )}
+            </div>
           </div>
 
           <div className="border-t border-[#E0E0E0] pt-5 mt-5">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Location</h3>
-        <MapPin size={18} className="text-[#A8A8A8]" />
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{role === 'Client' ? 'Website' : 'Location'}</h3>
+            <div className="flex items-center gap-2">
+              <MapPin size={18} className="text-[#A8A8A8]" />
+              <span className="text-[14px] text-[#161616]">{role === 'Client' ? (companyWebsite || '—') : 'Remote'}</span>
+            </div>
           </div>
 
           <div className="border-t border-[#E0E0E0] pt-5 mt-6 pb-6">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Resume</h3>
-        <FileText size={18} className="text-[#A8A8A8]" />
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{role === 'Client' ? 'Phone' : 'Resume'}</h3>
+            <div className="flex items-center gap-2">
+              {role === 'Client' ? (
+                <>
+                  <Phone size={18} className="text-[#A8A8A8]" />
+                  <span className="text-[14px] text-[#161616]">{phone || '—'}</span>
+                </>
+              ) : (
+                <>
+                  <FileText size={18} className="text-[#A8A8A8]" />
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -187,6 +187,9 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
+  const [role, setRole] = useState<'Client' | 'Freelancer'>('Client');
+  const [companyName, setCompanyName] = useState<string>('');
+  const [companyWebsite, setCompanyWebsite] = useState<string>('');
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
@@ -194,38 +197,58 @@ const SkillsInputPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[] } | null>(null);
+  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; companyName?: string; companyWebsite?: string; phone?: string; role?: 'Client' | 'Freelancer' } | null>(null);
 
   // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
   useEffect(() => {
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
-      if (raw) {
-        const prof = JSON.parse(raw);
-        if (prof?.skills && Array.isArray(prof.skills)) {
-          setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
-        }
-      }
-    } catch (e) {
-      // ignore parse errors
-    }
+    // localStorage reads disabled during development to avoid overriding role provided by caller
+    // try {
+    //   const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+    //   if (raw) {
+    //     const prof = JSON.parse(raw);
+    //     if (prof?.skills && Array.isArray(prof.skills)) {
+    //       setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
+    //     }
+    //   }
+    // } catch (e) {
+    //   // ignore parse errors
+    // }
   }, []);
 
   // Prepare preview data from local dummy storage when modal opens
   useEffect(() => {
     if (!showPreview) return;
+    // localStorage disabled — build preview from current component state instead
     try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
-      if (raw) {
-        const prof = JSON.parse(raw);
-        setPreviewProfile({ name: prof.name || 'Preview User', skills: (prof.skills || []).map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })) });
-      } else {
-        setPreviewProfile({ name: 'Preview User', skills });
-      }
+      setPreviewProfile({
+        name: 'Preview User',
+        skills: skills,
+        companyName: companyName,
+        companyWebsite: companyWebsite,
+        phone: undefined,
+        role: role
+      });
     } catch (e) {
       setPreviewProfile({ name: 'Preview User', skills });
     }
-  }, [showPreview]);
+  }, [showPreview, skills, companyName, companyWebsite, role]);
+
+  // load role and client info from demo_profile if present
+  useEffect(() => {
+    // localStorage loading disabled — do not override role set by parent or default
+    // try {
+    //   const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+    //   if (raw) {
+    //     const prof = JSON.parse(raw);
+    //     if (prof.role === 'Client') setRole('Client');
+    //     if (prof.name) {
+    //       // if name is full name, do nothing here — preview will use it
+    //     }
+    //     if (prof.companyName) setCompanyName(prof.companyName);
+    //     if (prof.companyWebsite) setCompanyWebsite(prof.companyWebsite);
+    //   }
+    // } catch (e) {}
+  }, []);
 
   const addSkill = (skillName: string) => {
     const trimmed = skillName.trim();
@@ -257,13 +280,19 @@ const SkillsInputPage: React.FC = () => {
   const handleNext = async () => {
     setLoading(true);
     try {
-      // Simulate save by writing to localStorage as JSON. This avoids backend calls / canister issues.
-      const payload = {
-        name: 'Demo User',
-        skills: skills.map(s => ({ name: s.name }))
-      };
+      // Save different payloads depending on role
+      const base: any = { role };
+      if (role === 'Client') {
+        base.name = (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('demo_profile') || '{}').name) || `${companyName}` || 'Client';
+        base.companyName = companyName || undefined;
+        base.companyWebsite = companyWebsite || undefined;
+      } else {
+        base.name = 'Demo User';
+        base.skills = skills.map(s => ({ name: s.name }));
+      }
       if (typeof window !== 'undefined') {
-        localStorage.setItem('demo_profile', JSON.stringify(payload));
+        // localStorage persistence disabled during development
+        // localStorage.setItem('demo_profile', JSON.stringify(base));
       }
       // proceed to next step
       router.push('/onboarding/step3');
@@ -302,7 +331,7 @@ const SkillsInputPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 md:px-28 py-12">
+      <div className="max-w-6xl mx-auto px-4 md:px-28 py-12 h-screen overflow-hidden">
         {/* Mobile preview modal */}
         {showPreview && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -314,7 +343,15 @@ const SkillsInputPage: React.FC = () => {
             <div className="bg-white rounded-xl max-w-[95vw] w-full max-h-[90vh] p-4 sm:p-6 relative overflow-auto shadow-lg">
               <div className="w-full flex justify-center">
                 {previewProfile ? (
-                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={true} />
+                  <UserPreviewCard
+                    name={previewProfile.name || 'Preview User'}
+                    skills={previewProfile.skills || skills}
+                    role={previewProfile.role || role}
+                    companyName={previewProfile.companyName || companyName}
+                    companyWebsite={previewProfile.companyWebsite || companyWebsite}
+                    phone={previewProfile.phone || ''}
+                    isAvailable={true}
+                  />
                 ) : (
                   <div className="p-6">Loading preview…</div>
                 )}
@@ -353,7 +390,7 @@ const SkillsInputPage: React.FC = () => {
             {/* Title + mobile preview button */}
             <div className="flex items-center justify-between mb-6">
               <h1 className={`${designTokens.typography.headingLarge} text-[#161616]`}>
-                What are your skills?
+                {role === 'Client' ? 'Tell us about your company' : 'What are your skills?'}
               </h1>
 
               <button
@@ -365,40 +402,51 @@ const SkillsInputPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Skills Input */}
+            {/* Role-specific Input Card */}
             <div className="mb-8">
-              <div className="w-full max-w-[700px] rounded-xl border-[0.6px] border-[#8D8D8D] p-4 md:p-6">
-                <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>
-                  Type skill
-                </label>
+              {role === 'Client' ? (
+                <div className="flex flex-col gap-4 w-full max-w-[700px]">
+                  {/* Company Name card */}
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white w-full">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Company Name</label>
+                    <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={`${designTokens.typography.bodySmall} text-[#161616] w-full p-2 rounded border border-transparent focus:border-[#44B0FF]`} placeholder="Enter company name" />
+                  </div>
 
-                 {/* Input below tags */}
-                <div className="mt-4">
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className={`${designTokens.typography.bodySmall} text-[#161616] bg-transparent border border-transparent focus:border-[#44B0FF] focus:ring-0 rounded w-full p-2`}
-                    placeholder="Type a skill and press Enter"
-                    aria-label="Add a skill"
-                  />
+                  {/* Divider / spacing automatically provided by gap-4 */}
+
+                  {/* Company Website card */}
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white w-full">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Company Website</label>
+                    <input value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} className={`${designTokens.typography.bodySmall} text-[#161616] w-full p-2 rounded border border-transparent focus:border-[#44B0FF]`} placeholder="https://yourcompany.com" />
+                  </div>
                 </div>
+               ) : (
+                <div className="w-full max-w-[700px] rounded-xl border-[0.6px] border-[#8D8D8D] p-4 md:p-6">
+                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Type skill</label>
+                  <div className="mt-4">
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className={`${designTokens.typography.bodySmall} text-[#161616] bg-transparent border border-transparent focus:border-[#44B0FF] focus:ring-0 rounded w-full p-2`}
+                      placeholder="Type a skill and press Enter"
+                      aria-label="Add a skill"
+                    />
+                  </div>
 
-                {/* Tags row */}
-                <div className="flex flex-wrap gap-3 items-center">
-                  {skills.map((skill) => (
-                    <div key={skill.id} className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-[33px] border border-[#E6E6E6]">
-                      <span className={`${designTokens.typography.bodySmall} text-[#161616]`}>{skill.name}</span>
-                      <button onClick={() => removeSkill(skill.id)} aria-label={`Remove ${skill.name}`} className="ml-2 p-1 rounded hover:bg-gray-100">
-                        <X size={14} className="text-[#393939]" />
-                      </button>
-                    </div>
-                  ))}
+                  <div className="flex flex-wrap gap-3 items-center mt-4">
+                    {skills.map((skill) => (
+                      <div key={skill.id} className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-[33px] border border-[#E6E6E6]">
+                        <span className={`${designTokens.typography.bodySmall} text-[#161616]`}>{skill.name}</span>
+                        <button onClick={() => removeSkill(skill.id)} aria-label={`Remove ${skill.name}`} className="ml-2 p-1 rounded hover:bg-gray-100">
+                          <X size={14} className="text-[#393939]" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-               
-              </div>
+              )}
             </div>
 
             {/* Navigation Buttons */}
@@ -425,12 +473,20 @@ const SkillsInputPage: React.FC = () => {
 
           {/* Right Content - Preview Card */}
           <div className="hidden lg:flex lg:flex-shrink-0 w-full lg:w-[495px]">
-            <UserPreviewCard name="Cyrus Roshan" skills={skills} isAvailable={true} />
+            <UserPreviewCard
+              name={previewProfile?.name || 'Preview User'}
+              skills={previewProfile?.skills || skills}
+              role={role}
+              companyName={previewProfile?.companyName || companyName}
+              companyWebsite={previewProfile?.companyWebsite || companyWebsite}
+              phone={previewProfile?.phone || ''}
+              isAvailable={true}
+            />
           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+         </div>
+       </div>
+     </div>
+   );
+ };
 
-export default SkillsInputPage;
+ export default SkillsInputPage;
