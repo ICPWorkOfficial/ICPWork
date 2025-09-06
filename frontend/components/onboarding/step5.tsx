@@ -50,7 +50,7 @@ interface StepProgressProps {
 
 interface UserPreviewCardProps {
   name: string;
-  skills: Skill[];
+  skills?: Skill[];
   isAvailable?: boolean;
   onToggleAvailable?: (v: boolean) => void;
   address?: {
@@ -62,6 +62,9 @@ interface UserPreviewCardProps {
   };
   profilePhoto?: string;
   resumeFileName?: string;
+  linkedin?: string;
+  role?: 'Client' | 'Freelancer';
+  companyDescription?: string;
 }
 
 // Reusable Components
@@ -109,7 +112,9 @@ const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) 
   </div>
 );
 
-const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true, onToggleAvailable, address, profilePhoto, resumeFileName }) => {
+const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills = [], isAvailable = true, onToggleAvailable, address, profilePhoto, resumeFileName, linkedin, role = 'Freelancer', companyDescription }) => {
+  const isClient = role === 'Client';
+
   // temporary fallback address shown when no address prop provided
   const tempAddress: UserPreviewCardProps['address'] = {
     streetAddress: '123 Demo Lane',
@@ -138,7 +143,7 @@ const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvail
       <div className="relative bg-white w-full p-6 lg:p-8 z-10 shadow-lg">
         <div className="flex flex-col items-center gap-6 lg:gap-8">
           <div className="w-28 h-28 lg:w-40 lg:h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center overflow-hidden">
-            {profilePhoto ? (
+            {profilePhoto && !isClient ? (
               <img src={profilePhoto} alt="Profile" className="object-cover w-full h-full" />
             ) : (
               <User size={72} className="text-[#C6C6C6]" />
@@ -150,55 +155,70 @@ const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvail
               {name}
             </h2>
 
-            <div className="flex items-center gap-4">
-              <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
-              {/* Toggle switch */}
-              <button
-                onClick={() => onToggleAvailable && onToggleAvailable(!isAvailable)}
-                aria-pressed={isAvailable}
-                className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${isAvailable ? 'bg-[#32CD32]' : 'bg-[#E6E6E6]'}`}
-              >
-                <span className={`ml-1 h-4 w-4 rounded-full bg-white transform transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
-            </div>
+            {!isClient && (
+              <div className="flex items-center gap-4">
+                <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
+                <button
+                  onClick={() => onToggleAvailable && onToggleAvailable(!isAvailable)}
+                  aria-pressed={isAvailable}
+                  className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${isAvailable ? 'bg-[#32CD32]' : 'bg-[#E6E6E6]'}`}
+                >
+                  <span className={`ml-1 h-4 w-4 rounded-full bg-white transform transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="mt-6 pt-6 px-4 lg:px-0">
           <div className="border-t border-[#E0E0E0] pt-5">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Skills</h3>
-        <div className="flex flex-wrap gap-3">
-          {skills.slice(0, 3).map((skill) => (
-            <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
-          ))}
-        </div>
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Company' : 'Skills'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616] font-medium">{companyDescription || '—'}</div>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {skills.slice(0, 3).map((skill) => (
+                  <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="border-t border-[#E0E0E0] pt-5 mt-5">
-            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Location</h3>
-            <div className="flex items-start gap-3">
-              <MapPin size={18} className="text-[#A8A8A8] mt-1" />
-              <div className="text-sm text-[#6F6F6F]">
-                {displayAddress?.streetAddress ? (
-                  <div className="font-medium text-[#041D37]">{displayAddress.streetAddress}</div>
-                ) : null}
-                <div>
-                  {[displayAddress?.city, displayAddress?.state, displayAddress?.postalCode, displayAddress?.country].filter(Boolean).join(', ')}
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Website / Industry' : 'Location'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616] font-medium">{linkedin || '—'}</div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <MapPin size={18} className="text-[#A8A8A8] mt-1" />
+                <div className="text-sm text-[#6F6F6F]">
+                  {displayAddress?.streetAddress ? (
+                    <div className="font-medium text-[#041D37]">{displayAddress.streetAddress}</div>
+                  ) : null}
+                  <div>
+                    {[displayAddress?.city, displayAddress?.state, displayAddress?.postalCode, displayAddress?.country].filter(Boolean).join(', ')}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="border-t border-[#E0E0E0] pt-5 mt-6 pb-6">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Resume</h3>
-        {resumeFileName ? (
-          <div className="flex items-center gap-3">
-            <FileText size={18} className="text-[#A8A8A8]" />
-            <span className="text-sm text-[#6F6F6F]">{resumeFileName}</span>
-          </div>
-        ) : (
-          <FileText size={18} className="text-[#A8A8A8]" />
-        )}
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Business Details' : 'Resume'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616]">{/* Clients only show minimal business details in this preview */}
+                <div>{'—'}</div>
+              </div>
+            ) : (
+              resumeFileName ? (
+                <div className="flex items-center gap-3">
+                  <FileText size={18} className="text-[#A8A8A8]" />
+                  <span className="text-sm text-[#6F6F6F]">{resumeFileName}</span>
+                </div>
+              ) : (
+                <FileText size={18} className="text-[#A8A8A8]" />
+              )
+            )}
           </div>
         </div>
       </div>
@@ -234,32 +254,35 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
+  const [role, setRole] = useState<'Client' | 'Freelancer'>('Client');
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
   ]);
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; address?: any; profilePhoto?: string; phone?: string; resumeFileName?: string; linkedin?: string } | null>(null);
+  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; address?: any; profilePhoto?: string; phone?: string; resumeFileName?: string; linkedin?: string; role?: 'Client' | 'Freelancer'; companyDescription?: string } | null>(null);
 
   // Profile resume + linkedin state (replacing profile photo + phone)
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
   const [resumeFileName, setResumeFileName] = useState<string | null>(null);
   const [linkedin, setLinkedin] = useState<string>('');
+  const [companyDescription, setCompanyDescription] = useState<string>('');
 
   // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
   useEffect(() => {
     try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
-      if (raw) {
-        const prof = JSON.parse(raw);
-        if (prof?.skills && Array.isArray(prof.skills)) {
-          setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
-        }
-        if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
-        if (prof.resumeFileName) setResumeFileName(prof.resumeFileName);
-        if (prof.linkedin) setLinkedin(prof.linkedin);
-      }
+  // localStorage reads disabled to avoid persisting during debugging
+  // const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+  // if (raw) {
+  //   const prof = JSON.parse(raw);
+  //   if (prof?.skills && Array.isArray(prof.skills)) {
+  //     setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
+  //   }
+  //   if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
+  //   if (prof.resumeFileName) setResumeFileName(prof.resumeFileName);
+  //   if (prof.linkedin) setLinkedin(prof.linkedin);
+  // }
     } catch (e) {
       // ignore parse errors
     }
@@ -269,20 +292,10 @@ const SkillsInputPage: React.FC = () => {
   useEffect(() => {
     if (!showPreview) return;
     try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
-      if (raw) {
-        const prof = JSON.parse(raw);
-        setPreviewProfile({
-          name: prof.name || 'Preview User',
-          skills: (prof.skills || []).map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })),
-          resumeFileName: prof.resumeFileName || undefined,
-          linkedin: prof.linkedin || undefined
-        });
-      } else {
-        setPreviewProfile({ name: 'Preview User', skills, resumeFileName: resumeFileName || undefined, linkedin });
-      }
+  // localStorage read disabled; use current state for preview
+  setPreviewProfile({ name: 'Preview User', skills, resumeFileName: resumeFileName || undefined, linkedin, role, companyDescription });
     } catch (e) {
-      setPreviewProfile({ name: 'Preview User', skills, resumeFileName: resumeFileName || undefined, linkedin });
+  setPreviewProfile({ name: 'Preview User', skills, resumeFileName: resumeFileName || undefined, linkedin, role, companyDescription });
     }
   }, [showPreview]);
 
@@ -297,14 +310,16 @@ const SkillsInputPage: React.FC = () => {
       // Simulate save by writing to localStorage as JSON. This avoids backend calls / canister issues.
       const payload: any = {
         name: 'Demo User',
+        role,
         skills: skills.map(s => ({ name: s.name })),
         available: isAvailable,
         resumeFileName: resumeFileName || null,
         linkedin: linkedin || null
       };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('demo_profile', JSON.stringify(payload));
-      }
+      // localStorage write disabled to avoid persisting during debugging
+      // if (typeof window !== 'undefined') {
+      //   localStorage.setItem('demo_profile', JSON.stringify(payload));
+      // }
       // proceed to next step
       router.push('/onboarding/step5');
     } catch (err) {
@@ -354,7 +369,7 @@ const SkillsInputPage: React.FC = () => {
             <div className="bg-white rounded-xl max-w-[95vw] w-full max-h-[90vh] p-4 sm:p-6 relative overflow-auto shadow-lg">
               <div className="w-full flex justify-center">
                 {previewProfile ? (
-                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} resumeFileName={previewProfile.resumeFileName || resumeFileName || undefined} />
+                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} resumeFileName={previewProfile.resumeFileName || resumeFileName || undefined} linkedin={previewProfile.linkedin || linkedin} role={previewProfile.role || role} companyDescription={previewProfile.companyDescription || companyDescription} />
                 ) : (
                   <div className="p-6">Loading preview…</div>
                 )}
@@ -392,8 +407,10 @@ const SkillsInputPage: React.FC = () => {
 
             {/* Title + mobile preview button */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className={`${designTokens.typography.headingLarge} text-[#161616] `}>Almost Done! Add your Resume</h2>
-                  
+              <div>
+                <h2 className={`${designTokens.typography.headingLarge} text-[#161616] `}>Almost Done! Add your Resume</h2>
+             
+              </div>
 
               <button
                 type="button"
@@ -407,42 +424,51 @@ const SkillsInputPage: React.FC = () => {
             {/* Profile Photo Upload + Phone Verification (replacing address inputs) */}
             <div className="mb-8">
               <div className="w-full max-w-[700px]">
-                {/* Resume Upload */}
-                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white mb-4">
-                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Resume Upload (optional)</label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <input
-                        id="resumeUpload"
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          setResumeFileName(file.name);
-                        }}
-                        className=" w-60"
-                      />
-                      <br/>
-                      <span className="text-sm text-[#6F6F6F]">Accepted: PDF, DOC, DOCX.</span>
+                {/* Resume Upload (Freelancers only) */}
+                {role === 'Freelancer' && (
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white mb-4">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Resume Upload (optional)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <input
+                          id="resumeUpload"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setResumeFileName(file.name);
+                          }}
+                          className=" w-60"
+                        />
+                        <br/>
+                        <span className="text-sm text-[#6F6F6F]">Accepted: PDF, DOC, DOCX.</span>
+                      </div>
+                      {/* <div className="w-28 text-right text-sm text-[#6F6F6F]">
+                        {resumeFileName || 'No file selected'}
+                      </div> */}
                     </div>
-                    {/* <div className="w-28 text-right text-sm text-[#6F6F6F]">
-                      {resumeFileName || 'No file selected'}
-                    </div> */}
                   </div>
-                </div>
+                )}
 
                 {/* LinkedIn URL (optional) */}
-                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
-                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>LinkedIn Profile (optional)</label>
-                  <input
-                    type="url"
-                    value={linkedin}
-                    onChange={(e) => setLinkedin(e.target.value)}
-                    placeholder="https://www.linkedin.com/in/your-name"
-                    className="w-full p-3 rounded"
-                  />
-                </div>
+                {role === 'Freelancer' ? (
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>LinkedIn Profile (optional)</label>
+                    <input
+                      type="url"
+                      value={linkedin}
+                      onChange={(e) => setLinkedin(e.target.value)}
+                      placeholder="https://www.linkedin.com/in/your-name"
+                      className="w-full p-3 rounded"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Company Description </label>
+                    <textarea value={companyDescription} onChange={(e) => setCompanyDescription(e.target.value)} placeholder="Brief description of the company " className="w-full p-3 rounded h-24" />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -470,7 +496,7 @@ const SkillsInputPage: React.FC = () => {
 
           {/* Right Content - Preview Card */}
           <div className="hidden lg:flex lg:flex-shrink-0 w-full lg:w-[495px]">
-            <UserPreviewCard name={previewProfile?.name || 'Preview User'} skills={skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} resumeFileName={previewProfile?.resumeFileName || resumeFileName || undefined} />
+            <UserPreviewCard name={previewProfile?.name || 'Preview User'} skills={skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} resumeFileName={previewProfile?.resumeFileName || resumeFileName || undefined} linkedin={previewProfile?.linkedin || linkedin} role={previewProfile?.role || role} companyDescription={previewProfile?.companyDescription || companyDescription} />
           </div>
         </div>
       </div>

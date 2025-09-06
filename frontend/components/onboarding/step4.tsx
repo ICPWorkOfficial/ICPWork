@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, FileText, User } from 'lucide-react';
+import { X, MapPin, FileText, User, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -50,7 +50,7 @@ interface StepProgressProps {
 
 interface UserPreviewCardProps {
   name: string;
-  skills: Skill[];
+  skills?: Skill[];
   isAvailable?: boolean;
   onToggleAvailable?: (v: boolean) => void;
   address?: {
@@ -61,6 +61,13 @@ interface UserPreviewCardProps {
     postalCode?: string;
   };
   profilePhoto?: string;
+  role?: 'Client' | 'Freelancer';
+  companyName?: string;
+  companyWebsite?: string;
+  phone?: string;
+  industry?: string;
+  businessType?: string;
+  employeeCount?: string;
 }
 
 // Reusable Components
@@ -108,20 +115,22 @@ const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) 
   </div>
 );
 
-const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true, onToggleAvailable, address, profilePhoto }) => {
-  // temporary fallback address shown when no address prop provided
-  const tempAddress: UserPreviewCardProps['address'] = {
-    streetAddress: '123 Demo Lane',
-    city: 'London',
-    state: 'England',
-    country: 'UK',
-    postalCode: 'SW1A 1AA'
-  };
-
-  // prefer actual address prop when any field is present, otherwise use tempAddress
-  const hasAddress = address && Object.values(address).some(Boolean);
-  const displayAddress = hasAddress ? address : tempAddress;
-
+const UserPreviewCard: React.FC<UserPreviewCardProps> = ({
+  name,
+  skills = [],
+  isAvailable = true,
+  onToggleAvailable,
+  address,
+  profilePhoto,
+  role = 'Freelancer',
+  companyName,
+  companyWebsite,
+  phone,
+  industry,
+  businessType,
+  employeeCount
+}) => {
+  const isClient = role === 'Client';
   return (
     <div className="relative w-full max-w-[495px] mx-auto  rounded-xl">
       <div
@@ -133,64 +142,81 @@ const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvail
           transform: 'rotate(3deg) '
         }}
       />
-
       <div className="relative bg-white w-full p-6 lg:p-8 z-10 shadow-lg">
         <div className="flex flex-col items-center gap-6 lg:gap-8">
           <div className="w-28 h-28 lg:w-40 lg:h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center overflow-hidden">
-            {profilePhoto ? (
+            {profilePhoto && !isClient ? (
               <img src={profilePhoto} alt="Profile" className="object-cover w-full h-full" />
             ) : (
               <User size={72} className="text-[#C6C6C6]" />
             )}
           </div>
-
           <div className="flex flex-col items-center gap-4 lg:gap-6">
             <h2 className={`${designTokens.typography.headingMedium} text-[#041D37] text-center`}>
               {name}
             </h2>
-
-            <div className="flex items-center gap-4">
-              <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
-              {/* Toggle switch */}
-              <button
-                onClick={() => onToggleAvailable && onToggleAvailable(!isAvailable)}
-                aria-pressed={isAvailable}
-                className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${isAvailable ? 'bg-[#32CD32]' : 'bg-[#E6E6E6]'}`}
-              >
-                <span className={`ml-1 h-4 w-4 rounded-full bg-white transform transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
-            </div>
+            {!isClient && (
+              <div className="flex items-center gap-4">
+                <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
+                <button
+                  onClick={() => onToggleAvailable && onToggleAvailable(!isAvailable)}
+                  aria-pressed={isAvailable}
+                  className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${isAvailable ? 'bg-[#32CD32]' : 'bg-[#E6E6E6]'}`}
+                >
+                  <span className={`ml-1 h-4 w-4 rounded-full bg-white transform transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
-
         <div className="mt-6 pt-6 px-4 lg:px-0">
+          {/* Section 1 */}
           <div className="border-t border-[#E0E0E0] pt-5">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Skills</h3>
-        <div className="flex flex-wrap gap-3">
-          {skills.slice(0, 3).map((skill) => (
-            <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
-          ))}
-        </div>
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Company' : 'Skills'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616] font-medium">{companyName || '—'}</div>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {skills.slice(0, 3).map((skill) => (
+                  <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
+                ))}
+              </div>
+            )}
           </div>
-
+          {/* Section 2 */}
           <div className="border-t border-[#E0E0E0] pt-5 mt-5">
-            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Location</h3>
-            <div className="flex items-start gap-3">
-              <MapPin size={18} className="text-[#A8A8A8] mt-1" />
-              <div className="text-sm text-[#6F6F6F]">
-                {displayAddress?.streetAddress ? (
-                  <div className="font-medium text-[#041D37]">{displayAddress.streetAddress}</div>
-                ) : null}
-                <div>
-                  {[displayAddress?.city, displayAddress?.state, displayAddress?.postalCode, displayAddress?.country].filter(Boolean).join(', ')}
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Website / Industry' : 'Location'}</h3>
+            {isClient ? (
+              <div className="flex flex-col gap-2 text-sm text-[#161616]">
+                <div className="flex items-center gap-2"><MapPin size={16} className="text-[#A8A8A8]" /> {companyWebsite || '—'}</div>
+                {/* <div className="text-[#6F6F6F]">{industry || 'Industry —'}</div> */}
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <MapPin size={18} className="text-[#A8A8A8] mt-1" />
+                <div className="text-sm text-[#6F6F6F]">
+                  {address?.streetAddress ? (
+                    <div className="font-medium text-[#041D37]">{address.streetAddress}</div>
+                  ) : null}
+                  <div>
+                    {[address?.city, address?.state, address?.postalCode, address?.country].filter(Boolean).join(', ')}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-
+          {/* Section 3 */}
           <div className="border-t border-[#E0E0E0] pt-5 mt-6 pb-6">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Resume</h3>
-        <FileText size={18} className="text-[#A8A8A8]" />
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Business Details' : 'Resume'}</h3>
+            {isClient ? (
+              <div className="text-xs text-[#161616] space-y-1">
+                {/* <div>Type: {businessType || '—'}</div> */}
+                {/* <div>Employees: {employeeCount || '—'}</div> */}
+                <div className="flex items-center gap-2"><Phone size={16} className="text-[#A8A8A8]" /> {phone || '—'}</div>
+              </div>
+            ) : (
+              <FileText size={18} className="text-[#A8A8A8]" />
+            )}
           </div>
         </div>
       </div>
@@ -226,18 +252,37 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
+  const [role, setRole] = useState<'Client' | 'Freelancer'>('Freelancer');
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
   ]);
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; address?: any; profilePhoto?: string; phone?: string } | null>(null);
+  const [previewProfile, setPreviewProfile] = useState<{
+    name?: string;
+    skills?: Skill[];
+    address?: any;
+    profilePhoto?: string;
+    phone?: string;
+    role?: 'Client' | 'Freelancer';
+    companyName?: string;
+    companyWebsite?: string;
+    industry?: string;
+    businessType?: string;
+    employeeCount?: string;
+  } | null>(null);
 
   // Profile photo + phone verification state (replacing address inputs)
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [phone, setPhone] = useState<string>('');
+  // client specific for preview only
+  const [companyName, setCompanyName] = useState<string>('');
+  const [companyWebsite, setCompanyWebsite] = useState<string>('');
+  const [industry, setIndustry] = useState<string>('');
+  const [businessType, setBusinessType] = useState<string>('');
+  const [employeeCount, setEmployeeCount] = useState<string>('');
   const [verificationCode, setVerificationCode] = useState<string>('');
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [isResending, setIsResending] = useState<boolean>(false);
@@ -245,41 +290,43 @@ const SkillsInputPage: React.FC = () => {
   // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
   useEffect(() => {
     try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+      // localStorage reads temporarily disabled to prevent persisted profile from overriding UI state during debugging
+      const raw = null; // typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
       if (raw) {
         const prof = JSON.parse(raw);
         if (prof?.skills && Array.isArray(prof.skills)) {
           setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
         }
+        if (prof.role === 'Client' || prof.role === 'Freelancer') setRole(prof.role);
         if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
         if (prof.profilePhoto) setProfilePhoto(prof.profilePhoto);
         if (prof.phone) setPhone(prof.phone);
         if (prof.phoneVerified) setIsVerified(Boolean(prof.phoneVerified));
+        if (prof.companyName) setCompanyName(prof.companyName);
+        if (prof.companyWebsite) setCompanyWebsite(prof.companyWebsite);
+        if (prof.industry) setIndustry(prof.industry);
+        if (prof.businessType) setBusinessType(prof.businessType);
+        if (prof.employeeCount) setEmployeeCount(prof.employeeCount);
       }
-    } catch (e) {
-      // ignore parse errors
-    }
+    } catch {}
   }, []);
 
   // Prepare preview data from local dummy storage when modal opens
   useEffect(() => {
     if (!showPreview) return;
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
-      if (raw) {
-        const prof = JSON.parse(raw);
-        setPreviewProfile({
-          name: prof.name || 'Preview User',
-          skills: (prof.skills || []).map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })),
-          profilePhoto: prof.profilePhoto || undefined,
-          phone: prof.phone || undefined
-        });
-      } else {
-        setPreviewProfile({ name: 'Preview User', skills, profilePhoto: profilePhoto || undefined, phone });
-      }
-    } catch (e) {
-      setPreviewProfile({ name: 'Preview User', skills, profilePhoto: profilePhoto || undefined, phone });
-    }
+    // Do not read from localStorage for preview; use current component state instead
+    setPreviewProfile({
+      name: 'Preview User',
+      skills,
+      profilePhoto: profilePhoto || undefined,
+      phone,
+      role,
+      companyName,
+      companyWebsite,
+      industry,
+      businessType,
+      employeeCount
+    });
   }, [showPreview]);
 
 
@@ -296,15 +343,22 @@ const SkillsInputPage: React.FC = () => {
       // Simulate save by writing to localStorage as JSON. This avoids backend calls / canister issues.
       const payload: any = {
         name: 'Demo User',
+        role,
         skills: skills.map(s => ({ name: s.name })),
         available: isAvailable,
         profilePhoto: profilePhoto || null,
         phone: phone || null,
-        phoneVerified: isVerified
+        phoneVerified: isVerified,
+        companyName,
+        companyWebsite,
+        industry,
+        businessType,
+        employeeCount
       };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('demo_profile', JSON.stringify(payload));
-      }
+  // localStorage write disabled to avoid persisting during debugging
+  // if (typeof window !== 'undefined') {
+  //   localStorage.setItem('demo_profile', JSON.stringify(payload));
+  // }
       // proceed to next step
       router.push('/onboarding/step4');
     } catch (err) {
@@ -392,9 +446,9 @@ const SkillsInputPage: React.FC = () => {
 
             {/* Title + mobile preview button */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className={`${designTokens.typography.headingLarge} text-[#161616] `}>Add profile Image and verify your number</h2>
-                  
-
+              <h2 className={`${designTokens.typography.headingLarge} text-[#161616] `}>
+                {role === 'Client' ? 'Verify your company phone number' : 'Add profile Image and verify your number'}
+              </h2>
               <button
                 type="button"
                 onClick={() => setShowPreview(true)}
@@ -406,41 +460,40 @@ const SkillsInputPage: React.FC = () => {
 
             {/* Profile Photo Upload + Phone Verification (replacing address inputs) */}
             <div className="mb-8">
-              <div className="w-full max-w-[700px]">
-                {/* Profile Photo */}
-                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white mb-4">
-                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Profile Photo</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-28 h-28 rounded-full bg-[#F4F4F4] overflow-hidden flex items-center justify-center">
-                      {profilePhoto ? (
-                        <img src={profilePhoto} alt="profile" className="w-full h-full object-cover" />
-                      ) : (
-                        <User size={40} className="text-[#C6C6C6]" />
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <input
-                        id="photoUpload"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = () => setProfilePhoto(String(reader.result || ''));
-                          reader.readAsDataURL(file);
-                        }}
-                        className="w-60"
-                      />
-                      <span className="text-sm text-[#6F6F6F]">Recommended size: 400x400px. JPG or PNG.</span>
+              <div className="w-full max-w-[700px] space-y-6">
+                {role === 'Freelancer' && (
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white mb-2">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Profile Photo</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-28 h-28 rounded-full bg-[#F4F4F4] overflow-hidden flex items-center justify-center">
+                        {profilePhoto ? (
+                          <img src={profilePhoto} alt="profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <User size={40} className="text-[#C6C6C6]" />
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <input
+                          id="photoUpload"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => setProfilePhoto(String(reader.result || ''));
+                            reader.readAsDataURL(file);
+                          }}
+                          className="w-60"
+                        />
+                        <span className="text-sm text-[#6F6F6F]">Recommended size: 400x400px. JPG or PNG.</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Phone number (optional) */}
+                )}
+                {/* Phone number */}
                 <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
-                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Phone Number (optional)</label>
+                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>{role === 'Client' ? 'Company Phone Number' : 'Phone Number (optional)'}</label>
                   <input
                     type="tel"
                     value={phone}
@@ -448,9 +501,7 @@ const SkillsInputPage: React.FC = () => {
                     placeholder="+1 555 555 5555"
                     className="w-full p-3 rounded mb-3"
                   />
-
-                  {/* When user enters a phone we show the verification area */}
-                  {phone ? (
+                  {phone && (
                     <div className="mt-2">
                       <label className={`${designTokens.typography.bodySmall} text-[#6F6F6F] block mb-2`}>Enter verification code</label>
                       <input
@@ -460,11 +511,9 @@ const SkillsInputPage: React.FC = () => {
                         placeholder="123456"
                         className="w-full p-3 rounded mb-3"
                       />
-
                       <div className="flex flex-col sm:flex-row gap-3">
                         <button
                           onClick={() => {
-                            // simple client-side verification simulation
                             if (verificationCode.trim().length > 0) {
                               setIsVerified(true);
                             }
@@ -473,11 +522,9 @@ const SkillsInputPage: React.FC = () => {
                         >
                           Verify Code
                         </button>
-
                         <button
                           onClick={() => {
                             setIsResending(true);
-                            // simulate resend
                             setTimeout(() => setIsResending(false), 1000);
                           }}
                           className="w-full sm:w-[220px] h-12 bg-transparent text-[#161616]"
@@ -485,10 +532,9 @@ const SkillsInputPage: React.FC = () => {
                           {isResending ? 'Resending…' : "Didn't Received ? Resend Code"}
                         </button>
                       </div>
-
                       {isVerified && <div className="mt-3 text-sm text-[#32CD32]">Phone verified</div>}
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>
@@ -517,7 +563,20 @@ const SkillsInputPage: React.FC = () => {
 
           {/* Right Content - Preview Card */}
           <div className="hidden lg:flex lg:flex-shrink-0 w-full lg:w-[495px]">
-            <UserPreviewCard name={previewProfile?.name || 'Preview User'} skills={skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} profilePhoto={previewProfile?.profilePhoto || profilePhoto || undefined} />
+            <UserPreviewCard
+              name={previewProfile?.name || 'Preview User'}
+              skills={skills}
+              isAvailable={isAvailable}
+              onToggleAvailable={setIsAvailable}
+              profilePhoto={previewProfile?.profilePhoto || profilePhoto || undefined}
+              role={role}
+              companyName={companyName}
+              companyWebsite={companyWebsite}
+              industry={industry}
+              businessType={businessType}
+              employeeCount={employeeCount}
+              phone={phone}
+            />
           </div>
         </div>
       </div>

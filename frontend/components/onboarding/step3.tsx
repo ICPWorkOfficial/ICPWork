@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, FileText, User } from 'lucide-react';
+import { X, MapPin, FileText, User, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -50,7 +50,7 @@ interface StepProgressProps {
 
 interface UserPreviewCardProps {
   name: string;
-  skills: Skill[];
+  skills?: Skill[];
   isAvailable?: boolean;
   onToggleAvailable?: (v: boolean) => void;
   address?: {
@@ -60,6 +60,13 @@ interface UserPreviewCardProps {
     country?: string;
     postalCode?: string;
   };
+  role?: 'Client' | 'Freelancer';
+  companyName?: string;
+  companyWebsite?: string;
+  phone?: string;
+  industry?: string;
+  businessType?: string;
+  employeeCount?: string;
 }
 
 // Reusable Components
@@ -107,7 +114,21 @@ const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) 
   </div>
 );
 
-const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvailable = true, onToggleAvailable, address }) => {
+const UserPreviewCard: React.FC<UserPreviewCardProps> = ({
+  name,
+  skills = [],
+  isAvailable = true,
+  onToggleAvailable,
+  address,
+  role = 'Freelancer',
+  companyName,
+  companyWebsite,
+  phone,
+  industry,
+  businessType,
+  employeeCount
+}) => {
+  const isClient = role === 'Client';
   return (
     <div className="relative w-full max-w-[495px] mx-auto  rounded-xl">
       <div
@@ -119,61 +140,78 @@ const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills, isAvail
           transform: 'rotate(3deg) '
         }}
       />
-
       <div className="relative bg-white w-full p-6 lg:p-8 z-10 shadow-lg">
         <div className="flex flex-col items-center gap-6 lg:gap-8">
           <div className="w-28 h-28 lg:w-40 lg:h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center">
-        <User size={72} className="text-[#C6C6C6]" />
+            <User size={72} className="text-[#C6C6C6]" />
           </div>
-
           <div className="flex flex-col items-center gap-4 lg:gap-6">
             <h2 className={`${designTokens.typography.headingMedium} text-[#041D37] text-center`}>
               {name}
             </h2>
-
-            <div className="flex items-center gap-4">
-              <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
-              {/* Toggle switch */}
-              <button
-                onClick={() => onToggleAvailable && onToggleAvailable(!isAvailable)}
-                aria-pressed={isAvailable}
-                className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${isAvailable ? 'bg-[#32CD32]' : 'bg-[#E6E6E6]'}`}
-              >
-                <span className={`ml-1 h-4 w-4 rounded-full bg-white transform transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
-            </div>
+            {!isClient && (
+              <div className="flex items-center gap-4">
+                <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
+                <button
+                  onClick={() => onToggleAvailable && onToggleAvailable(!isAvailable)}
+                  aria-pressed={isAvailable}
+                  className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${isAvailable ? 'bg-[#32CD32]' : 'bg-[#E6E6E6]'}`}
+                >
+                  <span className={`ml-1 h-4 w-4 rounded-full bg-white transform transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
-
         <div className="mt-6 pt-6 px-4 lg:px-0">
+          {/* Section 1 */}
           <div className="border-t border-[#E0E0E0] pt-5">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Skills</h3>
-        <div className="flex flex-wrap gap-3">
-          {skills.slice(0, 3).map((skill) => (
-            <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
-          ))}
-        </div>
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Company' : 'Skills'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616] font-medium">{companyName || '—'}</div>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {skills.slice(0, 3).map((skill) => (
+                  <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
+                ))}
+              </div>
+            )}
           </div>
-
+          {/* Section 2 */}
           <div className="border-t border-[#E0E0E0] pt-5 mt-5">
-            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Location</h3>
-            <div className="flex items-start gap-3">
-              <MapPin size={18} className="text-[#A8A8A8] mt-1" />
-              <div className="text-sm text-[#6F6F6F]">
-                {address?.streetAddress ? (
-                  <div className="font-medium text-[#041D37]">{address.streetAddress}</div>
-                ) : null}
-                <div>
-                  {[address?.city, address?.state, address?.postalCode, address?.country].filter(Boolean).join(', ')}
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Website / Industry' : 'Location'}</h3>
+            {isClient ? (
+              <div className="flex flex-col gap-2 text-sm text-[#161616]">
+                <div className="flex items-center gap-2"><MapPin size={16} className="text-[#A8A8A8]" /> {companyWebsite || '—'}</div>
+                {/* <div className="text-[#6F6F6F]">{industry || 'Industry —'}</div> */}
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <MapPin size={18} className="text-[#A8A8A8] mt-1" />
+                <div className="text-sm text-[#6F6F6F]">
+                  {address?.streetAddress ? (
+                    <div className="font-medium text-[#041D37]">{address.streetAddress}</div>
+                  ) : null}
+                  <div>
+                    {[address?.city, address?.state, address?.postalCode, address?.country].filter(Boolean).join(', ')}
+                  </div>
                 </div>
               </div>
+            )}
+          </div>
+          {/* Section 3 */}
+            <div className="border-t border-[#E0E0E0] pt-5 mt-6 pb-6">
+              <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Business Details' : 'Resume'}</h3>
+              {isClient ? (
+                <div className="text-xs text-[#161616] space-y-1">
+                  {/* <div>Type: {businessType || '—'}</div> */}
+                  {/* <div>Employees: {employeeCount || '—'}</div> */}
+                  <div className="flex items-center gap-2"><Phone size={16} className="text-[#A8A8A8]" /> {phone || '—'}</div>
+                </div>
+              ) : (
+                <FileText size={18} className="text-[#A8A8A8]" />
+              )}
             </div>
-          </div>
-
-          <div className="border-t border-[#E0E0E0] pt-5 mt-6 pb-6">
-        <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>Resume</h3>
-        <FileText size={18} className="text-[#A8A8A8]" />
-          </div>
         </div>
       </div>
     </div>
@@ -208,6 +246,7 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
+  const [role, setRole] = useState<'Client' | 'Freelancer'>('Freelancer');
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
@@ -215,7 +254,18 @@ const SkillsInputPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; address?: any } | null>(null);
+  const [previewProfile, setPreviewProfile] = useState<{
+    name?: string;
+    skills?: Skill[];
+    address?: any;
+    role?: 'Client' | 'Freelancer';
+    companyName?: string;
+    companyWebsite?: string;
+    industry?: string;
+    businessType?: string;
+    employeeCount?: string;
+    phone?: string;
+  } | null>(null);
 
   // Address / Step 3 state
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
@@ -225,6 +275,13 @@ const SkillsInputPage: React.FC = () => {
   const [city, setCity] = useState<string>('');
   const [postalCode, setPostalCode] = useState<string>('');
   const [streetAddress, setStreetAddress] = useState<string>('');
+  // Client specific
+  const [industry, setIndustry] = useState<string>('');
+  const [businessType, setBusinessType] = useState<string>('');
+  const [employeeCount, setEmployeeCount] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>('');
+  const [companyWebsite, setCompanyWebsite] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
 
   const countryOptions = ['USA', 'UK'];
   const stateOptionsMap: Record<string, string[]> = {
@@ -248,37 +305,45 @@ const SkillsInputPage: React.FC = () => {
   }, [country]);
 
   // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
-  useEffect(() => {
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
-      if (raw) {
-        const prof = JSON.parse(raw);
-        if (prof?.skills && Array.isArray(prof.skills)) {
-          setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
-        }
-        if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
-        if (prof.address && typeof prof.address.private === 'boolean') setIsPrivate(prof.address.private);
-      }
-    } catch (e) {
-      // ignore parse errors
-    }
-  }, []);
+  // LocalStorage loading disabled per request
+  // useEffect(() => {
+  //   try {
+  //     const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+  //     if (raw) {
+  //       const prof = JSON.parse(raw);
+  //       if (prof?.skills && Array.isArray(prof.skills)) {
+  //         setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
+  //       }
+  //       if (prof.role === 'Client' || prof.role === 'Freelancer') setRole(prof.role);
+  //       if (prof.companyName) setCompanyName(prof.companyName);
+  //       if (prof.companyWebsite) setCompanyWebsite(prof.companyWebsite);
+  //       if (prof.phone) setPhone(prof.phone);
+  //       if (prof.industry) setIndustry(prof.industry);
+  //       if (prof.businessType) setBusinessType(prof.businessType);
+  //       if (prof.employeeCount) setEmployeeCount(prof.employeeCount);
+  //       if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
+  //       if (prof.address && typeof prof.address.private === 'boolean') setIsPrivate(prof.address.private);
+  //     }
+  //   } catch {}
+  // }, []);
 
   // Prepare preview data from local dummy storage when modal opens
   useEffect(() => {
     if (!showPreview) return;
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
-      if (raw) {
-        const prof = JSON.parse(raw);
-        setPreviewProfile({ name: prof.name || 'Preview User', skills: (prof.skills || []).map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })), address: prof.address || undefined });
-      } else {
-        setPreviewProfile({ name: 'Preview User', skills, address: { streetAddress, city, state: stateValue, country, postalCode } });
-      }
-    } catch (e) {
-      setPreviewProfile({ name: 'Preview User', skills, address: { streetAddress, city, state: stateValue, country, postalCode } });
-    }
-  }, [showPreview]);
+    // Build preview strictly from current state (no localStorage)
+    setPreviewProfile({
+      name: 'Preview User',
+      skills,
+      address: role === 'Freelancer' ? { streetAddress, city, state: stateValue, country, postalCode } : undefined,
+      role,
+      companyName,
+      companyWebsite,
+      industry,
+      businessType,
+      employeeCount,
+      phone
+    });
+  }, [showPreview, role, skills, streetAddress, city, stateValue, country, postalCode, companyName, companyWebsite, industry, businessType, employeeCount, phone]);
 
 
 
@@ -292,22 +357,33 @@ const SkillsInputPage: React.FC = () => {
     setLoading(true);
     try {
       // Simulate save by writing to localStorage as JSON. This avoids backend calls / canister issues.
-      const payload = {
+      const payload: any = {
+        role,
         name: 'Demo User',
-        skills: skills.map(s => ({ name: s.name })),
-        available: isAvailable,
-        address: {
+        available: isAvailable
+      };
+      if (role === 'Freelancer') {
+        payload.skills = skills.map(s => ({ name: s.name }));
+        payload.address = {
           private: isPrivate,
           country,
           state: stateValue,
           city,
           postalCode,
           streetAddress
-        }
-      };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('demo_profile', JSON.stringify(payload));
+        };
+      } else {
+        payload.companyName = companyName;
+        payload.companyWebsite = companyWebsite;
+        payload.industry = industry;
+        payload.businessType = businessType;
+        payload.employeeCount = employeeCount;
+        payload.phone = phone;
       }
+  // LocalStorage save disabled per request
+  // if (typeof window !== 'undefined') {
+  //   localStorage.setItem('demo_profile', JSON.stringify(payload));
+  // }
       // proceed to next step
       router.push('/onboarding/step4');
     } catch (err) {
@@ -357,7 +433,20 @@ const SkillsInputPage: React.FC = () => {
             <div className="bg-white rounded-xl max-w-[95vw] w-full max-h-[90vh] p-4 sm:p-6 relative overflow-auto shadow-lg">
               <div className="w-full flex justify-center">
                 {previewProfile ? (
-                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} address={previewProfile.address || { streetAddress, city, state: stateValue, country, postalCode }} />
+                  <UserPreviewCard
+                    name={previewProfile.name || 'Preview User'}
+                    skills={previewProfile.skills || skills}
+                    isAvailable={isAvailable}
+                    onToggleAvailable={setIsAvailable}
+                    address={previewProfile.address || { streetAddress, city, state: stateValue, country, postalCode }}
+                    role={role}
+                    companyName={companyName}
+                    companyWebsite={companyWebsite}
+                    industry={industry}
+                    businessType={businessType}
+                    employeeCount={employeeCount}
+                    phone={phone}
+                  />
                 ) : (
                   <div className="p-6">Loading preview…</div>
                 )}
@@ -394,16 +483,21 @@ const SkillsInputPage: React.FC = () => {
             </div>
 
             {/* Title + mobile preview button */}
-            <div className="md:flex items-center justify-between mb-6">
-              <h2 className={`${designTokens.typography.headingLarge} text-[#161616]`}>Your Address Details</h2>
-                  <button
-                    type="button"
-                    onClick={() => setIsPrivate(prev => !prev)}
-                    className={`px-3 py-2 rounded-full border ${isPrivate ? 'bg-[#161616] text-white border-transparent' : 'bg-white text-[#161616]'}`}
-                  >
-                    {isPrivate ? 'Private' : 'Public'}
-                  </button>
-
+            <div className="md:flex items-center justify-between mb-6 gap-4">
+              <div className="flex flex-col gap-3 w-full">
+                <h2 className={`${designTokens.typography.headingLarge} text-[#161616]`}>
+                  {role === 'Client' ? 'Your Company Details' : 'Your Address Details'}
+                </h2>
+              </div>
+              {role === 'Freelancer' && (
+                <button
+                  type="button"
+                  onClick={() => setIsPrivate(prev => !prev)}
+                  className={`px-3 py-2 rounded-full border ${isPrivate ? 'bg-[#161616] text-white border-transparent' : 'bg-white text-[#161616]'}`}
+                >
+                  {isPrivate ? 'Private' : 'Public'}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setShowPreview(true)}
@@ -413,79 +507,102 @@ const SkillsInputPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Address Input (Step 3) */}
+            {/* Role-based Inputs */}
             <div className="mb-8">
-              <div className="w-full max-w-[700px] ">
-                
-
-                {/* Country/State/City/Postal Code in 2-column grid, each in its own bordered box */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {/* Country */}
+              {role === 'Client' ? (
+                <div className="w-full max-w-[700px] space-y-4">
                   <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Country</label>
-                    <select
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="w-full p-2 rounded"
-                    >
-                      {countryOptions.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Select your Industry</label>
+                    <select value={industry} onChange={(e) => setIndustry(e.target.value)} className="w-full p-2 rounded">
+                      <option value="">Select Industry</option>
+                      <option value="Technology">Technology</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Healthcare">Healthcare</option>
+                      <option value="Education">Education</option>
                     </select>
                   </div>
-
-                  {/* State */}
                   <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>State</label>
-                    <select
-                      value={stateValue}
-                      onChange={(e) => setStateValue(e.target.value)}
-                      className="w-full p-2 rounded"
-                    >
-                      {(stateOptionsMap[country] || []).map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Type of Business</label>
+                    <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="w-full p-2 rounded">
+                      <option value="">Select Type</option>
+                      <option value="Startup">Startup</option>
+                      <option value="SME">SME</option>
+                      <option value="Enterprise">Enterprise</option>
+                      <option value="Agency">Agency</option>
                     </select>
                   </div>
-
-                  {/* City */}
                   <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>City</label>
-                    <select
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="w-full p-2 rounded"
-                    >
-                      {(cityOptionsMap[stateValue] || []).map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Number of Employees</label>
+                    <select value={employeeCount} onChange={(e) => setEmployeeCount(e.target.value)} className="w-full p-2 rounded">
+                      <option value="">Select Range</option>
+                      <option value="1-10">1-10</option>
+                      <option value="11-50">11-50</option>
+                      <option value="51-200">51-200</option>
+                      <option value="200+">200+</option>
                     </select>
                   </div>
-
-                  {/* Postal Code */}
+                </div>
+              ) : (
+                <div className="w-full max-w-[700px] ">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
+                      <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Country</label>
+                      <select
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        className="w-full p-2 rounded"
+                      >
+                        {countryOptions.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
+                      <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>State</label>
+                      <select
+                        value={stateValue}
+                        onChange={(e) => setStateValue(e.target.value)}
+                        className="w-full p-2 rounded"
+                      >
+                        {(stateOptionsMap[country] || []).map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
+                      <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>City</label>
+                      <select
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="w-full p-2 rounded"
+                      >
+                        {(cityOptionsMap[stateValue] || []).map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
+                      <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Postal Code</label>
+                      <input
+                        type="text"
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        className="w-full p-2 rounded"
+                      />
+                    </div>
+                  </div>
                   <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Postal Code</label>
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Street Address</label>
                     <input
                       type="text"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
+                      value={streetAddress}
+                      onChange={(e) => setStreetAddress(e.target.value)}
                       className="w-full p-2 rounded"
+                      placeholder="House number, street name"
                     />
                   </div>
                 </div>
-
-                {/* Street Address full width below grid */}
-                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-3 bg-white">
-                  <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-2`}>Street Address</label>
-                  <input
-                    type="text"
-                    value={streetAddress}
-                    onChange={(e) => setStreetAddress(e.target.value)}
-                    className="w-full p-2 rounded"
-                    placeholder="House number, street name"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Navigation Buttons */}
@@ -512,7 +629,20 @@ const SkillsInputPage: React.FC = () => {
 
           {/* Right Content - Preview Card */}
           <div className="hidden lg:flex lg:flex-shrink-0 w-full lg:w-[495px]">
-            <UserPreviewCard name={previewProfile?.name || 'Preview User'} skills={skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} address={previewProfile?.address || { streetAddress, city, state: stateValue, country, postalCode }} />
+            <UserPreviewCard
+              name={previewProfile?.name || 'Preview User'}
+              skills={skills}
+              isAvailable={isAvailable}
+              onToggleAvailable={setIsAvailable}
+              address={previewProfile?.address || { streetAddress, city, state: stateValue, country, postalCode }}
+              role={role}
+              companyName={companyName}
+              companyWebsite={companyWebsite}
+              industry={industry}
+              businessType={businessType}
+              employeeCount={employeeCount}
+              phone={phone}
+            />
           </div>
         </div>
       </div>
