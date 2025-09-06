@@ -13,8 +13,8 @@
       "type": "motoko"
     },
     "work_store": {
-        "main": "src/work_store/src/main.mo",
-        "type": "motoko"
+      "main": "src/work_store/src/main.mo",
+      "type": "motoko"
     },
     "escrow": {
       "main": "src/escrow/src/main.mo",
@@ -24,7 +24,7 @@
   "defaults": {
     "build": {
       "args": "",
-      "packtool": ""
+      "packtool": "mops sources"
     }
   },
   "output_env_file": ".env",
