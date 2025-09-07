@@ -304,6 +304,39 @@ const SkillsInputPage: React.FC = () => {
     setCity('');
   }, [country]);
 
+  // Load demo profile and prefill form fields
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/demo/profile');
+        const json = await res.json();
+        if (!mounted || !json?.ok) return;
+        const p = json.profile || {};
+        if (p.role) setRole(p.role);
+        if (p.skills && Array.isArray(p.skills)) {
+          setSkills(p.skills.map((s: any, i: number) => ({ id: String(Date.now() + i), name: String(s.name || s).toUpperCase() })));
+        }
+        if (p.address && typeof p.address === 'object') {
+          const a = p.address;
+          if (a.country) setCountry(a.country);
+          if (a.state) setStateValue(a.state);
+          if (a.city) setCity(a.city);
+          if (a.postalCode) setPostalCode(a.postalCode);
+          if (a.streetAddress) setStreetAddress(a.streetAddress);
+          if (typeof a.private === 'boolean') setIsPrivate(Boolean(a.private));
+        }
+        if (p.companyName) setCompanyName(p.companyName);
+        if (p.companyWebsite) setCompanyWebsite(p.companyWebsite);
+        if (p.phone) setPhone(p.phone);
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
   // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
   // LocalStorage loading disabled per request
   // useEffect(() => {
@@ -380,10 +413,17 @@ const SkillsInputPage: React.FC = () => {
         payload.employeeCount = employeeCount;
         payload.phone = phone;
       }
-  // LocalStorage save disabled per request
-  // if (typeof window !== 'undefined') {
-  //   localStorage.setItem('demo_profile', JSON.stringify(payload));
-  // }
+      // POST to demo API (non-blocking)
+      try {
+        await fetch('/api/demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('demo POST failed', e);
+      }
       // proceed to next step
       router.push('/onboarding/step4');
     } catch (err) {

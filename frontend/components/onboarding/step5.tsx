@@ -288,6 +288,27 @@ const SkillsInputPage: React.FC = () => {
     }
   }, []);
 
+  // Load demo profile from API and prefill step5 fields (non-destructive)
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/demo/profile');
+        const json = await res.json();
+        if (!mounted || !json?.ok) return;
+        const p = json.profile || {};
+  if (p.resumeFileName) setResumeFileName(p.resumeFileName);
+        if (p.linkedin) setLinkedin(p.linkedin);
+        if (p.companyDescription) setCompanyDescription(p.companyDescription);
+        if (p.role) setRole(p.role);
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
   // Prepare preview data from local dummy storage when modal opens
   useEffect(() => {
     if (!showPreview) return;
@@ -316,11 +337,18 @@ const SkillsInputPage: React.FC = () => {
         resumeFileName: resumeFileName || null,
         linkedin: linkedin || null
       };
-      // localStorage write disabled to avoid persisting during debugging
-      // if (typeof window !== 'undefined') {
-      //   localStorage.setItem('demo_profile', JSON.stringify(payload));
-      // }
-      // proceed to next step
+      // POST to demo API so backend copy of onboarding data exists for testing
+      try {
+        await fetch('/api/demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('demo POST failed', e);
+      }
+      // proceed to next step (finish)
       router.push('/onboarding/step5');
     } catch (err) {
       // ignore

@@ -311,6 +311,29 @@ const SkillsInputPage: React.FC = () => {
     } catch {}
   }, []);
 
+  // Load demo profile from API and prefill fields (non-destructive)
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/demo/profile');
+        const json = await res.json();
+        if (!mounted || !json?.ok) return;
+        const p = json.profile || {};
+        if (p.role) setRole(p.role);
+        if (p.profilePhoto) setProfilePhoto(p.profilePhoto);
+        if (p.companyName) setCompanyName(p.companyName);
+        if (p.companyWebsite) setCompanyWebsite(p.companyWebsite);
+  // address may be part of profile but this step does not manage address fields
+        if (p.phone) setPhone(p.phone);
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
   // Prepare preview data from local dummy storage when modal opens
   useEffect(() => {
     if (!showPreview) return;
@@ -355,10 +378,17 @@ const SkillsInputPage: React.FC = () => {
         businessType,
         employeeCount
       };
-  // localStorage write disabled to avoid persisting during debugging
-  // if (typeof window !== 'undefined') {
-  //   localStorage.setItem('demo_profile', JSON.stringify(payload));
-  // }
+      // POST to demo API (non-blocking)
+      try {
+        await fetch('/api/demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('demo POST failed', e);
+      }
       // proceed to next step
       router.push('/onboarding/step4');
     } catch (err) {

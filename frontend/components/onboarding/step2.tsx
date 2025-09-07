@@ -187,7 +187,7 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
-  const [role, setRole] = useState<'Client' | 'Freelancer'>('Client');
+  const [role, setRole] = useState<'Client' | 'Freelancer'>('Freelancer');
   const [companyName, setCompanyName] = useState<string>('');
   const [companyWebsite, setCompanyWebsite] = useState<string>('');
   const [skills, setSkills] = useState<Skill[]>([
@@ -213,6 +213,33 @@ const SkillsInputPage: React.FC = () => {
     // } catch (e) {
     //   // ignore parse errors
     // }
+  }, []);
+
+  // Load demo profile from demo API to prefill fields (role, company, skills)
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/demo/profile');
+        const json = await res.json();
+        if (!mounted || !json?.ok) return;
+        const p = json.profile || {};
+        // set role if present in profile
+        if (p.role !== undefined) setRole(p.role);
+        // set company fields if they exist in profile (allow empty string values)
+        if (Object.prototype.hasOwnProperty.call(p, 'companyName')) setCompanyName(p.companyName ?? '');
+        if (Object.prototype.hasOwnProperty.call(p, 'companyWebsite')) setCompanyWebsite(p.companyWebsite ?? '');
+        // prefill skills when profile or current role indicates Freelancer
+        const shouldPrefillSkills = (p.skills && Array.isArray(p.skills) && p.skills.length) && ((p.role === 'Freelancer') || role === 'Freelancer');
+        if (shouldPrefillSkills) {
+          setSkills(p.skills.map((s: any, i: number) => ({ id: String(Date.now() + i), name: String(s.name || s).toUpperCase() })));
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+    return () => { mounted = false; };
   }, []);
 
   // Prepare preview data from local dummy storage when modal opens
@@ -290,9 +317,16 @@ const SkillsInputPage: React.FC = () => {
         base.name = 'Demo User';
         base.skills = skills.map(s => ({ name: s.name }));
       }
-      if (typeof window !== 'undefined') {
-        // localStorage persistence disabled during development
-        // localStorage.setItem('demo_profile', JSON.stringify(base));
+      // POST to demo API for temporary persistence (non-blocking)
+      try {
+        await fetch('/api/demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(base)
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('demo POST failed', e);
       }
       // proceed to next step
       router.push('/onboarding/step3');

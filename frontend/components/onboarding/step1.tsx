@@ -121,9 +121,22 @@ const FreelancerOnboarding: React.FC<{ initialRole?: 'Client' | 'Freelancer' }> 
     // small feedback can be added later
   };
 
-  const handleNextForClient = () => {
-    // ensure saved
+  const handleNextForClient = async () => {
+    // ensure saved locally
     handleSave();
+    // also POST demo payload to the demo API for persistence during testing
+    try {
+      const payload = { name: `${firstName} ${lastName}`.trim(), role };
+      await fetch('/api/demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      // don't block navigation on API failure, but log for debugging
+      // eslint-disable-next-line no-console
+      console.warn('demo POST failed', err);
+    }
     router.push('/onboarding/step2');
   };
 
