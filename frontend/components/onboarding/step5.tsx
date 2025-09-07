@@ -1,439 +1,224 @@
-import React, { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileText, User, Upload, Loader2, CheckCircle } from 'lucide-react';
+'use client';
 
-interface FinalData {
-  resume?: File;
-  linkedinProfile?: string;
+import React, { useState, useEffect } from 'react';
+import { X, MapPin, FileText, User } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+// Design tokens from Figma
+const designTokens = {
+  colors: {
+    primary: '#161616',
+    secondary: '#041D37',
+    textSecondary: '#8D8D8D',
+    textStrong: '#6F6F6F',
+    background: '#FFFFFF',
+    backgroundPage: '#FCFCFC',
+    borderDefault: '#E0E0E0',
+    borderInput: '#8D8D8D',
+    borderDashed: '#A8A8A8',
+    success: '#32CD32',
+    progressBlue: '#44B0FF',
+    progressBackground: '#F6F6F6'
+  },
+  typography: {
+    headingLarge: 'md:text-[32px] text-[20px] font-semibold leading-[40px] tracking-[-0.4px]',
+    headingMedium: 'text-[42px] font-medium leading-[50px] tracking-[-0.8px]',
+    headingSmall: 'text-[18px] font-medium leading-[28px]',
+    bodyRegular: 'text-[20px] leading-[28px]',
+    bodySmall: 'text-[14px] leading-[20px]',
+    labelSmall: 'text-[14px] font-medium leading-[20px] tracking-[1px] uppercase'
+  }
+};
+
+// Types
+interface Skill {
+  id: string;
+  name: string;
 }
 
-interface OnboardingStep5Props {
-  data: {
-    personalInfo?: {
-      firstName?: string;
-      lastName?: string;
-    };
-    skills?: string[];
-    address?: {
-      city?: string;
-      state?: string;
-      country?: string;
-    };
-    profile?: {
-      profilePhoto?: File;
-    };
-    final?: FinalData;
-  };
-  onComplete: (stepData: { final: FinalData }) => void;
-  onBack: () => void;
+interface SkillTagProps {
+  skill: Skill;
+  onRemove: (id: string) => void;
+  variant?: 'input' | 'display';
+}
+
+interface StepProgressProps {
   currentStep: number;
   totalSteps: number;
 }
 
-const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ 
-  data,
-  onComplete,
-  onBack,
-  currentStep,
-  totalSteps
-}) => {
-  const [resume, setResume] = useState<File | null>(data.final?.resume || null);
-  const [linkedinProfile, setLinkedinProfile] = useState(data.final?.linkedinProfile || '');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  
-  const resumeInputRef = useRef<HTMLInputElement>(null);
-
-  // Get user data for preview
-  const userName = data.personalInfo?.firstName && data.personalInfo?.lastName 
-    ? `${data.personalInfo.firstName} ${data.personalInfo.lastName}`
-    : 'Cyrus Roshan';
-    
-  const skills = data.skills || ['Prototyping', 'Development', 'Prototyping', 'Wireframing', 'Prototyping'];
-  
-  const location = data.address?.city && data.address?.state && data.address?.country
-    ? `${data.address.city}, ${data.address.state}, ${data.address.country}`
-    : 'California, CA, USA';
-
-  const handleResumeUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && (file.type === 'application/pdf' || file.type.includes('document'))) {
-      setResume(file);
-      setUploadError(null);
-    } else {
-      setUploadError('Please upload a PDF or document file');
-    }
+interface UserPreviewCardProps {
+  name: string;
+  skills?: Skill[];
+  isAvailable?: boolean;
+  onToggleAvailable?: (v: boolean) => void;
+  address?: {
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
   };
+  profilePhoto?: string;
+  resumeFileName?: string;
+  linkedin?: string;
+  role?: 'Client' | 'Freelancer';
+  companyDescription?: string;
+}
 
-  const handleResumeClick = () => {
-    resumeInputRef.current?.click();
-  };
+// Reusable Components
+const SkillTag: React.FC<SkillTagProps> = ({ skill, onRemove, variant = 'input' }) => (
+  <div className="inline-flex items-center gap-2 px-[26px] py-2 h-8 rounded-[33px] border-[0.8px] border-dashed border-[#A8A8A8]">
+    <span className={`${designTokens.typography.bodySmall} text-[#161616]`}>
+      {skill.name}
+    </span>
+    {variant === 'input' && (
+      <button
+        onClick={() => onRemove(skill.id)}
+        className="w-2.5 h-2.5 flex items-center justify-center hover:bg-gray-100 rounded"
+        aria-label={`Remove ${skill.name}`}
+      >
+        <X size={10} className="text-[#393939]" strokeWidth={2} />
+      </button>
+    )}
+  </div>
+);
 
-  // API function to upload profile data
-  const uploadProfileData = async () => {
-    const formData = new FormData();
-    
-    // Add all collected data
-    if (data.personalInfo) {
-      formData.append('firstName', data.personalInfo.firstName || '');
-      formData.append('lastName', data.personalInfo.lastName || '');
-    }
-    
-    if (data.skills) {
-      formData.append('skills', JSON.stringify(data.skills));
-    }
-    
-    if (data.address) {
-      formData.append('address', JSON.stringify(data.address));
-    }
-    
-    if (data.profile?.profilePhoto) {
-      formData.append('profilePhoto', data.profile.profilePhoto);
-    }
-    
-    if (resume) {
-      formData.append('resume', resume);
-    }
-    
-    if (linkedinProfile) {
-      formData.append('linkedinProfile', linkedinProfile);
-    }
-
-    try {
-      const response = await fetch('/api/profile/create', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create profile');
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const handleComplete = async () => {
-    if (!resume) {
-      setUploadError('Please upload your resume before continuing');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError(null);
-
-    try {
-      // Upload to API
-      await uploadProfileData();
+const StepProgress: React.FC<StepProgressProps> = ({ currentStep, totalSteps }) => (
+  <div className="flex items-center gap-4">
+    <span className={`${designTokens.typography.headingSmall} text-[#6F6F6F]`}>
+      Step
+    </span>
+    <div className="relative w-[91px] h-[92px]">
+      {/* Background circle */}
+      <div className="absolute inset-0">
+        <svg width="91" height="92" viewBox="0 0 91 92" fill="none">
+          <path 
+            d="M91 46C91 71.4051 70.629 92 45.5 92C20.371 92 0 71.4051 0 46C0 20.5949 20.371 0 45.5 0C70.629 0 91 20.5949 91 46ZM7.23641 46C7.23641 67.3646 24.3676 84.6841 45.5 84.6841C66.6324 84.6841 83.7636 67.3646 83.7636 46C83.7636 24.6354 66.6324 7.31593 45.5 7.31593C24.3676 7.31593 7.23641 24.6354 7.23641 46Z" 
+            fill="#F5F5F5"
+          />
+        </svg>
+      </div>
+      {/* Progress Bar */}
       
-      setUploadSuccess(true);
-      
-      // Complete onboarding after successful upload
-      setTimeout(() => {
-        onComplete({ 
-          final: { 
-            resume, 
-            linkedinProfile 
-          } 
-        });
-      }, 1500);
-      
-    } catch (error) {
-      setUploadError('Failed to create profile. Please try again.');
-      setIsUploading(false);
-    }
+      {/* Step text */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={`${designTokens.typography.bodyRegular} text-[#6F6F6F]`}>
+          {currentStep}/{totalSteps}
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
+const UserPreviewCard: React.FC<UserPreviewCardProps> = ({ name, skills = [], isAvailable = true, onToggleAvailable, address, profilePhoto, resumeFileName, linkedin, role = 'Freelancer', companyDescription }) => {
+  const isClient = role === 'Client';
+
+  // temporary fallback address shown when no address prop provided
+  const tempAddress: UserPreviewCardProps['address'] = {
+    streetAddress: '123 Demo Lane',
+    city: 'London',
+    state: 'England',
+    country: 'UK',
+    postalCode: 'SW1A 1AA'
   };
+
+  // prefer actual address prop when any field is present, otherwise use tempAddress
+  const hasAddress = address && Object.values(address).some(Boolean);
+  const displayAddress = hasAddress ? address : tempAddress;
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
-      {/* Header */}
-      <header className="w-full h-[84px] bg-white border-b border-[#e0e0e0] flex items-center justify-between px-8">
-        <div className="flex items-center">
-          {/* Logo */}
-          <div className="text-xl font-semibold text-[#161616]">
-            ICPWork
-          </div>
-        </div>
-        
-        {/* Right side navigation */}
-        <div className="flex items-center space-x-2">
-          <span className="text-[#101010] text-xl">Want to Hire ?</span>
-          <button className="text-[#28a745] text-xl font-medium hover:underline">
-            Join As Client
-          </button>
-        </div>
-      </header>
+    <div className="relative w-full max-w-[495px] mx-auto  rounded-xl">
+      <div
+        aria-hidden
+        className="absolute inset-0 rounded-xl pointer-events-none lg:block hidden"
+        style={{
+          background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)',
+          opacity: 0.5,
+          transform: 'rotate(3deg) '
+        }}
+      />
 
-      {/* Progress Bar - Full Width (Complete) */}
-      <div className="w-full h-0.5 bg-[#44b0ff]" />
-
-      {/* Resume PDF indicator */}
-      <div className="px-8 py-2">
-        <div className="flex items-center space-x-2">
-          <FileText className="w-4 h-4 text-[#161616]" />
-          <span className="text-[20px] text-[#161616]">
-            {resume ? resume.name : 'resume.pdf'}
-          </span>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex px-8 py-8">
-        <div className="max-w-7xl w-full flex justify-between">
-          
-          {/* Left Column - Form */}
-          <div className="w-[650px] space-y-6">
-            
-            {/* Step Indicator */}
-            <div className="flex items-center space-x-4">
-              <span className="text-[18px] text-[#6f6f6f]">Step</span>
-              
-              {/* Circular Progress - Complete */}
-              <div className="relative w-[91px] h-[92px]">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 91 92">
-                  {/* Complete circle */}
-                  <circle
-                    cx="45.5"
-                    cy="46"
-                    r="40"
-                    fill="none"
-                    stroke="#161616"
-                    strokeWidth="7"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[20px] text-[#6f6f6f]">{currentStep}/{totalSteps}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Question */}
-            <div className="space-y-6">
-              <h1 className="text-[32px] font-semibold text-[#161616] leading-[40px] tracking-[-0.4px]">
-                Almost Done! Add your Resume
-              </h1>
-
-              {/* Upload sections */}
-              <div className="space-y-5">
-                
-                {/* Resume Upload */}
-                <Card className="w-[495px] h-[104px] border-[0.6px] border-[#8d8d8d] rounded-xl cursor-pointer hover:border-[#1da1f2] transition-colors" onClick={handleResumeClick}>
-                  <CardContent className="p-6 h-full">
-                    <div className="space-y-4">
-                      <div className="text-[14px] font-medium text-[#8d8d8d] tracking-[1px] uppercase">
-                        Add Your Resume
-                      </div>
-                      
-                      <div className="flex items-center space-x-4">
-                        <FileText className="w-5 h-5 text-[#525252]" />
-                        <span className="text-[20px] text-neutral-600 underline">
-                          {resume ? resume.name : 'Myresume.pdf'}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* LinkedIn Profile */}
-                <Card className="w-[495px] h-[104px] border-[0.6px] border-[#8d8d8d] rounded-xl">
-                  <CardContent className="p-6 h-full">
-                    <div className="space-y-4">
-                      <div className="text-[14px] font-light text-[#6f6f6f] tracking-[1px] uppercase">
-                        Add LinkedIn Profile
-                      </div>
-                      
-                      <Input
-                        value={linkedinProfile}
-                        onChange={(e) => setLinkedinProfile(e.target.value)}
-                        placeholder="Add your profile Link Here"
-                        className="border-none p-0 h-auto text-[20px] text-[#6f6f6f] placeholder:text-[#6f6f6f] focus:ring-0 focus:border-none shadow-none bg-transparent"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Hidden file input */}
-                <input
-                  ref={resumeInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleResumeUpload}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Upload Status */}
-              {uploadError && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-600">
-                    {uploadError}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {uploadSuccess && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <AlertDescription className="text-green-600">
-                    Profile created successfully! Redirecting to workspace...
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="flex space-x-[25px] pt-8">
-              <Button
-                onClick={onBack}
-                disabled={isUploading}
-                variant="outline"
-                className="w-[220px] h-16 rounded-[30px] border border-[#041d37] text-[#041d37] text-[18px] font-medium bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Back
-              </Button>
-              
-              <Button
-                onClick={handleComplete}
-                disabled={isUploading || uploadSuccess}
-                className="w-[362px] h-16 rounded-[30px] text-[18px] font-medium shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] bg-[#161616] text-white hover:bg-[#2a2a2a] transition-colors disabled:opacity-50"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Profile...
-                  </>
-                ) : uploadSuccess ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Success!
-                  </>
-                ) : (
-                  "Yay! Let's Go To Workspace"
-                )}
-              </Button>
-            </div>
+      <div className="relative bg-white w-full p-6 lg:p-8 z-10 shadow-lg">
+        <div className="flex flex-col items-center gap-6 lg:gap-8">
+          <div className="w-28 h-28 lg:w-40 lg:h-40 bg-[#F4F4F4] rounded-full flex items-center justify-center overflow-hidden">
+            {profilePhoto && !isClient ? (
+              <img src={profilePhoto} alt="Profile" className="object-cover w-full h-full" />
+            ) : (
+              <User size={72} className="text-[#C6C6C6]" />
+            )}
           </div>
 
-          {/* Right Column - Final Profile Preview with Uploaded Photo */}
-          <div className="w-[495px]">
-            <Card className="bg-white rounded-xl shadow-[0px_4px_16px_2px_rgba(0,0,0,0.08)] p-10">
-              <CardContent className="p-0 space-y-8">
-                
-                {/* Profile Header */}
-                <div className="flex flex-col items-center space-y-10">
-                  
-                  {/* Avatar with uploaded photo */}
-                  <div className="w-40 h-40 bg-[#f4f4f4] rounded-full flex items-center justify-center overflow-hidden">
-                    {data.profile?.profilePhoto ? (
-                      <img
-                        src={URL.createObjectURL(data.profile.profilePhoto)}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      // Default placeholder image (from the design)
-                      <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center">
-                        <User className="w-16 h-16 text-white" />
-                      </div>
-                    )}
-                  </div>
+          <div className="flex flex-col items-center gap-4 lg:gap-6">
+            <h2 className={`${designTokens.typography.headingMedium} text-[#041D37] text-center`}>
+              {name}
+            </h2>
 
-                  {/* User Info */}
-                  <div className="text-center space-y-6">
-                    <h2 className="text-[42px] font-medium text-[#003366] leading-[50px] tracking-[-0.8px]">
-                      {userName}
-                    </h2>
-                    
-                    {/* Status */}
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="flex items-center">
-                        <div className="w-[25.778px] h-4 bg-[#32cd32] rounded-[10.483px] relative">
-                          <div className="w-3 h-3 bg-white rounded-[10.483px] absolute right-0 top-0.5" />
-                        </div>
-                      </div>
-                      <span className="text-[16px] font-medium text-[#161616] tracking-[-0.1px]">
-                        Available for work
-                      </span>
-                    </div>
+            {!isClient && (
+              <div className="flex items-center gap-4">
+                <span className="text-[14px] font-medium leading-[18px] text-[#161616]">Available for work</span>
+                <button
+                  onClick={() => onToggleAvailable && onToggleAvailable(!isAvailable)}
+                  aria-pressed={isAvailable}
+                  className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${isAvailable ? 'bg-[#32CD32]' : 'bg-[#E6E6E6]'}`}
+                >
+                  <span className={`ml-1 h-4 w-4 rounded-full bg-white transform transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 pt-6 px-4 lg:px-0">
+          <div className="border-t border-[#E0E0E0] pt-5">
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Company' : 'Skills'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616] font-medium">{companyDescription || '—'}</div>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {skills.slice(0, 3).map((skill) => (
+                  <SkillTag key={skill.id} skill={skill} onRemove={() => {}} variant="display" />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-[#E0E0E0] pt-5 mt-5">
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Website / Industry' : 'Location'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616] font-medium">{linkedin || '—'}</div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <MapPin size={18} className="text-[#A8A8A8] mt-1" />
+                <div className="text-sm text-[#6F6F6F]">
+                  {displayAddress?.streetAddress ? (
+                    <div className="font-medium text-[#041D37]">{displayAddress.streetAddress}</div>
+                  ) : null}
+                  <div>
+                    {[displayAddress?.city, displayAddress?.state, displayAddress?.postalCode, displayAddress?.country].filter(Boolean).join(', ')}
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
 
-                {/* Profile Sections */}
-                <div className="space-y-5">
-                  
-                  {/* Skills Section */}
-                  <div className="space-y-5">
-                    <div className="h-[0.8px] bg-[#e0e0e0] w-full" />
-                    <div className="text-[14px] font-medium text-[#8d8d8d] tracking-[1px] uppercase">
-                      Skills
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap gap-3">
-                        {skills.slice(0, 3).map((skill, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="h-8 px-[26px] py-2 border-[0.8px] border-dashed border-[#a8a8a8] rounded-[33px] text-[14px] text-[#161616] bg-transparent"
-                          >
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                      
-                      {skills.length > 3 && (
-                        <div className="flex flex-wrap gap-3">
-                          {skills.slice(3, 5).map((skill, index) => (
-                            <Badge
-                              key={index + 3}
-                              variant="outline"
-                              className="h-8 px-[26px] py-2 border-[0.8px] border-dashed border-[#a8a8a8] rounded-[33px] text-[14px] text-[#161616] bg-transparent"
-                            >
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Location Section */}
-                  <div className="space-y-5">
-                    <div className="h-[0.8px] bg-[#e0e0e0] w-full" />
-                    <div className="text-[14px] font-medium text-[#8d8d8d] tracking-[1px] uppercase">
-                      Location
-                    </div>
-                    <div className="text-[20px] text-[#161616] leading-[28px]">
-                      {location}
-                    </div>
-                  </div>
-
-                  {/* Resume Section */}
-                  <div className="space-y-6">
-                    <div className="h-[0.8px] bg-[#e0e0e0] w-full" />
-                    <div className="space-y-4">
-                      <div className="text-[14px] font-medium text-[#8d8d8d] tracking-[1px] uppercase">
-                        Resume
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <FileText className="w-[15.556px] h-5 text-[#a8a8a8]" />
-                        <span className="text-[20px] text-[#161616] leading-[28px]">
-                          {resume ? resume.name : 'resume.pdf'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+          <div className="border-t border-[#E0E0E0] pt-5 mt-6 pb-6">
+            <h3 className={`${designTokens.typography.labelSmall} text-[#8D8D8D] mb-3`}>{isClient ? 'Business Details' : 'Resume'}</h3>
+            {isClient ? (
+              <div className="text-sm text-[#161616]">{/* Clients only show minimal business details in this preview */}
+                <div>{'—'}</div>
+              </div>
+            ) : (
+              resumeFileName ? (
+                <div className="flex items-center gap-3">
+                  <FileText size={18} className="text-[#A8A8A8]" />
+                  <span className="text-sm text-[#6F6F6F]">{resumeFileName}</span>
                 </div>
-              </CardContent>
-            </Card>
+              ) : (
+                <FileText size={18} className="text-[#A8A8A8]" />
+              )
+            )}
           </div>
         </div>
       </div>
@@ -441,4 +226,310 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({
   );
 };
 
-export default OnboardingStep5;
+const Logo: React.FC = () => (
+  <div className="flex items-center gap-2">
+    <div className="w-[57px] h-[33px]">
+      <svg viewBox="0 0 57 33" fill="none" className="w-full h-full">
+        <path d="M40.1879 8.63504L32.2559 10.2732L25.8785 16.0471L18.2052 8.3738L18.2457 8.33328L11.1216 1.20916C9.50931 -0.403096 6.89434 -0.403096 5.28209 1.20916L1.20919 5.28206C-0.403065 6.89432 -0.403065 9.50928 1.20919 11.1215L18.4285 28.3408C23.8524 33.7647 32.6474 33.7647 38.0713 28.3408L38.1213 28.2908L55.0284 11.3836L50.0424 6.47868L40.1879 8.63504Z" fill="url(#paint0_linear)" />
+        <path d="M50.1 6.4793L43.8062 7.68634L39.4091 8.63473L38.6832 9.0296L31.0349 1.38128C29.4226 -0.230975 26.8077 -0.230975 25.1954 1.38128L18.2437 8.33297L30.7409 20.8301C34.8379 24.9272 41.4809 24.9272 45.5788 20.8301L48.0317 18.3773L55.0265 11.3825L50.1009 6.4793H50.1Z" fill="url(#paint1_linear)" />
+        <path d="M18.2441 8.33384L18.2039 8.37407L38.1198 28.29L38.1601 28.2498L18.2441 8.33384Z" fill="#FDB131" />
+        <path d="M55.0284 11.3825C51.1668 15.2441 44.9057 15.2441 41.0432 11.3825L38.1635 8.5028L45.1557 1.5106C46.768 -0.101657 49.3829 -0.101657 50.9952 1.5106L55.0276 5.54297C56.6398 7.15523 56.6398 9.7702 55.0276 11.3825H55.0284Z" fill="#29AAE1" />
+        <defs>
+          <linearGradient id="paint0_linear" x1="15.066" y1="-1.80067" x2="47.4853" y2="30.6187" gradientUnits="userSpaceOnUse">
+            <stop offset="0.21" stopColor="#F05A24" />
+            <stop offset="0.68" stopColor="#FAAF3B" />
+          </linearGradient>
+          <linearGradient id="paint1_linear" x1="26.2265" y1="-0.549979" x2="55.4515" y2="28.675" gradientUnits="userSpaceOnUse">
+            <stop offset="0.22" stopColor="#EC1E79" />
+            <stop offset="0.89" stopColor="#522784" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <span className="text-[24px] font-bold text-black">ICPWork</span>
+    <span className="text-[16px] font-normal text-black">®</span>
+  </div>
+);
+
+// Main Page Component
+const SkillsInputPage: React.FC = () => {
+  const router = useRouter();
+  const [role, setRole] = useState<'Client' | 'Freelancer'>('Client');
+  const [skills, setSkills] = useState<Skill[]>([
+    { id: '1', name: 'UI UX DESIGN' },
+    { id: '2', name: 'UI UX DESIGN' }
+  ]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [previewProfile, setPreviewProfile] = useState<{ name?: string; skills?: Skill[]; address?: any; profilePhoto?: string; phone?: string; resumeFileName?: string; linkedin?: string; role?: 'Client' | 'Freelancer'; companyDescription?: string } | null>(null);
+
+  // Profile resume + linkedin state (replacing profile photo + phone)
+  const [isAvailable, setIsAvailable] = useState<boolean>(true);
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const [linkedin, setLinkedin] = useState<string>('');
+  const [companyDescription, setCompanyDescription] = useState<string>('');
+
+  // Load a dummy profile from localStorage (simulate backend). If none, use defaults.
+  useEffect(() => {
+    try {
+  // localStorage reads disabled to avoid persisting during debugging
+  // const raw = typeof window !== 'undefined' ? localStorage.getItem('demo_profile') : null;
+  // if (raw) {
+  //   const prof = JSON.parse(raw);
+  //   if (prof?.skills && Array.isArray(prof.skills)) {
+  //     setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
+  //   }
+  //   if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
+  //   if (prof.resumeFileName) setResumeFileName(prof.resumeFileName);
+  //   if (prof.linkedin) setLinkedin(prof.linkedin);
+  // }
+    } catch (e) {
+      // ignore parse errors
+    }
+  }, []);
+
+  // Load demo profile from API and prefill step5 fields (non-destructive)
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/demo/profile');
+        const json = await res.json();
+        if (!mounted || !json?.ok) return;
+        const p = json.profile || {};
+  if (p.resumeFileName) setResumeFileName(p.resumeFileName);
+        if (p.linkedin) setLinkedin(p.linkedin);
+        if (p.companyDescription) setCompanyDescription(p.companyDescription);
+        if (p.role) setRole(p.role);
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  // Prepare preview data from local dummy storage when modal opens
+  useEffect(() => {
+    if (!showPreview) return;
+    try {
+  // localStorage read disabled; use current state for preview
+  setPreviewProfile({ name: 'Preview User', skills, resumeFileName: resumeFileName || undefined, linkedin, role, companyDescription });
+    } catch (e) {
+  setPreviewProfile({ name: 'Preview User', skills, resumeFileName: resumeFileName || undefined, linkedin, role, companyDescription });
+    }
+  }, [showPreview]);
+
+  const handleBack = () => {
+    console.log('Navigate back');
+    router.push('/onboarding/step1');
+  };
+
+  const handleNext = async () => {
+    setLoading(true);
+    try {
+      // Simulate save by writing to localStorage as JSON. This avoids backend calls / canister issues.
+      const payload: any = {
+        name: 'Demo User',
+        role,
+        skills: skills.map(s => ({ name: s.name })),
+        available: isAvailable,
+        resumeFileName: resumeFileName || null,
+        linkedin: linkedin || null
+      };
+      // POST to demo API so backend copy of onboarding data exists for testing
+      try {
+        await fetch('/api/demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('demo POST failed', e);
+      }
+      // proceed to next step (finish)
+      router.push('/onboarding/step5');
+    } catch (err) {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Pie chart calculations
+  const completedSteps = 5;
+  const totalSteps = 5;
+  const radius = 56; // px
+  const circumference = 2 * Math.PI * radius;
+  const completedLength = (completedSteps / totalSteps) * circumference;
+
+  return (
+    <div className="min-h-screen bg-[#FCFCFC]">
+      {/* Header */}
+      <header className="bg-white h-[84px] border-b border-[#E0E0E0] flex items-center justify-between px-4 md:px-28">
+        <Logo />
+        <div className={`${designTokens.typography.bodyRegular} hidden md:flex items-center gap-2`}>
+          <span className="text-[#101010]">Want to Hire ?</span>
+          <span className="text-[#28a745]">Join As Client</span>
+        </div>
+      </header>
+      <div className="w-full h-2 bg-[#f6f6f6] rounded-full">
+        <div 
+          className="h-full bg-[#44b0ff] rounded-full transition-all duration-300"
+          style={{ width: `${(5/ totalSteps) * 100}%`,
+          background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)',
+          // opacity: 0.3,
+        }}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 md:px-28 py-12">
+        {/* Mobile preview modal */}
+        {showPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            {/* Close button placed on the overlay so it's always visible */}
+            <button aria-label="Close preview" onClick={() => setShowPreview(false)} className="absolute top-4 right-4 z-60 bg-white p-2 rounded-full shadow-lg">
+              <X size={18} />
+            </button>
+
+            <div className="bg-white rounded-xl max-w-[95vw] w-full max-h-[90vh] p-4 sm:p-6 relative overflow-auto shadow-lg">
+              <div className="w-full flex justify-center">
+                {previewProfile ? (
+                  <UserPreviewCard name={previewProfile.name || 'Preview User'} skills={previewProfile.skills || skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} resumeFileName={previewProfile.resumeFileName || resumeFileName || undefined} linkedin={previewProfile.linkedin || linkedin} role={previewProfile.role || role} companyDescription={previewProfile.companyDescription || companyDescription} />
+                ) : (
+                  <div className="p-6">Loading preview…</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row gap-12">
+          {/* Left Content */}
+          <div className="flex-1">
+            {/* Step label */}
+            <div className="mb-4 flex items-center gap-4">
+              <span className={`${designTokens.typography.headingSmall} text-[#6F6F6F]`}>Step</span>
+              {/* Smaller Pie chart (compact) */}
+              <div className="relative w-16 h-16">
+                <svg width="64" height="64" viewBox="0 0 128 128" className="transform -rotate-90">
+                  <circle cx="64" cy="64" r={radius} fill="none" stroke="#F6F6F6" strokeWidth="8" />
+                  <circle
+                    cx="64"
+                    cy="64"
+                    r={radius}
+                    fill="none"
+                    stroke="#161616"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={`${completedLength} ${circumference - completedLength}`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`${designTokens.typography.bodySmall} text-[#6F6F6F]`}>{completedSteps}/{totalSteps}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Title + mobile preview button */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className={`${designTokens.typography.headingLarge} text-[#161616] `}>Almost Done! Add your Resume</h2>
+             
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className="md:hidden ml-4 px-3 py-2 rounded bg-[#161616] text-white"
+              >
+                Preview
+              </button>
+            </div>
+
+            {/* Profile Photo Upload + Phone Verification (replacing address inputs) */}
+            <div className="mb-8">
+              <div className="w-full max-w-[700px]">
+                {/* Resume Upload (Freelancers only) */}
+                {role === 'Freelancer' && (
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white mb-4">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Resume Upload (optional)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <input
+                          id="resumeUpload"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setResumeFileName(file.name);
+                          }}
+                          className=" w-60"
+                        />
+                        <br/>
+                        <span className="text-sm text-[#6F6F6F]">Accepted: PDF, DOC, DOCX.</span>
+                      </div>
+                      {/* <div className="w-28 text-right text-sm text-[#6F6F6F]">
+                        {resumeFileName || 'No file selected'}
+                      </div> */}
+                    </div>
+                  </div>
+                )}
+
+                {/* LinkedIn URL (optional) */}
+                {role === 'Freelancer' ? (
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>LinkedIn Profile (optional)</label>
+                    <input
+                      type="url"
+                      value={linkedin}
+                      onChange={(e) => setLinkedin(e.target.value)}
+                      placeholder="https://www.linkedin.com/in/your-name"
+                      className="w-full p-3 rounded"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
+                    <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>Company Description </label>
+                    <textarea value={companyDescription} onChange={(e) => setCompanyDescription(e.target.value)} placeholder="Brief description of the company " className="w-full p-3 rounded h-24" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/onboarding/step4" className="no-underline">
+                <button
+                  onClick={handleBack}
+                  className="w-full sm:w-[220px] h-16 bg-white rounded-[30px] border border-[#041D37] flex items-center justify-center hover:bg-gray-50 transition-colors"
+                >
+                  <span className={`${designTokens.typography.headingSmall} text-[#041D37]`}>Back</span>
+                </button>
+              </Link>
+
+              <Link href="/onboarding/step5" className="no-underline">
+                <button
+                  onClick={handleNext}
+                  className="w-full sm:w-[220px] h-16 bg-[#161616] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] flex items-center justify-center hover:bg-gray-800 transition-colors"
+                >
+                  <span className={`${designTokens.typography.headingSmall} text-white`}>Yay! Lets’s Go To workspace</span>
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Content - Preview Card */}
+          <div className="hidden lg:flex lg:flex-shrink-0 w-full lg:w-[495px]">
+            <UserPreviewCard name={previewProfile?.name || 'Preview User'} skills={skills} isAvailable={isAvailable} onToggleAvailable={setIsAvailable} resumeFileName={previewProfile?.resumeFileName || resumeFileName || undefined} linkedin={previewProfile?.linkedin || linkedin} role={previewProfile?.role || role} companyDescription={previewProfile?.companyDescription || companyDescription} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SkillsInputPage;

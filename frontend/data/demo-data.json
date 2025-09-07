@@ -1,0 +1,39 @@
+[
+  {
+    "id": 1,
+    "title": "Demo item",
+    "content": "This is a demo item stored in JSON",
+    "createdAt": "2025-09-07T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "role": "Client",
+    "name": "Demo User",
+    "createdAt": "2025-09-07T18:51:29.729Z"
+  },
+  {
+    "id": 3,
+    "role": "Client",
+    "name": "Demo User",
+    "available": true,
+    "companyName": "",
+    "companyWebsite": "",
+    "industry": "Healthcare",
+    "businessType": "Enterprise",
+    "employeeCount": "",
+    "phone": "",
+    "createdAt": "2025-09-07T18:53:22.800Z"
+  },
+  {
+    "id": 4,
+    "name": "",
+    "role": "Client",
+    "createdAt": "2025-09-07T18:57:24.557Z"
+  },
+  {
+    "id": 5,
+    "role": "Client",
+    "name": "Client",
+    "createdAt": "2025-09-07T18:57:26.821Z"
+  }
+]

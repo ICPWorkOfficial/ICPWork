@@ -1,25 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { 
-  Search,
-  ChevronDown,
-  LayoutGrid,
-  Briefcase,
-  Megaphone,
-  User,
-  MessageCircle,
-  DollarSign,
-  BarChart3,
-  Code2
-} from 'lucide-react'
+import { Search, ChevronDown } from 'lucide-react'
 
 interface ProjectCard {
   id: string
@@ -88,16 +76,7 @@ const projectData: ProjectCard[] = [
   }
 ]
 
-const sidebarItems = [
-  { icon: LayoutGrid, label: 'Dashboard', active: false },
-  { icon: Briefcase, label: 'Browse Projects', active: true },
-  { icon: Megaphone, label: 'Bounties', active: false },
-  { icon: User, label: 'My Projects', active: false },
-  { icon: MessageCircle, label: 'Messages', active: false },
-  { icon: Code2, label: 'Hackathons', active: false },
-  { icon: DollarSign, label: 'Payments', active: false },
-  { icon: BarChart3, label: 'Analytics', active: false }
-]
+// sidebar removed - only main content kept
 
 const categoryTabs = [
   'All Categories',
@@ -163,74 +142,10 @@ export default function FreelancerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f8f9]">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-lg"></div>
-            <span className="text-xl font-bold text-gray-900">ICPWork</span>
-          </div>
-
-          {/* Search */}
-          <div className="flex-1 max-w-md mx-8">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search your industry here..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-4 pr-12 py-2 w-full border-gray-300 rounded-full bg-gray-50"
-              />
-              <Button
-                size="sm"
-                className="absolute right-1 top-1 bg-green-600 hover:bg-green-700 rounded-full w-8 h-8 p-0"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* User Profile */}
-          <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2 border shadow-sm">
-            <Avatar className="w-6 h-6">
-              <AvatarImage src="" alt="John Dee" />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium text-gray-900">John Dee</span>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex max-w-7xl mx-auto">
-        {/* Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
-          <div className="p-6">
-            <nav className="space-y-2">
-              {sidebarItems.map((item, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center gap-3 px-5 py-3 rounded-lg cursor-pointer transition-colors ${
-                    item.active
-                      ? 'border-2 border-blue-400 text-gray-600'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="flex gap-8">
-            {/* Projects Section */}
-            <div className="flex-1">
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="flex gap-8">
+        {/* Projects Section */}
+        <div className="flex-1">
               {/* Header */}
               <div className="mb-6">
                 <h1 className="text-2xl font-semibold text-gray-800 mb-1">Browse Projects</h1>
@@ -408,8 +323,6 @@ export default function FreelancerDashboard() {
               </div>
             </div>
           </div>
-        </div>
       </div>
-    </div>
   )
 }

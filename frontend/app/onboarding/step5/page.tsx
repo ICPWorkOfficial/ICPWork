@@ -1,4 +1,4 @@
-import SkillsInputPage from "@/components/onboarding/step3";
+import SkillsInputPage from "@/components/onboarding/step5";
 export default function OnboardingStep2Page() {
   return (
     <SkillsInputPage />
