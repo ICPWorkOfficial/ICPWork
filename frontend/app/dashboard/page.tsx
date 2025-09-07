@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Bell, 
   ChevronDown, 
@@ -19,6 +20,7 @@ import {
   Plus,
   Eye,
   TrendingUp
+  ,Menu, X
 } from 'lucide-react';
 
 // Design tokens from Figma
@@ -75,88 +77,43 @@ interface SidebarItem {
   disabled?: boolean;
 }
 
-// Reusable Components
-const StatCard: React.FC<{ stat: StatCard }> = ({ stat }) => (
-  <div className="bg-white rounded-lg shadow-[4px_4px_16px_2px_rgba(0,0,0,0.08)] p-4 flex flex-col gap-2.5 h-[116px] w-[248px]">
-    <div className="flex items-center justify-between">
-      <span className={`${designTokens.typography.bodySmall} text-[#525252] capitalize`}>
-        {stat.title}
-      </span>
-      <span className="text-[10px] font-medium leading-[20px] text-transparent bg-clip-text">
-        {stat.trend}
-      </span>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <div className="w-[30px] h-[30px] bg-[#F8F8F8] rounded-full flex items-center justify-center">
-        {stat.icon}
-      </div>
-      <span className="text-[18px] font-bold leading-[24px] text-[#16192C]">
-        {stat.value}
-      </span>
-    </div>
-    
-    <span className="text-[10px] font-medium leading-[20px] uppercase text-[#525252]">
-      {stat.subtitle}
-    </span>
-  </div>
-);
+// Shared view components
+import DashboardView from './views/dashboard';
+import BountiesView from './views/bounties';
+import HackathonsView from './views/hackathons';
+import ProjectsView from './views/projects';
+import BountiesDashboard from './views/bounties';
+import PaymentView from './views/payments';
+import { StatCard, ProjectRow } from './views/components';
 
-const ProjectRow: React.FC<{ project: Project }> = ({ project }) => (
-  <div className="bg-[#FDFDFD] border border-[#F9F9F9] rounded-xl h-20 p-3 flex items-center justify-between">
-    <div className="flex items-center gap-[15px]">
-      <div className="w-[57px] h-[57px] bg-[#1BB152] rounded-[6.5px] flex items-center justify-center">
-        <ArrowDownLeft size={16} className="text-black rotate-[270deg]" />
-      </div>
-      
-      <div className="w-[243px]">
-        <h4 className="text-[14px] font-medium leading-[28px] text-black">
-          {project.title}
-        </h4>
-        <p className="text-[10px] leading-[28px] text-black">
-          From: {project.from}
-        </p>
-      </div>
-    </div>
-    
-    <div className="w-[148px] flex flex-col items-end gap-px">
-      <div className="flex items-start gap-[3px] w-full">
-        <span className="text-[18px] font-medium leading-[28px] text-transparent bg-clip-text">
-          {project.amount}
-        </span>
-        <div className="bg-[rgba(104,255,102,0.14)] px-1 py-0.5 rounded-lg h-[25px] w-[61px] flex items-center justify-center">
-          <span className="text-[10px] font-medium leading-[20px] text-[#058700] capitalize">
-            {project.status}
-          </span>
-        </div>
-      </div>
-      <span className="text-[10px] leading-[28px] text-black text-center">
-        {project.date}
-      </span>
-    </div>
-  </div>
-);
+const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ item, onClick }) => {
+  // logo gradient used for active background
+  const gradient = 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)';
+  const activeStyle: React.CSSProperties = item.active
+    ? {
+        background: `linear-gradient(30deg, rgba(68,176,255,0.08) 0%, rgba(151,62,238,0.08) 25%, rgba(241,42,230,0.08) 50%, rgba(255,112,57,0.08) 75%, rgba(243,188,59,0.08) 100%)`,
+        border: '2px solid',
+        borderImage: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%) 1',
+        borderRadius: '12px',
+      }
+    : {};
 
-const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ item, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`w-52 pl-5 pr-[45px] py-3 rounded-lg flex items-center gap-2 ${
-      item.active 
-        ? 'border-[1.5px] border-[#44B0FF] bg-transparent' 
-        : 'hover:bg-gray-50'
-    } ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-    disabled={item.disabled}
-  >
-    <div className="w-6 h-6 flex items-center justify-center">
-      {item.icon}
-    </div>
-    <span className={`text-[16px] leading-[24px] ${
-      item.active ? 'text-[#041D37]' : item.disabled ? 'text-[#525252]' : 'text-[#555555]'
-    }`}>
-      {item.label}
-    </span>
-  </button>
-);
+  return (
+    <button
+      onClick={onClick}
+      className={`w-52 pl-5 pr-[45px] py-3 rounded-lg flex items-center gap-2 ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${!item.active ? 'hover:bg-gray-50' : ''}`}
+      disabled={item.disabled}
+      style={activeStyle}
+    >
+      <div className="w-6 h-6 flex items-center justify-center">
+        {item.icon}
+      </div>
+      <span className={`text-[16px] leading-[24px] ${item.active ? 'text-[#041D37]' : item.disabled ? 'text-[#525252]' : 'text-[#555555]'}`}>
+        {item.label}
+      </span>
+    </button>
+  );
+};
 
 const Logo: React.FC = () => (
   <div className="flex items-center gap-2">
@@ -185,7 +142,10 @@ const Logo: React.FC = () => (
 
 // Main Dashboard Component
 const FreelancerDashboard: React.FC = () => {
+  const router = useRouter();
   const [activeNav, setActiveNav] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Mock data
   const stats: StatCard[] = [
@@ -255,16 +215,14 @@ const FreelancerDashboard: React.FC = () => {
   ];
 
   const sidebarItems: SidebarItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <Grid3x3 size={20} className="text-[#041D37]" />, active: true },
-    { id: 'hire-talent', label: 'Hire Talent', icon: <Users size={20} className="text-[#555555]" /> },
+    { id: 'dashboard', label: 'Dashboard', icon: <Grid3x3 size={20} className="text-[#041D37]" /> },
     { id: 'browse-projects', label: 'Browse Projects', icon: <Briefcase size={20} className="text-[#555555]" /> },
     { id: 'bounties', label: 'Bounties', icon: <Megaphone size={20} className="text-[#555555]" /> },
-    { id: 'my-projects', label: 'My Projects', icon: <User size={20} className="text-[#525252]" />, disabled: true },
+    { id: 'my-projects', label: 'My Projects', icon: <User size={20} className="text-[#525252]" /> },
     { id: 'messages', label: 'Messages', icon: <Mail size={20} className="text-[#555555]" /> },
-    { id: 'hackathons', label: 'Hackathons', icon: <Code size={20} className="text-[#525252]" />, disabled: true },
-    { id: 'payments', label: 'Payments', icon: <DollarSign size={20} className="text-[#525252]" />, disabled: true },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" />, disabled: true },
-    { id: 'caffeine-ai', label: 'Caffeine AI', icon: <div className="w-[25px] h-[27px] bg-gray-200 rounded-[12.5px]" />, disabled: true }
+    { id: 'hackathons', label: 'Hackathons', icon: <Code size={20} className="text-[#525252]" /> },
+    { id: 'payments', label: 'Payments', icon: <DollarSign size={20} className="text-[#525252]" /> },
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> }
   ];
 
   const handleNavClick = (navId: string) => {
@@ -273,10 +231,53 @@ const FreelancerDashboard: React.FC = () => {
     }
   };
 
+  // Main content renderers for each nav option
+ 
+
+
+
+  const MyProjectsView = () => (
+    <div>
+      <h1 className="text-[20px] font-semibold mb-3">My Projects</h1>
+      <p className="text-sm text-gray-600">Projects you're involved with.</p>
+    </div>
+  );
+
+  const MessagesView = () => (
+    <div>
+      <h1 className="text-[20px] font-semibold mb-3">Messages</h1>
+      <p className="text-sm text-gray-600">Your inbox.</p>
+    </div>
+  );
+
+
+
+
+  const AnalyticsView = () => (
+    <div>
+      <h1 className="text-[20px] font-semibold mb-3">Analytics</h1>
+      <p className="text-sm text-gray-600">Platform analytics.</p>
+    </div>
+  );
+
+  const renderContent = (navId: string) => {
+    switch (navId) {
+  case 'dashboard': return <DashboardView onBrowseAll={() => setActiveNav('browse-projects')} />;
+  case 'browse-projects': return <ProjectsView />;
+  case 'bounties': return <BountiesDashboard />;
+      case 'my-projects': return <MyProjectsView/>;
+      case 'messages': return <MessagesView />;
+  case 'hackathons': return <HackathonsView />;
+      case 'payments': return <PaymentView />;
+      case 'analytics': return <AnalyticsView />;
+      default: return <DashboardView />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FCFCFC] flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-[#E0E0E0] flex flex-col">
+      {/* Sidebar (desktop) */}
+      <div className="hidden md:flex w-64 bg-white border-r border-[#E0E0E0] flex flex-col">
         <div className="p-6">
           <Logo />
         </div>
@@ -286,7 +287,7 @@ const FreelancerDashboard: React.FC = () => {
             {sidebarItems.map((item) => (
               <SidebarItem
                 key={item.id}
-                item={item}
+                item={{ ...item, active: activeNav === item.id }}
                 onClick={() => handleNavClick(item.id)}
               />
             ))}
@@ -297,128 +298,109 @@ const FreelancerDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="bg-white border-b border-[#E0E0E0] h-[84px] flex items-center justify-between px-6">
-          <div className="flex-1" />
+        <header className="bg-white border-b border-[#E0E0E0] h-[84px] flex items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-4">
+            {/* Mobile menu button */}
+            <button className="md:hidden p-2 rounded-md" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+              <Menu size={20} />
+            </button>
+            <div className="hidden md:block flex-1" />
+          </div>
           
           <div className="flex items-center gap-4">
             {/* Notification */}
             <div className="relative">
-              <div className="w-8 h-8 flex items-center justify-center">
+              <button
+                onClick={() => setShowNotifications((s) => !s)}
+                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors duration-150"
+                aria-label="Notifications"
+              >
                 <Bell size={20} className="text-[#130F26]" />
-              </div>
+              </button>
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF3B30] rounded-full flex items-center justify-center">
                 <span className="text-[12.5px] font-semibold text-white uppercase tracking-[0.28px]">1</span>
               </div>
+
+              {/* Notifications dropdown */}
+              {showNotifications && (
+                <>
+                  {/* backdrop to close */}
+                  <div className="fixed inset-0 z-40 md:hidden" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 mt-10 w-[320px] z-50 bg-white rounded-lg shadow-lg border border-[#E6E6E6] overflow-hidden">
+                    <div className="p-3 border-b border-[#F2F2F2] flex items-center justify-between">
+                      <span className="text-sm font-medium">Notifications</span>
+                      <button onClick={() => setShowNotifications(false)} className="text-gray-500 hover:text-gray-700">Close</button>
+                    </div>
+                    <div className="divide-y">
+                      <div className="p-3 flex gap-3 items-start">
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">🔔</div>
+                        <div>
+                          <div className="text-[14px] font-medium">New message from client</div>
+                          <div className="text-sm text-gray-500">You received a new message regarding your proposal.</div>
+                        </div>
+                      </div>
+                      <div className="p-3 flex gap-3 items-start">
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">🏆</div>
+                        <div>
+                          <div className="text-[14px] font-medium">Hackathon win</div>
+                          <div className="text-sm text-gray-500">Your submission was shortlisted — check details.</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Client Dropdown */}
-            <div className="bg-[#FCFCFC] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-5 flex items-center gap-2">
+            <div className="bg-[#FCFCFC] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-5 flex items-center gap-2 hover:bg-gray-100 transition-colors duration-150 cursor-pointer">
               <div className="w-6 h-6 rounded-full bg-gray-200" />
-              <span className="text-[14px] text-black tracking-[-0.1px]">Client</span>
+              <span className="hidden sm:inline text-[14px] text-black tracking-[-0.1px]">Client</span>
               <ChevronDown size={12} className="text-black rotate-[270deg]" />
             </div>
             
             {/* User Dropdown */}
-            <div className="bg-white rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-4 flex items-center gap-2">
+            <button
+              onClick={() => router.push('/profile')}
+              className="bg-white rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-4 flex items-center gap-2 hover:bg-gray-100 transition-colors duration-150"
+              aria-label="Open profile"
+            >
               <div className="w-[37px] h-[37px] rounded-full bg-gray-200" />
-              <span className="text-[14px] font-medium text-[#272D37] tracking-[-0.1px]">Darshana</span>
+              <span className="hidden sm:inline text-[14px] font-medium text-[#272D37] tracking-[-0.1px]">Darshana</span>
               <ChevronDown size={12} className="text-black rotate-[270deg]" />
-            </div>
+            </button>
           </div>
         </header>
 
-        {/* Dashboard Content */}
-        <main className="flex-1 p-6">
-          <div className="mb-6">
-            <h1 className="text-[20px] font-semibold leading-[24px] text-gray-800 mb-2">
-              Browse Projects
-            </h1>
-            <p className="text-sm text-gray-600">
-              Join Exciting Hackathons and win prizes
-            </p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <StatCard key={index} stat={stat} />
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-6">
-            {/* Recent Projects */}
-            <div className="col-span-2">
-              <div className="bg-white rounded-xl border border-[#EDEDED] p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-[20px] font-semibold text-gray-800">Recent Projects</h2>
-                  <button className="text-[8px] font-medium uppercase tracking-[0.4px] text-black bg-transparent rounded-[222px] px-0 py-1">
-                    Browse All
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  {projects.map((project) => (
-                    <ProjectRow key={project.id} project={project} />
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+            <div className="absolute left-0 top-0 bottom-0 w-64 bg-white border-r border-[#E0E0E0] p-6 overflow-auto">
+              <div className="flex items-center justify-between">
+                <Logo />
+                <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-md hover:bg-gray-100">
+                  <X size={18} />
+                </button>
+              </div>
+              <nav className="mt-6">
+                <div className="space-y-2">
+                  {sidebarItems.map((item) => (
+                    <SidebarItem
+                      key={item.id}
+                      item={{ ...item, active: activeNav === item.id }}
+                      onClick={() => { setSidebarOpen(false); handleNavClick(item.id); }}
+                    />
                   ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Performance Card */}
-              <div className="bg-white rounded-2xl border border-[#EAEAEA] p-5">
-                <h3 className="text-[20px] font-medium text-black tracking-[-0.4px] leading-[32px] mb-2">
-                  Performance
-                </h3>
-                
-                <div className="space-y-6">
-                  <div className="space-y-[23px]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Category</span>
-                      <span className="text-[14px] font-medium text-[#4C4C4C] leading-[22px]">ICP Development</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Timeline</span>
-                      <span className="text-[14px] font-medium text-[#535353] leading-[22px]">3–4 weeks</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Level</span>
-                      <span className="text-[14px] font-medium text-transparent bg-clip-text leading-[22px]">$75K - $100K</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Proposals</span>
-                      <span className="text-[14px] font-medium text-[#535353] leading-[22px]">5</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="bg-white rounded-xl border border-[#EDEDED] p-5">
-                <h3 className="text-[20px] font-medium text-black tracking-[-0.4px] leading-[32px] mb-6">
-                  Quick Actions
-                </h3>
-                
-                <div className="space-y-4">
-                  <button className="w-full flex items-center gap-2 p-3 text-left hover:bg-gray-50 rounded-lg">
-                    <Plus size={16} className="text-gray-600" />
-                    <span className="text-sm">Create New Proposal</span>
-                  </button>
-                  
-                  <button className="w-full flex items-center gap-2 p-3 text-left hover:bg-gray-50 rounded-lg">
-                    <Eye size={16} className="text-gray-600" />
-                    <span className="text-sm">View Active Projects</span>
-                  </button>
-                  
-                  <button className="w-full flex items-center gap-2 p-3 text-left hover:bg-gray-50 rounded-lg">
-                    <BarChart3 size={16} className="text-gray-600" />
-                    <span className="text-sm">Check Analytics</span>
-                  </button>
-                </div>
-              </div>
+              </nav>
             </div>
           </div>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 p-6">
+          {renderContent(activeNav)}
         </main>
       </div>
     </div>

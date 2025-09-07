@@ -1,101 +1,88 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { 
-  Search,
-  ChevronDown,
-  LayoutGrid,
-  Briefcase,
-  Megaphone,
-  User,
-  MessageCircle,
-  DollarSign,
-  BarChart3,
-  Code2
-} from 'lucide-react'
+import { Search, ChevronDown } from 'lucide-react'
 
-interface BountyCard {
+interface HackathonCard {
   id: string
   title: string
+  description: string
   organizer: string
   mode: string
   prizePool: string
   timeline: string
+  registrationCloses: string
   tags: string[]
-  status: 'Open' | 'Closed' | 'In Progress' | 'Completed'
+  status: 'REGISTRATION OPEN' | 'UPCOMING' | 'ONGOING' | 'COMPLETED'
   featured?: boolean
 }
 
-const bountyData: BountyCard[] = [
+const hackathonData: HackathonCard[] = [
   {
     id: '1',
     title: 'Web3 Security Challenge',
+    description: 'Focus on building secure, auditable smart contracts and identifying vulnerabilities in existing protocols. Help make Web3 safer for everyone.',
     organizer: 'Security First',
     mode: 'Virtual',
     prizePool: '$75,000',
     timeline: '537 days',
+    registrationCloses: '3 days',
     tags: ['Smart', 'Contracts'],
-    status: 'Open',
+    status: 'REGISTRATION OPEN',
     featured: true
   },
   {
     id: '2',
     title: 'Web3 Security Challenge',
+    description: 'Focus on building secure, auditable smart contracts and identifying vulnerabilities in existing protocols. Help make Web3 safer for everyone.',
     organizer: 'Security First',
     mode: 'Virtual',
     prizePool: '$75,000',
     timeline: '537 days',
+    registrationCloses: '3 days',
     tags: ['Smart', 'Contracts'],
-    status: 'Open'
+    status: 'REGISTRATION OPEN'
   },
   {
     id: '3',
     title: 'Web3 Security Challenge',
+    description: 'Focus on building secure, auditable smart contracts and identifying vulnerabilities in existing protocols. Help make Web3 safer for everyone.',
     organizer: 'Security First',
     mode: 'Virtual',
     prizePool: '$75,000',
     timeline: '537 days',
+    registrationCloses: '3 days',
     tags: ['Smart', 'Contracts'],
-    status: 'Open',
-    featured: true
+    status: 'REGISTRATION OPEN'
   },
   {
     id: '4',
     title: 'Web3 Security Challenge',
+    description: 'Focus on building secure, auditable smart contracts and identifying vulnerabilities in existing protocols. Help make Web3 safer for everyone.',
     organizer: 'Security First',
     mode: 'Virtual',
     prizePool: '$75,000',
     timeline: '537 days',
+    registrationCloses: '3 days',
     tags: ['Smart', 'Contracts'],
-    status: 'Open'
+    status: 'REGISTRATION OPEN'
   }
 ]
 
-const sidebarItems = [
-  { icon: LayoutGrid, label: 'Dashboard', active: false },
-  { icon: Briefcase, label: 'Browse Projects', active: false },
-  { icon: Megaphone, label: 'Bounties', active: true },
-  { icon: User, label: 'My Projects', active: false },
-  { icon: MessageCircle, label: 'Messages', active: false },
-  { icon: Code2, label: 'Hackathons', active: false },
-  { icon: DollarSign, label: 'Payments', active: false },
-  { icon: BarChart3, label: 'Analytics', active: false }
-]
+// sidebar removed - only main content kept
 
-const categoryTabs = [
-  'All Categories',
-  'Smart Contracts',
-  'Frontend',
-  'Backend',
-  'Documentation',
-  'User Testing'
+const eventTabs = [
+  'All Events',
+  'Open Registration',
+  'Upcoming',
+  'Ongoing',
+  'Completed'
 ]
 
 const jobTypes = [
@@ -122,21 +109,21 @@ const salaryRanges = [
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'Open':
+    case 'REGISTRATION OPEN':
       return 'bg-green-100 text-green-800 border-green-200'
-    case 'In Progress':
+    case 'UPCOMING':
       return 'bg-blue-100 text-blue-800 border-blue-200'
-    case 'Completed':
+    case 'ONGOING':
+      return 'bg-orange-100 text-orange-800 border-orange-200'
+    case 'COMPLETED':
       return 'bg-gray-100 text-gray-800 border-gray-200'
-    case 'Closed':
-      return 'bg-red-100 text-red-800 border-red-200'
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200'
   }
 }
 
-export default function BountiesDashboard() {
-  const [selectedCategory, setSelectedCategory] = useState('Smart Contracts')
+export default function HackathonsDashboard() {
+  const [selectedTab, setSelectedTab] = useState('Open Registration')
   const [searchQuery, setSearchQuery] = useState('')
   const [remoteOnly, setRemoteOnly] = useState(false)
   const [selectedJobTypes, setSelectedJobTypes] = useState<string[]>([])
@@ -168,122 +155,59 @@ export default function BountiesDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f8f9]">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-lg"></div>
-            <span className="text-xl font-bold text-gray-900">ICPWork</span>
-          </div>
-
-          {/* Search */}
-          <div className="flex-1 max-w-md mx-8">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search your industry here..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-4 pr-12 py-2 w-full border-gray-300 rounded-full bg-gray-50"
-              />
-              <Button
-                size="sm"
-                className="absolute right-1 top-1 bg-green-600 hover:bg-green-700 rounded-full w-8 h-8 p-0"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* User Profile */}
-          <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2 border shadow-sm">
-            <Avatar className="w-6 h-6">
-              <AvatarImage src="" alt="John Dee" />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium text-gray-900">John Dee</span>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex max-w-7xl mx-auto">
-        {/* Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
-          <div className="p-6">
-            <nav className="space-y-2">
-              {sidebarItems.map((item, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center gap-3 px-5 py-3 rounded-lg cursor-pointer transition-colors ${
-                    item.active
-                      ? 'border-2 border-blue-400 text-gray-600'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="flex gap-8">
-            {/* Bounties Section */}
-            <div className="flex-1">
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Main Content */}
+      <div className="flex gap-8">
+        {/* Hackathons Section */}
+        <div className="flex-1">
               {/* Header */}
               <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-800 mb-1">Bounties</h1>
-                <p className="text-gray-600">Discover Bounties and earn rewards</p>
+                <h1 className="text-2xl font-semibold text-gray-800 mb-1">Hackathons</h1>
+                <p className="text-gray-600">Join Exciting Hackathons and win prizes</p>
               </div>
 
-              {/* Category Tabs */}
-              <div className="flex gap-6 mb-8 overflow-x-auto">
-                {categoryTabs.map((category) => (
+              {/* Event Tabs */}
+              <div className="flex gap-4 mb-6 overflow-x-auto">
+                {eventTabs.map((tab) => (
                   <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
+                    key={tab}
+                    variant={selectedTab === tab ? "default" : "outline"}
                     className={`rounded-full px-8 py-2 whitespace-nowrap ${
-                      selectedCategory === category
+                      selectedTab === tab
                         ? 'bg-white text-black border-gray-300 shadow-sm'
                         : 'border-gray-400 text-gray-600'
                     }`}
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => setSelectedTab(tab)}
                   >
-                    {category}
+                    {tab}
                   </Button>
                 ))}
               </div>
 
-              {/* Bounties Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-                {bountyData.map((bounty) => (
-                  <Card key={bounty.id} className={`p-5 ${bounty.featured ? 'shadow-lg' : ''}`}>
+              {/* Hackathons Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {hackathonData.map((hackathon) => (
+                  <Card key={hackathon.id} className={`p-5 ${hackathon.featured ? 'shadow-lg' : ''}`}>
                     <CardHeader className="p-0 mb-5">
                       <div className="flex justify-between items-start mb-4">
                         <CardTitle className="text-xl font-medium text-gray-800 flex-1 mr-4">
-                          {bounty.title}
+                          {hackathon.title}
                         </CardTitle>
                         <Badge 
                           variant="secondary" 
-                          className={`text-xs px-2 py-1 border rounded-full ${getStatusColor(bounty.status)}`}
+                          className={`text-xs px-2 py-1 border rounded-full ${getStatusColor(hackathon.status)}`}
                         >
-                          {bounty.status}
+                          {hackathon.status}
                         </Badge>
                       </div>
                       
                       <div className="flex justify-between items-center text-base mb-2">
-                        <span className="font-medium text-gray-800">{bounty.organizer}</span>
-                        <span className="text-gray-500 italic text-sm">Mode: {bounty.mode}</span>
+                        <span className="font-medium text-gray-800">{hackathon.organizer}</span>
+                        <span className="text-gray-500 italic text-sm">Mode: {hackathon.mode}</span>
                       </div>
 
                       <div className="flex gap-2 mb-4">
-                        {bounty.tags.map((tag, index) => (
+                        {hackathon.tags.map((tag, index) => (
                           <Badge 
                             key={tag} 
                             className={`text-xs px-3 py-1 ${
@@ -299,16 +223,24 @@ export default function BountiesDashboard() {
                     </CardHeader>
 
                     <CardContent className="p-0">
+                      <CardDescription className="text-gray-600 mb-4 text-sm leading-relaxed">
+                        {hackathon.description}
+                      </CardDescription>
+
                       <div className="space-y-2 mb-6">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Prize Pool</span>
                           <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600 font-medium">
-                            {bounty.prizePool}
+                            {hackathon.prizePool}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Timeline</span>
-                          <span className="text-gray-600">{bounty.timeline}</span>
+                          <span className="text-gray-600">{hackathon.timeline}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Registration closes in</span>
+                          <span className="text-gray-600">{hackathon.registrationCloses}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Participants</span>
@@ -418,8 +350,6 @@ export default function BountiesDashboard() {
               </div>
             </div>
           </div>
-        </div>
       </div>
-    </div>
   )
 }
