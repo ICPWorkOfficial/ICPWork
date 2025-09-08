@@ -84,6 +84,10 @@ import HackathonsView from './views/hackathons';
 import ProjectsView from './views/projects';
 import BountiesDashboard from './views/bounties';
 import PaymentView from './views/payments';
+// import MessageView from './views/messages';
+import MessageView from './views/messages';
+import MyProjectsView from './views/my-projects';
+import ProjectFlowView from './views/project-flow';
 import { StatCard, ProjectRow } from './views/components';
 
 const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ item, onClick }) => {
@@ -146,6 +150,7 @@ const FreelancerDashboard: React.FC = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [activeProject, setActiveProject] = useState<any | null>(null);
 
   // Mock data
   const stats: StatCard[] = [
@@ -236,20 +241,6 @@ const FreelancerDashboard: React.FC = () => {
 
 
 
-  const MyProjectsView = () => (
-    <div>
-      <h1 className="text-[20px] font-semibold mb-3">My Projects</h1>
-      <p className="text-sm text-gray-600">Projects you're involved with.</p>
-    </div>
-  );
-
-  const MessagesView = () => (
-    <div>
-      <h1 className="text-[20px] font-semibold mb-3">Messages</h1>
-      <p className="text-sm text-gray-600">Your inbox.</p>
-    </div>
-  );
-
 
 
 
@@ -261,13 +252,24 @@ const FreelancerDashboard: React.FC = () => {
   );
 
   const renderContent = (navId: string) => {
+  if (activeProject) {
+      return (
+        <div>
+          <div className="mb-4">
+            <button onClick={() => setActiveProject(null)} className="px-3 py-1 border rounded">← Back</button>
+          </div>
+      <ProjectFlowView project={activeProject as any} onUpdate={(p) => { setActiveProject(p as any); }} />
+        </div>
+      );
+    }
+
     switch (navId) {
-  case 'dashboard': return <DashboardView onBrowseAll={() => setActiveNav('browse-projects')} />;
-  case 'browse-projects': return <ProjectsView />;
-  case 'bounties': return <BountiesDashboard />;
-      case 'my-projects': return <MyProjectsView/>;
-      case 'messages': return <MessagesView />;
-  case 'hackathons': return <HackathonsView />;
+      case 'dashboard': return <DashboardView onBrowseAll={() => setActiveNav('browse-projects')} />;
+      case 'browse-projects': return <ProjectsView />;
+      case 'bounties': return <BountiesDashboard />;
+  case 'my-projects': return <MyProjectsView onOpenProject={(p) => setActiveProject(p as any)} onProjectUpdated={(p) => { /* keep activeProject in sync if needed */ setActiveProject(p as any); }} />;
+      case 'messages': return <MessageView />;
+      case 'hackathons': return <HackathonsView />;
       case 'payments': return <PaymentView />;
       case 'analytics': return <AnalyticsView />;
       default: return <DashboardView />;
