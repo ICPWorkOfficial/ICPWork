@@ -15,7 +15,9 @@
         "email": "alice@example.com"
       },
       "files": [
-        "4.png"
+        "4.png",
+        "/uploads/1757441759416-Completion_Certificate___SkillsBuild.pdf",
+        "/uploads/1757441774236-Aveksha.png"
       ]
     },
     {
@@ -33,7 +35,8 @@
         "email": "bob@example.com"
       },
       "files": [
-        "Gradient 08.jpg"
+        "Gradient 08.jpg",
+        "drive-download-20250903T201633Z-1-001.zip"
       ]
     },
     {
@@ -50,6 +53,60 @@
         "name": "Charlie Lee",
         "email": "charlie@example.com"
       }
+    },
+    {
+      "id": "p4",
+      "title": "Token Swap Widget",
+      "description": "Implement a token swap widget with price quotes and slippage control.",
+      "tier": "Premium",
+      "type": "Widget",
+      "price": "600 ICP",
+      "orderedOn": "2025-06-12T11:00:00.000Z",
+      "image": "/logo.svg",
+      "status": "completed",
+      "client": {
+        "name": "Dana S",
+        "email": "dana@example.com"
+      },
+      "files": [
+        "swap-widget.zip"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Landing Page Refresh",
+      "description": "Redesign the marketing landing page and improve conversion flow.",
+      "tier": "Standard",
+      "type": "Design",
+      "price": "250 ICP",
+      "orderedOn": "2025-08-01T09:00:00.000Z",
+      "image": "/logo.svg",
+      "status": "revision",
+      "client": {
+        "name": "Eve Martin",
+        "email": "eve@example.com"
+      },
+      "files": [
+        "landing-v2.png"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Onchain Indexer Setup",
+      "description": "Set up an indexer for onchain event processing and dashboards.",
+      "tier": "Premium",
+      "type": "Backend",
+      "price": "1800 ICP",
+      "orderedOn": "2025-05-20T08:30:00.000Z",
+      "image": "/logo.svg",
+      "status": "completed ",
+      "client": {
+        "name": "Frank Liu",
+        "email": "frank@example.com"
+      },
+      "files": [
+        "indexer.tar.gz"
+      ]
     }
   ]
 }

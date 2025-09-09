@@ -147,7 +147,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll, onOpenProjec
           <p className="text-md text-gray-600">Manage your projects and proposals</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="text-sm  px-4 py-2 rounded-md cursor-pointer text-white flex items-center gap-2" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
+          <button className="text-xs  px-4 py-2 rounded-md cursor-pointer text-white flex items-center gap-2" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -203,9 +203,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll, onOpenProjec
                     </div>
                   ) : (
                     projects.filter(p => {
-                    if (postedSubTab === 'new') return p.status === 'new';
-                    if (postedSubTab === 'complete') return p.status === 'completed';
-                    if (postedSubTab === 'cancelled') return p.status === 'cancelled';
+                    const s = String(p.status || '').toLowerCase();
+                    if (postedSubTab === 'new') return s === 'new' || s.includes('progress') || s.includes('pend');
+                    if (postedSubTab === 'complete') return s.includes('complete');
+                    if (postedSubTab === 'cancelled') return s.includes('cancel');
                     return true;
                     }).map(p => {
                     
