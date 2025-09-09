@@ -1,0 +1,55 @@
+{
+  "projects": [
+    {
+      "id": "p1",
+      "title": "Build DeFi Dashboard",
+      "description": "Create a responsive DeFi dashboard with charts and wallet integration.",
+      "tier": "Premium",
+      "type": "Web App",
+      "price": "1250 ICP",
+      "orderedOn": "2025-08-20T10:00:00.000Z",
+      "image": "/logo.svg",
+      "status": "in-progress",
+      "client": {
+        "name": "Alice Johnson",
+        "email": "alice@example.com"
+      },
+      "files": [
+        "4.png"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Smart Contract Audit",
+      "description": "Audit and report vulnerabilities in smart contracts.",
+      "tier": "Standard",
+      "type": "Audit",
+      "price": "450 ICP",
+      "orderedOn": "2025-07-11T09:30:00.000Z",
+      "image": "/logo.svg",
+      "status": "in-progress",
+      "client": {
+        "name": "Bob Smith",
+        "email": "bob@example.com"
+      },
+      "files": [
+        "Gradient 08.jpg"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Mobile Wallet UI",
+      "description": "Design and implement mobile wallet UI for iOS and Android.",
+      "tier": "Standard",
+      "type": "Mobile App",
+      "price": "1335 ICP",
+      "orderedOn": "2025-09-01T14:00:00.000Z",
+      "image": "/logo.svg",
+      "status": "cancelled",
+      "client": {
+        "name": "Charlie Lee",
+        "email": "charlie@example.com"
+      }
+    }
+  ]
+}

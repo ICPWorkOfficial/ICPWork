@@ -86,7 +86,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
           <div className="bg-[rgba(104,255,102,0.14)] px-2 py-1 rounded-lg h-[28px] flex items-center justify-center">
           <span className="text-[11px] md:text-[12px] font-medium text-[#058700] capitalize">Available</span>
         </div>
-            <button className="text-sm font-semibold px-4 py-2 rounded-md text-white flex items-center gap-2" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
+            <button className="text-sm font-semibold px-4 py-2 rounded-md cursor-pointer text-white flex items-center gap-2" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>

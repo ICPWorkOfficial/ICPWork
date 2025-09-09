@@ -1,0 +1,52 @@
+{
+  "contacts": [
+    {
+      "id": "c1",
+      "name": "Alice Johnson",
+      "lastMessage": "See you tomorrow",
+      "unread": 2
+    },
+    {
+      "id": "c2",
+      "name": "Bob Smith",
+      "lastMessage": "Thanks!",
+      "unread": 0
+    },
+    {
+      "id": "c3",
+      "name": "Charlie Lee",
+      "lastMessage": "Can you review this?",
+      "unread": 1
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "c1",
+      "to": "me",
+      "text": "Hi, are you available for a quick call?",
+      "createdAt": "2025-09-07T10:00:00.000Z"
+    },
+    {
+      "id": "m2",
+      "from": "me",
+      "to": "c1",
+      "text": "Yes, give me 10 mins.",
+      "createdAt": "2025-09-07T10:01:00.000Z"
+    },
+    {
+      "id": "m3",
+      "from": "c2",
+      "to": "me",
+      "text": "Thanks for the update.",
+      "createdAt": "2025-09-07T09:00:00.000Z"
+    },
+    {
+      "id": "1757364995959",
+      "from": "me",
+      "to": "c2",
+      "text": "retggfgd",
+      "createdAt": "2025-09-08T20:56:35.959Z"
+    }
+  ]
+}
