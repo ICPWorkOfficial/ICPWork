@@ -38,7 +38,6 @@ interface PasswordValidation {
 }
 
 // SVG assets
-const googleIcon: string = "http://localhost:3845/assets/52243b2205799c2b1fa5d742582bdcf791c4d845.svg";
 
 export default function AuthForm() {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
