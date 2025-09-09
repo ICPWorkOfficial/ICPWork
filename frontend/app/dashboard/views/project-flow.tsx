@@ -23,12 +23,12 @@ export default function ProjectFlowView({ project: initialProject, onUpdate }: {
   const isInProgress = ['in-progress', 'new', 'pending', 'work-pending'].includes(statusNorm) || statusNorm.includes('pend');
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-2">Service Flow — {project.title}</h1>
-      <div className="text-sm text-gray-600 mb-6">Client: {project.client?.name} • Ordered on {project.orderedOn ? new Date(project.orderedOn).toLocaleString() : ''}</div>
+    <div className="max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-2"> {project.description}</h1>
+      <div className="text-sm text-gray-600 mb-6">Client: {project.client?.name} <br/> Ordered on {project.orderedOn ? new Date(project.orderedOn).toLocaleString() : ''}</div>
 
       <section className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h2 className="font-semibold mb-4">Timeline</h2>
+        {/* <h2 className="font-semibold mb-4">Timeline</h2> */}
         <div className="relative">
           <div className="absolute left-6 right-6 top-5 h-1 bg-green-200"></div>
           <div className="flex items-center justify-between relative z-10">
@@ -57,31 +57,24 @@ export default function ProjectFlowView({ project: initialProject, onUpdate }: {
           {isInProgress && (
             <>
               <FilesUploader projectId={project.id} initialFiles={["initial-setup.zip"]} showRevision={false} onUpdate={(p) => setProject(p)} />
-              <div className="mt-4">
-                <button className="px-4 py-2 bg-green-600 text-white rounded" onClick={async () => {
-                  try {
-                    const res = await fetch('/api/projects', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: project.id, status: 'completed' }) });
-                    const json = await res.json();
-                    if (json?.ok) { setProject(json.project); onUpdate?.(json.project); }
-                  } catch (e) { console.error(e); }
-                }}>Mark as Complete</button>
-              </div>
+            
             </>
           )}
 
           {statusNorm === 'completed' && (
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-              <div className="text-2xl font-semibold text-green-600 mb-3">Project Successfully Completed</div>
-              <div className="mb-4">Thanks — the project workflow is finished.</div>
+            <div className="bg-gray-100 p-6 rounded-lg shadow-sm ">
+              <div className="text-4xl font-semibold text-green-600 mb-3">Project Successfully Completed</div>
+              <div className="mb-4 max-w-xl">Joining our network starts with an application. We meticulously review your expertise, portfolio, and professional background.</div>
               <div className="flex justify-center gap-3">
                 <button onClick={async () => {
                   // demo: mark dispute (no-op server-side in this demo)
                   alert('Raise dispute flow (demo)');
-                }} className="px-4 py-2 border rounded">Raise a Dispute</button>
+                }} className="px-4 py-2 border-2 border-gray-400 text-gray-600 rounded cursor-pointer rounded-full">Raise a Dispute</button>
+               
                 <button onClick={async () => {
                   // demo: ask for review — for now just alert
                   alert('Ask for review (demo)');
-                }} className="px-4 py-2 bg-indigo-600 text-white rounded">Ask for Review</button>
+                }} className="px-4 py-2 bg-indigo-600 text-white rounded cursor-pointer rounded-full" style={{ background: 'linear-gradient(90deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>Ask for Review</button>
               </div>
             </div>
           )}

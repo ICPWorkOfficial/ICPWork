@@ -27,11 +27,14 @@
       "price": "450 ICP",
       "orderedOn": "2025-07-11T09:30:00.000Z",
       "image": "/logo.svg",
-      "status": "completed",
+      "status": "in-progress",
       "client": {
         "name": "Bob Smith",
         "email": "bob@example.com"
-      }
+      },
+      "files": [
+        "Gradient 08.jpg"
+      ]
     },
     {
       "id": "p3",
