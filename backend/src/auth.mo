@@ -4,10 +4,14 @@ import Buffer "mo:base/Buffer";
 import Utils "./utils";
 
 module {
-  public class Auth() {
-    var usersArray : [(Text, Blob)] = [];
+  public type User = {
+    email : Text;
+    passwordHash : Blob;
+  };
 
-    var users = Buffer.fromArray<(Text, Blob)>(usersArray);
+  public class Auth() {
+    var usersArray : [User] = [];
+    var users : Buffer.Buffer<User> = Buffer.fromArray(usersArray);
 
     public func preupgrade() {
       usersArray := Buffer.toArray(users);
@@ -21,35 +25,36 @@ module {
       var i : Nat = 0;
       let len = users.size();
       while (i < len) {
-        let (e, _) = users.get(i);
-        if (e == email) return ?i;
+        let u = users.get(i);
+        if (u.email == email) return ?i;
         i += 1;
       };
-      return null;
+      null
     };
 
-    public func auth(email : Text, password : Text) : (Text, Blob) {
+    public func auth(email : Text, password : Text) : User {
       let hashed = Utils.hashPassword(password);
+      let newUser : User = { email = email; passwordHash = hashed };
 
       switch (findUserIndex(email)) {
-        case (?i) { users.put(i, (email, hashed)); };
-        case null { users.add((email, hashed)); };
+        case (?i) { users.put(i, newUser); };
+        case null { users.add(newUser); };
       };
 
-      (email, hashed)
+      newUser
     };
 
     public func login(email : Text, password : Text) : Bool {
       switch (findUserIndex(email)) {
         case (?i) {
-          let (_, storedHash) = users.get(i);
-          Utils.hashPassword(password) == storedHash
+          let u = users.get(i);
+          Utils.hashPassword(password) == u.passwordHash
         };
         case null { false };
       }
     };
 
-    public func listUsers() : [(Text, Blob)] {
+    public func listUsers() : [User] {
       Buffer.toArray(users)
     };
   };
