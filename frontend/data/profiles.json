@@ -1,0 +1,357 @@
+{
+  "profiles": [
+    {
+      "id": "p1",
+      "personal": {
+        "name": "Vivek Mehta",
+        "title": "A Web Developer working From 5 years. Hereto help startups & businesses",
+        "description": "Passionate blockchain developer with 5+ years of experience.",
+        "about": "Experienced Product Designer, previously a key contributor to web product design in collaboration with the founders at Post News. I thrive in the art of crafting products that not only capture attention but also ignite meaningful connections and drive business growth.",
+        "profileImage": "https://cdn-employer-wp.arc.dev/wp-content/uploads/2022/04/good-software-developer-1128x635.jpg",
+        "socials": [
+          {
+            "platform": "GitHub",
+            "url": "https://github.com/vivek",
+            "icon": "github"
+          },
+          {
+            "platform": "LinkedIn",
+            "url": "https://linkedin.com/in/vivek",
+            "icon": "linkedin"
+          }
+        ]
+      },
+      "skills": [
+        "Solidity",
+        "React",
+        "TypeScript",
+        "Node.js",
+        "Ethers.js"
+      ],
+      "stats": {
+        "companiesServed": 12,
+        "projectsDone": 34,
+        "hackathonsParticipated": 5
+      },
+      "workExperience": [
+        {
+          "id": 1,
+          "designation": "Senior Blockchain Engineer",
+          "company": "Nebula Labs",
+          "description": "Led development of a layer-2 rollup prototype, implemented gas-optimised contract patterns and mentoring a team of 4.",
+          "duration": "2022 - Present",
+          "timeWorked": "3 yrs"
+        },
+        {
+          "id": 2,
+          "designation": "Smart Contract Developer",
+          "company": "OpenDeFi",
+          "description": "Built core DeFi primitives (AMM, lending) and performed security hardening and audits.",
+          "duration": "2019 - 2022",
+          "timeWorked": "3 yrs"
+        }
+      ],
+      "services": [
+        {
+          "id": 1,
+          "title": "Smart Contract Audit",
+          "image": "/api/placeholder/600/400",
+          "personName": "Alex Chen",
+          "description": "Comprehensive security audit with gas/attack surface analysis and mitigation guidance.",
+          "rating": 4.9,
+          "price": "$2,500"
+        },
+        {
+          "id": 2,
+          "title": "Full-stack dApp Development",
+          "image": "/api/placeholder/600/400",
+          "personName": "Alex Chen",
+          "description": "End-to-end dApp: contracts, backend APIs, and React frontend with wallet integrations.",
+          "rating": 4.8,
+          "price": "$4,500"
+        }
+      ],
+      "reviews": [
+        {
+          "id": 1,
+          "text": "Alex helped us harden our contracts and shipped fixes quickly.",
+          "reviewer": "S. Patel",
+          "designation": "CTO, Tokenize"
+        },
+        {
+          "id": 2,
+          "text": "Great communication and deep technical skill — delivery on time.",
+          "reviewer": "J. Morales",
+          "designation": "Founder, DeFund"
+        }
+      ],
+      "portfolio": [
+        {
+          "id": 1,
+          "title": "Layer-2 Rollup Prototype",
+          "image": "/api/placeholder/800/500",
+          "description": "Research prototype for optimistic rollups and batching."
+        },
+        {
+          "id": 2,
+          "title": "DeFi Lending Protocol",
+          "image": "/api/placeholder/800/500",
+          "description": "A permissionless lending pool with collateral liquidations and rate oracles."
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "personal": {
+        "name": "Priya Kapoor",
+        "title": "Smart Contract Engineer",
+        "description": "Building secure contracts for DeFi and NFTs.",
+        "about": "I deliver auditable, gas-efficient smart contracts and love mentoring junior devs.",
+        "profileImage": "/api/placeholder/400/400",
+        "socials": [
+          {
+            "platform": "GitHub",
+            "url": "https://github.com/priya",
+            "icon": "github"
+          },
+          {
+            "platform": "Twitter",
+            "url": "https://twitter.com/priya",
+            "icon": "twitter"
+          }
+        ]
+      },
+      "skills": [
+        "Solidity",
+        "Hardhat",
+        "Foundry",
+        "Rust",
+        "Web3"
+      ],
+      "stats": {
+        "companiesServed": 8,
+        "projectsDone": 21,
+        "hackathonsParticipated": 10
+      },
+      "workExperience": [
+        {
+          "id": 1,
+          "designation": "Lead Smart Contract Engineer",
+          "company": "Audita Labs",
+          "description": "Owner of security tooling and automated test harnesses; ran multiple audits for high-value contracts.",
+          "duration": "2021 - Present",
+          "timeWorked": "4 yrs"
+        },
+        {
+          "id": 2,
+          "designation": "Smart Contract Developer",
+          "company": "MintWorks",
+          "description": "Built NFT minting and on-chain royalty distribution modules.",
+          "duration": "2018 - 2021",
+          "timeWorked": "3 yrs"
+        }
+      ],
+      "services": [
+        {
+          "id": 1,
+          "title": "Formal Audit & Foundry Tests",
+          "image": "/api/placeholder/600/400",
+          "personName": "Priya Kapoor",
+          "description": "Deep audits including property-based tests and Foundry fuzzing suites.",
+          "rating": 5,
+          "price": "$3,500"
+        },
+        {
+          "id": 2,
+          "title": "Gas Optimisation Consultation",
+          "image": "/api/placeholder/600/400",
+          "personName": "Priya Kapoor",
+          "description": "Contract refactors and assembly-level gas savings where appropriate.",
+          "rating": 4.9,
+          "price": "$1,200"
+        }
+      ],
+      "reviews": [
+        {
+          "id": 1,
+          "text": "Priya found critical edge cases before our mainnet launch.",
+          "reviewer": "L. Zhang",
+          "designation": "Engineering Lead, ChainBridge"
+        },
+        {
+          "id": 2,
+          "text": "Excellent Foundry tests and clear remediation steps.",
+          "reviewer": "M. Rossi",
+          "designation": "Product, ArtMint"
+        }
+      ],
+      "portfolio": [
+        {
+          "id": 1,
+          "title": "NFT Royalty Engine",
+          "image": "/api/placeholder/800/500",
+          "description": "On-chain royalty splitter compatible with major marketplaces."
+        },
+        {
+          "id": 2,
+          "title": "DeFi Audit Report (v2)",
+          "image": "/api/placeholder/800/500",
+          "description": "Comprehensive audit for a lending protocol with remediations documented."
+        }
+      ]
+    },
+    {
+      "id": "p3",
+      "personal": {
+        "name": "Miguel Santos",
+        "title": "dApp Frontend Engineer",
+        "description": "Designing delightful Web3 UX.",
+        "about": "I focus on accessible, responsive dApp frontends with robust wallet integration.",
+        "profileImage": "/api/placeholder/400/400",
+        "socials": [
+          {
+            "platform": "LinkedIn",
+            "url": "https://linkedin.com/in/miguel",
+            "icon": "linkedin"
+          },
+          {
+            "platform": "Portfolio",
+            "url": "https://miguel.dev",
+            "icon": "globe"
+          }
+        ]
+      },
+      "skills": [
+        "React",
+        "Next.js",
+        "TypeScript",
+        "GraphQL",
+        "IPFS"
+      ],
+      "stats": {
+        "companiesServed": 20,
+        "projectsDone": 58,
+        "hackathonsParticipated": 3
+      },
+      "workExperience": [
+        {
+          "id": 1,
+          "designation": "Senior Frontend Engineer",
+          "company": "UXChain",
+          "description": "Designed core dApp components and wallet onboarding flows used by multiple products.",
+          "duration": "2020 - Present",
+          "timeWorked": "5 yrs"
+        },
+        {
+          "id": 2,
+          "designation": "Frontend Developer",
+          "company": "PixelBridge",
+          "description": "Built responsive dashboards and data visualisations for blockchain analytics.",
+          "duration": "2016 - 2020",
+          "timeWorked": "4 yrs"
+        }
+      ],
+      "services": [
+        {
+          "id": 1,
+          "title": "dApp Frontend Consultation",
+          "image": "/api/placeholder/600/400",
+          "personName": "Miguel Santos",
+          "description": "UX review, wallet onboarding improvements, and accessible UI components.",
+          "rating": 4.7,
+          "price": "$1,800"
+        },
+        {
+          "id": 2,
+          "title": "React + Next.js dApp Implementation",
+          "image": "/api/placeholder/600/400",
+          "personName": "Miguel Santos",
+          "description": "Production-ready frontends with server-side rendering and performance tuning.",
+          "rating": 4.9,
+          "price": "$3,200"
+        }
+      ],
+      "reviews": [
+        {
+          "id": 1,
+          "text": "Miguel transformed our onboarding flow — conversion doubled.",
+          "reviewer": "K. Osei",
+          "designation": "Growth, Walletly"
+        },
+        {
+          "id": 2,
+          "text": "Top-tier frontend craftsmanship and clear documentation.",
+          "reviewer": "A. Becker",
+          "designation": "CTO, GraphNode"
+        }
+      ],
+      "portfolio": [
+        {
+          "id": 1,
+          "title": "Wallet Onboarding Kit",
+          "image": "/api/placeholder/800/500",
+          "description": "A reusable onboarding kit for new crypto users with progressive disclosure."
+        },
+        {
+          "id": 2,
+          "title": "Analytics Dashboard",
+          "image": "/api/placeholder/800/500",
+          "description": "High-throughput dashboards visualising chain metrics and user flows."
+        }
+      ]
+    },
+    {
+      "id": "p4",
+      "status": "incomplete",
+      "personal": {
+        "name": "Sarah Johnson",
+        "title": "",
+        "description": "",
+        "about": "",
+        "profileImage": "/api/placeholder/400/400",
+        "socials": []
+      },
+      "skills": [],
+      "stats": {
+        "companiesServed": 0,
+        "projectsDone": 0,
+        "hackathonsParticipated": 0
+      },
+      "workExperience": [],
+      "services": [],
+      "reviews": [],
+      "portfolio": [],
+      "education": [
+        {
+          "institution": "",
+          "degree": "",
+          "startYear": "",
+          "endYear": ""
+        }
+      ]
+    },
+    {
+      "id": "p4",
+      "status": "incomplete",
+      "personal": {
+        "name": "Sarah Johnson",
+        "title": "",
+        "description": "",
+        "about": "",
+        "profileImage": "/api/placeholder/400/400",
+        "socials": []
+      },
+      "skills": [],
+      "stats": {
+        "companiesServed": 0,
+        "projectsDone": 0,
+        "hackathonsParticipated": 0
+      },
+      "workExperience": [],
+      "education": [],
+      "services": [],
+      "reviews": [],
+      "portfolio": []
+    }
+  ]
+}

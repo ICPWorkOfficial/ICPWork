@@ -66,6 +66,7 @@ interface ProfileData {
   services: Service[];
   reviews: Review[];
   portfolio: PortfolioWork[];
+  status?: string;
 }
 
 // Social icons mapping
@@ -78,19 +79,39 @@ const SocialIcons: { [key: string]: any } = {
 
 export default function ProfilePage() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draftPersonal, setDraftPersonal] = useState<Personal | null>(null);
+  const [openedId, setOpenedId] = useState('');
   const [currentReview, setCurrentReview] = useState(0);
   const [currentWork, setCurrentWork] = useState(0);
   const [currentService, setCurrentService] = useState(0);
   const [currentExperience, setCurrentExperience] = useState(0);
 
   useEffect(() => {
-    // Fetch profile data
+    // Fetch profile data (support ?id= query param)
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/profile');
+        const params = new URLSearchParams(window.location.search);
+        let id = params.get('id');
+        // fallback: support /profile/:id path
+        if (!id) {
+          const m = window.location.pathname.match(/\/profile\/(.+?)(?:\/|$)/);
+          if (m) id = decodeURIComponent(m[1]);
+        }
+        let response;
+        if (id) {
+          response = await fetch(`/api/profile?id=${encodeURIComponent(id)}`);
+        } else {
+          response = await fetch('/api/profile');
+        }
+
         const result = await response.json();
+        // API may return { ok, profiles } or { ok, profile } or legacy { ok, data }
         if (result.ok) {
-          setProfileData(result.data);
+          if (result.profile) setProfileData(result.profile);
+          else if (result.profiles) setProfileData(result.profiles[0] || null);
+          else if (result.data) setProfileData(result.data);
+          else setProfileData(null);
         }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
@@ -101,13 +122,31 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    // Auto-rotate reviews
-    if (profileData?.reviews) {
+    // Auto-rotate reviews (only when there is at least one review)
+    if (profileData?.reviews && profileData.reviews.length > 0) {
+      const len = profileData.reviews.length;
       const interval = setInterval(() => {
-        setCurrentReview((prev) => (prev + 1) % profileData.reviews.length);
+        setCurrentReview((prev) => (prev + 1) % len);
       }, 4000);
       return () => clearInterval(interval);
     }
+  }, [profileData]);
+
+  // compute opened id on client only
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    let id = params.get('id');
+    if (!id) {
+      const m = window.location.pathname.match(/\/profile\/(.+?)(?:\/|$)/);
+      if (m) id = decodeURIComponent(m[1]);
+    }
+    setOpenedId(id || '');
+  }, []);
+
+  // keep draft in sync with loaded profile (must be declared before any early returns)
+  useEffect(() => {
+    setDraftPersonal(profileData?.personal || null);
   }, [profileData]);
 
   if (!profileData) {
@@ -118,49 +157,82 @@ export default function ProfilePage() {
     );
   }
 
+  // If profile is incomplete, redirect to complete profile page
+  if (profileData.status === 'incomplete') {
+    return (
+      <div className="min-h-screen bg-white">
+        <nav className="bg-white shadow-sm border-b px-4 sm:px-6 lg:px-8 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              ICPWork
+            </div>
+          </div>
+        </nav>
+        
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Complete Your Profile</h1>
+            <p className="text-gray-600 mb-6">Your profile is incomplete. Please complete your profile to get discovered by clients.</p>
+            <a 
+              href="/profile/complete"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Complete Profile
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const { personal, skills, stats, workExperience, services, reviews, portfolio } = profileData;
 
+  const editable = openedId === 'p2';
+
+  const saveDraft = () => {
+    if (!draftPersonal) return;
+    // client-side only: update UI state. Persistence API not implemented here.
+    setProfileData((p) => (p ? { ...p, personal: draftPersonal } : p));
+    setEditing(false);
+  };
+
   const nextWork = () => {
-    setCurrentWork((prev) => (prev + 1) % portfolio.length);
+  if (!portfolio || portfolio.length === 0) return;
+  setCurrentWork((prev) => (prev + 1) % portfolio.length);
   };
 
   const prevWork = () => {
-    setCurrentWork((prev) => (prev - 1 + portfolio.length) % portfolio.length);
+  if (!portfolio || portfolio.length === 0) return;
+  setCurrentWork((prev) => (prev - 1 + portfolio.length) % portfolio.length);
   };
 
   const nextService = () => {
-    setCurrentService((prev) => (prev + 1) % services.length);
+  if (!services || services.length === 0) return;
+  setCurrentService((prev) => (prev + 1) % services.length);
   };
 
   const prevService = () => {
-    setCurrentService((prev) => (prev - 1 + services.length) % services.length);
+  if (!services || services.length === 0) return;
+  setCurrentService((prev) => (prev - 1 + services.length) % services.length);
   };
 
   const nextExperience = () => {
-    setCurrentExperience((prev) => (prev + 1) % workExperience.length);
+  if (!workExperience || workExperience.length === 0) return;
+  setCurrentExperience((prev) => (prev + 1) % workExperience.length);
   };
 
   const prevExperience = () => {
-    setCurrentExperience((prev) => (prev - 1 + workExperience.length) % workExperience.length);
+  if (!workExperience || workExperience.length === 0) return;
+  setCurrentExperience((prev) => (prev - 1 + workExperience.length) % workExperience.length);
   };
 
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm border-b px-4 sm:px-6 lg:px-8 py-4">
+      <nav className="bg-white shadow-lg border-b px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            ICPWork
-          </div>
-          <div className="hidden md:flex space-x-8">
-            <a href="#" className="text-gray-700 hover:text-gray-900">About</a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">Services</a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">Portfolio</a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">Contact</a>
-          </div>
-          <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
-            Get in Touch
-          </button>
+           <img src="/logo.svg" alt="ICPWork Logo" className="w-36 " />
+         
         </div>
       </nav>
 
@@ -170,19 +242,44 @@ export default function ProfilePage() {
           <div className="flex flex-col lg:flex-row items-start gap-8">
             {/* Left Content */}
             <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-                {personal.name}
-              </h1>
-              <h2 className="text-lg sm:text-xl text-gray-600 mb-6 leading-relaxed">
-                {personal.title}
-              </h2>
-              <p className="text-gray-700 text-base sm:text-lg leading-relaxed mb-8">
-                {personal.about}
-              </p>
+              {editable && !editing ? (
+                <div className="flex items-center gap-4 mb-4">
+                  <div>
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">{personal.name}</h1>
+                    <div className="text-lg sm:text-xl text-gray-600">{personal.title}</div>
+                  </div>
+                  <div>
+                    <button onClick={() => setEditing(true)} className="px-4 py-2 bg-indigo-600 text-white rounded">Edit</button>
+                  </div>
+                </div>
+              ) : editing ? (
+                <div className="space-y-3 mb-4">
+                  <input className="w-full p-3 border rounded" value={draftPersonal?.name || ''} onChange={(e) => setDraftPersonal((d) => d ? { ...d, name: e.target.value } : d)} />
+                  <input className="w-full p-3 border rounded" value={draftPersonal?.title || ''} onChange={(e) => setDraftPersonal((d) => d ? { ...d, title: e.target.value } : d)} />
+                  <textarea className="w-full p-3 border rounded" value={draftPersonal?.about || ''} onChange={(e) => setDraftPersonal((d) => d ? { ...d, about: e.target.value } : d)} />
+                  <div className="flex gap-3">
+                    <button onClick={saveDraft} className="px-4 py-2 bg-green-600 text-white rounded">Save</button>
+                    <button onClick={() => { setEditing(false); setDraftPersonal(profileData.personal); }} className="px-4 py-2 border rounded">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl  text-gray-900 mb-4">
+                    {personal.name}
+                  </h1>
+                  <h2 className="text-lg sm:text-3xl font-bold text-black mb-6 leading-relaxed max-w-2xl">
+                    I am {personal.name},<br />
+                    {personal.title}
+                  </h2>
+                  <p className="text-gray-700 text-base sm:text-lg leading-relaxed mb-8 max-w-2xl">
+                    {personal.about}
+                  </p>
+                </>
+              )}
               
               {/* Socials */}
               <div className="flex flex-wrap gap-8 mb-8">
-                {personal.socials.map((social, index) => {
+                {(draftPersonal?.socials || personal.socials).map((social, index) => {
                   const IconComponent = SocialIcons[social.icon];
                   return (
                     <a
@@ -205,7 +302,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Right Photo */}
-            <div className="w-full lg:w-80 xl:w-96">
+            <div className="w-full lg:w-80 xl:w-96 h-80 lg:h-96">
               <img
                 src={personal.profileImage}
                 alt={personal.name}
@@ -216,19 +313,24 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* Skills Strip */}
-      <section className="bg-[#FFE1B8] py-6 overflow-hidden mb-16">
-        <div className="flex animate-scroll whitespace-nowrap">
+      {/* Skills Strip •  */}
+      <section className="bg-[#FFE1B8] py-8 overflow-hidden mb-16">
+        <div className="flex gap-10 animate-scroll whitespace-nowrap px-6">
           {[...skills, ...skills, ...skills].map((skill, index) => (
-            <span key={index} className="inline-block px-4 text-lg font-medium text-gray-800">
-              {skill} •
+            <div>
+            <span key={index} className="inline-block px-4 font-medium text-2xl text-gray-800">
+              {skill+" "}
             </span>
+             <span className="inline-block px-4 font-medium text-4xl text-gray-800">
+              •
+            </span>
+            </div>
           ))}
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="bg-black py-16 px-4 sm:px-6 lg:px-8 w-3/4 mx-auto rounded-2xl mb-16">
+      <section className="bg-black py-10 px-4 sm:px-3 lg:px-4 w-3/4 mx-auto rounded-4xl my-16">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
@@ -255,8 +357,8 @@ export default function ProfilePage() {
 
       {/* Work Experience */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl   mb-12">Work Experience</h2>
+        <div className="sm:mx-5">
+          <h2 className="text-xl sm:text-3xl   mb-12">Work Experience</h2>
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <button
@@ -307,8 +409,9 @@ export default function ProfilePage() {
 
       {/* Book My Services */}
       <section className="bg-[#393939] py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center text-white mb-12">Book My Services</h2>
+        <div className=" md:mx-24">
+          <h2 className="text-3xl sm:text-4xl font-bold  text-white mb-12">Book My Services</h2>
+          <p className='max-w-2xl text-gray-400'>Experienced Product Designer, previously a key contributor to web product design in collaboration with the founders at Post News.</p>
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <button
@@ -326,7 +429,7 @@ export default function ProfilePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-hidden">
               {services.slice(currentService, currentService + 3).map((service) => (
-                <div key={service.id} className="bg-white rounded-xl overflow-hidden shadow-lg">
+                <div key={service.id} className="rounded-xl overflow-hidden shadow-lg">
                   <img
                     src={service.image}
                     alt={service.title}
@@ -334,10 +437,10 @@ export default function ProfilePage() {
                   />
                   <div className="p-6">
                     <div className="text-lg font-semibold mb-2">{service.personName}</div>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg mb-4 hover:bg-blue-700 transition-colors">
+                    <button className="px-4 py-1 border-red-500 border rounded-full text-red-500  mb-4  transition-colors">
                       View
                     </button>
-                    <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                    <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                       {service.description}
                     </p>
                     <div className="flex items-center justify-between">
@@ -352,9 +455,9 @@ export default function ProfilePage() {
                             }`}
                           />
                         ))}
-                        <span className="ml-2 text-sm text-gray-600">{service.rating}</span>
+                        <span className="ml-2 text-sm text-gray-300">{service.rating}</span>
                       </div>
-                      <div className="text-lg font-bold text-blue-600">{service.price}</div>
+                      <div className="text-lg font-bold text-white">{service.price}</div>
                     </div>
                   </div>
                 </div>
@@ -369,13 +472,19 @@ export default function ProfilePage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-12">What Clients Say</h2>
           <div className="relative">
-            <blockquote className="text-xl sm:text-2xl text-gray-700 mb-8 leading-relaxed">
-              "{reviews[currentReview].text}"
-            </blockquote>
-            <div className="mb-4">
-              <div className="font-semibold text-lg">{reviews[currentReview].reviewer}</div>
-              <div className="text-gray-600">{reviews[currentReview].designation}</div>
-            </div>
+            {reviews && reviews.length > 0 ? (
+              <>
+                <blockquote className="text-xl sm:text-2xl text-gray-700 mb-8 leading-relaxed">
+                  "{reviews[currentReview].text}"
+                </blockquote>
+                <div className="mb-4">
+                  <div className="font-semibold text-lg">{reviews[currentReview].reviewer}</div>
+                  <div className="text-gray-600">{reviews[currentReview].designation}</div>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-600 mb-8">No reviews yet.</div>
+            )}
             <div className="flex justify-center space-x-2">
               {reviews.map((_, index) => (
                 <button
@@ -392,9 +501,11 @@ export default function ProfilePage() {
       </section>
 
       {/* Portfolio Works */}
-      <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
+      <section className="bg-gray-100 py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">My Works</h2>
+          <h2 className="text-3xl sm:text-4xl  mb-4">Work Portfolio</h2>
+          <p className='max-w-2xl text-gray-400 mb-5'>Experienced Product Designer, previously a key contributor to web product design in collaboration with the founders at Post News.</p>
+          
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <button
@@ -412,7 +523,7 @@ export default function ProfilePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-hidden">
               {portfolio.slice(currentWork, currentWork + 3).map((work) => (
-                <div key={work.id} className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+                <div key={work.id} className=" rounded-xl overflow-hidden  hover:shadow-xl transition-shadow">
                   <img
                     src={work.image}
                     alt={work.title}
