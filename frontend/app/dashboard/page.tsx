@@ -19,8 +19,8 @@ import {
   ArrowDownLeft,
   Plus,
   Eye,
-  TrendingUp
-  ,Menu, X
+  TrendingUp,
+  Menu, X
 } from 'lucide-react';
 
 // Design tokens from Figma
@@ -88,6 +88,7 @@ import PaymentView from './views/payments';
 import MessageView from './views/messages';
 import MyProjectsView from './views/my-projects';
 import ProjectFlowView from './views/project-flow';
+import SwapInterface from './views/icpswap';
 import { StatCard, ProjectRow } from './views/components';
 
 const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ item, onClick }) => {
@@ -227,9 +228,11 @@ const FreelancerDashboard: React.FC = () => {
     { id: 'messages', label: 'Messages', icon: <Mail size={20} className="text-[#555555]" /> },
     { id: 'hackathons', label: 'Hackathons', icon: <Code size={20} className="text-[#525252]" /> },
     { id: 'payments', label: 'Payments', icon: <DollarSign size={20} className="text-[#525252]" /> },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> }
-  ];
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
+    // { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
+    { id: 'icp-swap', label: 'ICP Swap', icon: <ArrowDownLeft size={20} className="text-[#525252]" /> },
 
+  ];
   const handleNavClick = (navId: string) => {
     if (!sidebarItems.find(item => item.id === navId)?.disabled) {
       setActiveNav(navId);
@@ -272,6 +275,7 @@ const FreelancerDashboard: React.FC = () => {
       case 'hackathons': return <HackathonsView />;
       case 'payments': return <PaymentView />;
       case 'analytics': return <AnalyticsView />;
+      case 'icp-swap': return <SwapInterface />;
       default: return <DashboardView />;
     }
   };

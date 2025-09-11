@@ -190,8 +190,9 @@ export default function ServiceRegisterPage() {
         return (
           <div className="space-y-6">
             <div className="rounded-lg p-6">
-              <h3 className="text-lg mb-4 text-black pb-2">Service Packages</h3>
-              
+              <h3 className="text-lg font-bold text-black pb-2">Client Requirements</h3>
+              <p className='text-gray-600 mb-4'>Please provide detailed information about your project requirements.</p>
+
               {/* Mobile Tier Toggle */}
               <div className="md:hidden mb-6">
                 <div className="flex rounded-lg border overflow-hidden">
@@ -215,10 +216,10 @@ export default function ServiceRegisterPage() {
               <div className="hidden md:grid md:grid-cols-3 gap-6">
                 {tiers.map((tier) => (
                   <div key={tier} className="space-y-4">
-                    <h4 className="text-lg font-semibold text-center text-[#6F6F6F]">{tier}</h4>
-                    <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white">
+                    <h4 className="text-lg font-semibold text-center text-[#6F6F6F] py-4 px-2 bg-blue-100 shadow-lg rounded-2xl">{tier}</h4>
+                    <div >
                       <div className="space-y-4">
-                        <div>
+                        <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white">
                           <label className="text-[14px] font-medium text-[#6F6F6F] block">TITLE</label>
                           <input
                             type="text"
@@ -228,7 +229,7 @@ export default function ServiceRegisterPage() {
                             className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]"
                           />
                         </div>
-                        <div>
+                        <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white">
                           <label className="text-[14px] font-medium text-[#6F6F6F] block">DESCRIPTION</label>
                           <textarea
                             value={projectTiers[tier as keyof typeof projectTiers].description}
@@ -238,7 +239,7 @@ export default function ServiceRegisterPage() {
                             className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]"
                           />
                         </div>
-                        <div>
+                        <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white">
                           <label className="text-[14px] font-medium text-[#6F6F6F] block">PRICE ($)</label>
                           <input
                             type="number"
@@ -308,24 +309,25 @@ export default function ServiceRegisterPage() {
         return (
           <div className="space-y-6">
             <div className="rounded-lg p-6">
-              <h3 className="text-lg mb-4 text-black pb-2">Additional Charges</h3>
+              <h3 className="text-lg  text-black font-bold pb-2">Additional Charges</h3>
+              <p className='text-gray-600 mb-4'>Specify any additional charges that may apply to this project.</p>
               <div className="space-y-4">
                 {additionalCharges.map((charge, index) => (
-                  <div key={index} className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
+                  <div key={index} >
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-medium text-[#6F6F6F]">Additional Charge {index + 1}</h4>
+                        {/* <h4 className="text-sm font-medium text-[#6F6F6F]">Additional Charge {index + 1}</h4> */}
                         {additionalCharges.length > 1 && (
                           <button
                             onClick={() => removeAdditionalCharge(index)}
-                            className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                            className="px-3 py-1 border-2 text-3xl border-red-500 text-red-500 rounded-full text-sm hover:bg-red-600"
                           >
-                            Remove
+                          Remove
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                        <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
                           <label className="text-[14px] font-medium text-[#6F6F6F] block">SERVICE NAME</label>
                           <input
                             type="text"
@@ -335,7 +337,7 @@ export default function ServiceRegisterPage() {
                             className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]"
                           />
                         </div>
-                        <div>
+                        <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
                           <label className="text-[14px] font-medium text-[#6F6F6F] block">PRICE ($)</label>
                           <input
                             type="number"
@@ -426,7 +428,8 @@ export default function ServiceRegisterPage() {
         return (
           <div className="space-y-6">
             <div className="rounded-lg p-6">
-              <h3 className="text-lg mb-4 text-black pb-2">Client Requirements & Questions</h3>
+              <h3 className="text-xl  text-black font-bold ">Client Requirements & Questions</h3>
+              <p className="text-gray-600 mb-6">Please provide any specific requirements or questions you have for this project.</p>
               <div className="space-y-4">
                 {questions.map((question, index) => (
                   <div key={index} className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
