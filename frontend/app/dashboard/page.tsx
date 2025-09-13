@@ -89,6 +89,7 @@ import MessageView from './views/messages';
 import MyProjectsView from './views/my-projects';
 import ProjectFlowView from './views/project-flow';
 import SwapInterface from './views/icpswap';
+import Analytics from './views/analytics';
 import { StatCard, ProjectRow } from './views/components';
 
 const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ item, onClick }) => {
@@ -231,6 +232,7 @@ const FreelancerDashboard: React.FC = () => {
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
     // { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
     { id: 'icp-swap', label: 'ICP Swap', icon: <ArrowDownLeft size={20} className="text-[#525252]" /> },
+    
 
   ];
   const handleNavClick = (navId: string) => {
@@ -247,12 +249,7 @@ const FreelancerDashboard: React.FC = () => {
 
 
 
-  const AnalyticsView = () => (
-    <div>
-      <h1 className="text-[20px] font-semibold mb-3">Analytics</h1>
-      <p className="text-sm text-gray-600">Platform analytics.</p>
-    </div>
-  );
+
 
   const renderContent = (navId: string) => {
   if (activeProject) {
@@ -274,7 +271,7 @@ const FreelancerDashboard: React.FC = () => {
       case 'messages': return <MessageView />;
       case 'hackathons': return <HackathonsView />;
       case 'payments': return <PaymentView />;
-      case 'analytics': return <AnalyticsView />;
+      case 'analytics': return <Analytics />;
       case 'icp-swap': return <SwapInterface />;
       default: return <DashboardView />;
     }
