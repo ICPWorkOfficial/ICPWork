@@ -15,10 +15,53 @@ const tabs: TabData[] = [
   { id: 'projects', name: 'Projects', icon: FolderOpen, mobileIcon: FolderOpen },
   { id: 'pricing', name: 'Pricing', icon: DollarSign, mobileIcon: DollarSign },
   { id: 'portfolio', name: 'Portfolio', icon: Image, mobileIcon: Image },
-  { id: 'others', name: 'Others', icon: MoreHorizontal, mobileIcon: MoreHorizontal }
+  { id: 'others', name: 'Others', icon: MoreHorizontal, mobileIcon: MoreHorizontal },
+  { id: 'preview', name: 'Preview', icon: FileText, mobileIcon: FileText }
 ];
 
 const tiers = ['Basic', 'Advanced', 'Premium'];
+
+const previewImages = [
+  'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg',
+  'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg',
+  'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg',
+  'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg',
+  'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg',
+  'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg',
+];
+
+export function PreviewSection() {
+  const [currentImage, setCurrentImage] = useState(0);
+  const nextImage = () => setCurrentImage((prev) => (prev + 1) % previewImages.length);
+  const prevImage = () => setCurrentImage((prev) => (prev - 1 + previewImages.length) % previewImages.length);
+
+  return (
+    <section className="bg-gray-100 rounded-lg p-4">
+      <div className="relative">
+        <div className="overflow-hidden rounded-lg">
+          <img src={previewImages[currentImage]} alt="Preview" className="w-full h-auto" />
+        </div>
+        <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md" aria-label="Previous image">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md" aria-label="Next image">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+      <div className="mt-4 flex justify-center gap-2">
+        {previewImages.map((_, index) => (
+          <button key={index} onClick={() => setCurrentImage(index)} className={`w-16 h-12 rounded-md overflow-hidden border-2 ${currentImage === index ? 'border-[#29aae1]' : 'border-transparent'}`}>
+            <img src={previewImages[index]} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function ServiceRegisterPage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -51,6 +94,35 @@ export default function ServiceRegisterPage() {
       console.error('Failed to save service data:', error);
     }
   };
+
+  const publishService = async () => {
+    try {
+      const payload = {
+        overview: formData,
+        projectTiers,
+        additionalCharges,
+        portfolioImages: portfolioImages.map((f) => f.name),
+        questions,
+      }
+
+      const res = await fetch('/api/service/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (data?.success) {
+        // navigate to profile or show confirmation
+        alert('Service published — ID: ' + data.id)
+        // optional: redirect to profile page: window.location.href = `/profile/${data.id}`
+      } else {
+        alert('Failed to publish')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Failed to publish')
+    }
+  }
 
   const updateProjectTier = (tier: string, field: string, value: string) => {
     setProjectTiers(prev => ({
@@ -523,6 +595,174 @@ export default function ServiceRegisterPage() {
             </button>
           </div>
         );
+
+      case 'preview':
+        return (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="rounded-lg p-6 bg-white">
+              <div className="max-w-7xl mx-auto">
+                <div className="w-full bg-white border-b border-gray-200 py-4">
+                  <div className="max-w-7xl mx-auto px-4 flex items-center">
+                    <div className="flex items-center">
+                      <svg
+                        width="40"
+                        height="28"
+                        viewBox="0 0 40 28"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M29.9991 0L19.9991 16.9999L10 0H0L19.9991 27.9999L40 0H29.9991Z"
+                          fill="url(#paint0_linear)"
+                        />
+                        <defs>
+                          <linearGradient
+                            id="paint0_linear"
+                            x1="20"
+                            y1="0"
+                            x2="20"
+                            y2="28"
+                            gradientUnits="userSpaceOnUse"
+                          >
+                            <stop stopColor="#FF5757" />
+                            <stop offset="1" stopColor="#8C52FF" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <span className="ml-2 text-[#041d37] font-bold text-xl">ICPWork</span>
+                    </div>
+                    <div className="ml-auto">
+                      <button className="bg-[#041d37] text-white px-4 py-2 rounded-md font-medium">
+                        <div className="flex items-center">Publish</div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main preview content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                {/* Description Section (static sample description) */}
+                <section className="mt-0 bg-white rounded-xl p-6 border">
+                  <h2 className="text-xl font-medium text-[#33363a] mb-4">Description</h2>
+                         <PreviewSection />
+
+                  <p className="text-[#33363a] mb-4">
+                    {formData.serviceTitle || '3000+ Projects completed on upwork with client satisfaction/ui-ux/ux designer-ui web design-ux web design-website ui ux design -ui ux web designer-mobile ui ux designer-mobile app ui ux designer-user experience-figma -adobe xd-psd design-graphic designer.'}
+                  </p>
+                  <ul className="list-disc pl-5 space-y-2 text-[#33363a] mb-6">
+                    <li>Modern</li>
+                    <li>Eye-Catching & elegant designs</li>
+                    <li>Premium & responsive designs</li>
+                    <li>user friendly interface</li>
+                    <li>Custom Designs, Professional Fonts-Mockup in Figma, Adobe XD, PSD Designs</li>
+                    <li>Layered PSD or AI File-Editable Source file with all the Assets</li>
+                    <li>Guaranteed satisfaction & lifetime support</li>
+                  </ul>
+                  <p className="text-[#33363a] mb-4">
+                    I have expertise in designing User Interfaces for websites, web apps, and mobile devices. I've worked on designs for both iOS and Android.
+                  </p>
+                  <p className="text-[#33363a]">
+                    Designing creative Custom, Modern, and Responsive websites, Blog & Magazine, Education, Non-profit, Real Estate, Wedding.
+                  </p>
+
+                  {/* Pricing cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                    {tiers.map((t, idx) => {
+                      const pkg = projectTiers[t as keyof typeof projectTiers];
+                      const price = pkg?.price || (idx === 0 ? '49' : idx === 1 ? '79' : '129');
+                      const title = pkg?.title || t;
+                      const desc = pkg?.description || 'Better insights for growing businesses that want more customers.';
+                      return (
+                        <div key={t} className="border border-gray-200 rounded-lg p-6 bg-white">
+                          <h3 className="text-lg font-medium mb-2">{title}</h3>
+                          <div className="text-3xl font-bold text-[#33363a] mb-4">
+                            ${price}
+                            <span className="text-lg font-normal">/mo</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-6">{desc}</p>
+                          <div className="mb-6">
+                            <h4 className="font-medium mb-3">Features include:</h4>
+                            <ul className="space-y-2">
+                              <li className="flex items-start">
+                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span>50 Placeholder text commonly</span>
+                              </li>
+                              <li className="flex items-start">
+                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span>Consectetur adipiscing elit</span>
+                              </li>
+                              <li className="flex items-start">
+                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span>Excepteur sint occaecat cupidatat</span>
+                              </li>
+                              <li className="flex items-start">
+                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span>Officia deserunt mollit anim</span>
+                              </li>
+                            </ul>
+                          </div>
+                          <button className="w-full bg-[#041d37] text-white py-3 rounded-md font-medium">Buy Plan</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+
+  
+              </div>
+
+              {/* Right column */}
+              <aside className="space-y-6">
+                <div className="bg-white rounded-xl p-4 border">
+                  <h4 className="font-medium">Overview</h4>
+                  <p className="text-sm text-gray-700">Title: {formData.serviceTitle}</p>
+                  <p className="text-sm text-gray-700">Category: {formData.mainCategory} / {formData.subCategory}</p>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border">
+                  <h4 className="font-medium">Additional Charges</h4>
+                  {additionalCharges.length > 0 ? (
+                    additionalCharges.map((c, i) => (
+                      <div key={i} className="flex justify-between py-2">
+                        <div>{c.name}</div>
+                        <div>${c.price}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-500">No additional charges</div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border">
+                  <h4 className="font-medium">Questions</h4>
+                  {questions.map((q, i) => (
+                    <div key={i} className="py-2">
+                      <div className="font-medium">Q{i + 1}: {q.question}</div>
+                      <div className="text-sm text-gray-600">Type: {q.type}</div>
+                    </div>
+                  ))}
+                </div>
+              </aside>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setActiveTab('others')} className="w-40 py-3 bg-gray-200 text-gray-700 font-thin rounded-full">Back</button>
+              <button onClick={publishService} className="w-40 py-3 bg-black text-white font-thin rounded-full">Publish</button>
+            </div>
+          </div>
+        )
 
       default:
         return null;
