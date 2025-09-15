@@ -154,9 +154,10 @@ persistent actor Main {
 
     // Register new user (legacy function for backward compatibility)
     public func registerUser(userType: Text, email: Text, password: Text) : async Result.Result<(), Error> {
-        switch (signup(email, password, userType)) {
-            case (#ok(_)) { #ok(()) };
-            case (#err(error)) { #err(error) };
+    let signupResult = await signup(email, password, userType);
+    switch (signupResult) {
+        case (#ok(_)) { #ok(()) };
+        case (#err(error)) { #err(error) };
         }
     };
 
@@ -194,21 +195,21 @@ persistent actor Main {
     };
 
     // Verify OTP (placeholder - implement based on your OTP system)
-    public func verifyOTP(userId: Text, otp: Text) : async Result.Result<Text, Error> {
+    public func verifyOTP(_userId: Text, _otp: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP verification logic
         #ok("OTP verified successfully")
     };
 
     // Resend OTP (placeholder - implement based on your OTP system)
-    public func resendOTP(userId: Text) : async Result.Result<Text, Error> {
+    public func resendOTP(_userId: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP resending logic
         #ok("OTP sent successfully")
     };
 
     // Change password (placeholder - implement based on your OTP system)
-    public func changePassword(userId: Text, otp: Text, newPassword: Text) : async Result.Result<Text, Error> {
+    public func changePassword(_userId: Text, _otp: Text, _newPassword: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual password change with OTP verification
         #ok("Password changed successfully")
