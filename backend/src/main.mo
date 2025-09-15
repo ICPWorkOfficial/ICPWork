@@ -51,6 +51,89 @@ persistent actor Main {
         #WeakPassword;
     };
 
+    // Message types
+    public type Message = {
+        id: Text;
+        from: Text;
+        to: Text;
+        content: Text;
+        timestamp: Int;
+        serverTimestamp: Int;
+        messageType: MessageType;
+        isRead: Bool;
+        isDelivered: Bool;
+    };
+
+    public type MessageType = {
+        #text;
+        #file;
+        #image;
+        #system;
+    };
+
+    public type ConversationSummary = {
+        participantA: Text;
+        participantB: Text;
+        lastMessage: ?Message;
+        unreadCount: Nat;
+        lastActivity: Int;
+    };
+
+    // Onboarding data types
+    public type ProfileMethod = {
+        #resume;
+        #manual;
+    };
+
+    public type PersonalInfo = {
+        firstName: ?Text;
+        lastName: ?Text;
+    };
+
+    public type AddressData = {
+        country: Text;
+        state: Text;
+        city: Text;
+        zipCode: Text;
+        streetAddress: Text;
+        isPublic: Bool;
+    };
+
+    public type ProfileData = {
+        profilePhoto: ?Text;
+        phoneNumber: ?Text;
+        phoneVerified: Bool;
+    };
+
+    public type FinalData = {
+        resume: ?Text;
+        linkedinProfile: ?Text;
+    };
+
+    public type CompanyData = {
+        companyName: ?Text;
+        companyWebsite: ?Text;
+        industry: ?Text;
+        businessType: ?Text;
+        employeeCount: ?Text;
+    };
+
+    public type OnboardingRecord = {
+        email: Text;
+        userType: Text;
+        profileMethod: ?ProfileMethod;
+        personalInfo: ?PersonalInfo;
+        skills: [Text];
+        address: ?AddressData;
+        profile: ?ProfileData;
+        final: ?FinalData;
+        companyData: ?CompanyData;
+        isComplete: Bool;
+        createdAt: Int;
+        updatedAt: Int;
+        completedAt: ?Int;
+    };
+
     // Storage canister actors - REPLACE WITH ACTUAL CANISTER IDs
     transient let freelancerStorage = actor("rdmx6-jaaaa-aaaaa-aaadq-cai") : actor {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
@@ -66,6 +149,153 @@ persistent actor Main {
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
         deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
+    };
+
+    transient let messageStorage = actor("rrkah4-fqaaa-aaaah-qcu7q-cai") : actor {
+        storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+    };
+
+    transient let onboardingStorage = actor("onboarding-canister-id") : actor {
+        createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+    };
+
+    // Bounties data types
+    public type BountyStatus = {
+        #Open;
+        #Closed;
+        #InProgress;
+        #Completed;
+    };
+
+    public type BountyMode = {
+        #Virtual;
+        #InPerson;
+        #Hybrid;
+    };
+
+    public type BountyCategory = {
+        #SmartContracts;
+        #Frontend;
+        #Backend;
+        #Documentation;
+        #UserTesting;
+        #Design;
+        #Security;
+        #Other : Text;
+    };
+
+    public type ParticipantStatus = {
+        #Registered;
+        #Submitted;
+        #Winner;
+        #Disqualified;
+    };
+
+    public type Participant = {
+        userId: Text;
+        registeredAt: Int;
+        status: ParticipantStatus;
+        submissionUrl: ?Text;
+        submissionDescription: ?Text;
+        submittedAt: ?Int;
+    };
+
+    public type Bounty = {
+        id: Text;
+        title: Text;
+        description: Text;
+        organizer: Text;
+        organizerId: Text;
+        mode: BountyMode;
+        prizePool: Text;
+        timeline: Text;
+        registrationDeadline: ?Int;
+        submissionDeadline: ?Int;
+        tags: [Text];
+        category: BountyCategory;
+        status: BountyStatus;
+        featured: Bool;
+        requirements: [Text];
+        deliverables: [Text];
+        judgesCriteria: [Text];
+        maxParticipants: ?Nat;
+        createdAt: Int;
+        updatedAt: Int;
+        participants: [Participant];
+        winnerIds: [Text];
+    };
+
+    public type BountyInput = {
+        title: Text;
+        description: Text;
+        organizer: Text;
+        mode: BountyMode;
+        prizePool: Text;
+        timeline: Text;
+        registrationDeadline: ?Int;
+        submissionDeadline: ?Int;
+        tags: [Text];
+        category: BountyCategory;
+        featured: Bool;
+        requirements: [Text];
+        deliverables: [Text];
+        judgesCriteria: [Text];
+        maxParticipants: ?Nat;
+    };
+
+    public type BountyUpdate = {
+        title: ?Text;
+        description: ?Text;
+        prizePool: ?Text;
+        timeline: ?Text;
+        registrationDeadline: ?Int;
+        submissionDeadline: ?Int;
+        tags: ?[Text];
+        status: ?BountyStatus;
+        featured: ?Bool;
+        requirements: ?[Text];
+        deliverables: ?[Text];
+        judgesCriteria: ?[Text];
+        maxParticipants: ?Nat;
+    };
+
+    public type BountyStats = {
+        totalBounties: Nat;
+        openBounties: Nat;
+        completedBounties: Nat;
+        totalPrizePool: Text;
+        totalParticipants: Nat;
+    };
+
+    transient let bountiesStorage = actor("bounties-canister-id") : actor {
+        createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
+        updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
+        registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
+        submitToBounty: (Text, Text, Text, Text) -> async Result.Result<(), Text>;
+        getBounty: (Text) -> async ?Bounty;
+        getAllBounties: () -> async [Bounty];
+        getBountiesByStatus: (BountyStatus) -> async [Bounty];
+        getBountiesByCategory: (BountyCategory) -> async [Bounty];
+        getFeaturedBounties: () -> async [Bounty];
+        getBountiesByOrganizer: (Text) -> async [Bounty];
+        getUserBounties: (Text) -> async [Bounty];
+        getBountyStats: () -> async BountyStats;
+        deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
     };
 
     // Initialize modules
@@ -420,5 +650,558 @@ persistent actor Main {
     // UTILITY FUNCTIONS
     public func getActiveSessionCount() : async Nat {
         sessionManager.getActiveSessionCount()
+    };
+
+    // MESSAGE FUNCTIONS
+
+    // Send a message
+    public func sendMessage(sessionId: Text, to: Text, content: Text, messageType: MessageType, clientTimestamp: Int) : async Result.Result<Message, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await messageStorage.storeMessage(session.email, to, content, clientTimestamp, messageType);
+                    switch (result) {
+                        case (#ok(message)) { #ok(message) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#InvalidMessage) { #err(#StorageError("Invalid message")) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to send message")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get conversation messages
+    public func getConversationMessages(sessionId: Text, otherUser: Text, limit: ?Nat, offset: ?Nat) : async Result.Result<[Message], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await messageStorage.getConversationMessages(session.email, otherUser, limit, offset);
+                    switch (result) {
+                        case (#ok(messages)) { #ok(messages) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get messages")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Mark message as read
+    public func markMessageAsRead(sessionId: Text, messageId: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await messageStorage.markMessageAsRead(messageId, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#NotFound) { #err(#StorageError("Message not found")) };
+                                case (#Unauthorized) { #err(#StorageError("Unauthorized")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to mark message as read")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get user conversations
+    public func getUserConversations(sessionId: Text) : async Result.Result<[ConversationSummary], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await messageStorage.getUserConversations(session.email);
+                    switch (result) {
+                        case (#ok(conversations)) { #ok(conversations) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get conversations")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get unread message count
+    public func getUnreadMessageCount(sessionId: Text) : async Result.Result<Nat, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await messageStorage.getUnreadMessageCount(session.email);
+                    switch (result) {
+                        case (#ok(count)) { #ok(count) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get unread count")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Delete a message
+    public func deleteMessage(sessionId: Text, messageId: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await messageStorage.deleteMessage(messageId, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#NotFound) { #err(#StorageError("Message not found")) };
+                                case (#Unauthorized) { #err(#StorageError("Unauthorized")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to delete message")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
+                }
+            };
+        }
+    };
+
+    // ===== ONBOARDING FUNCTIONS =====
+
+    // Create onboarding record
+    public func createOnboardingRecord(sessionId: Text, userType: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await onboardingStorage.createOnboardingRecord(session.email, userType);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#InvalidUserType) { #err(#InvalidUserType) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to create onboarding record")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Update onboarding step
+    public func updateOnboardingStep(
+        sessionId: Text,
+        profileMethod: ?ProfileMethod,
+        personalInfo: ?PersonalInfo,
+        skills: ?[Text],
+        address: ?AddressData,
+        profile: ?ProfileData,
+        final: ?FinalData,
+        companyData: ?CompanyData
+    ) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await onboardingStorage.updateOnboardingStep(
+                        session.email, 
+                        profileMethod, 
+                        personalInfo, 
+                        skills, 
+                        address, 
+                        profile, 
+                        final, 
+                        companyData
+                    );
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#NotFound) { #err(#StorageError("Onboarding record not found")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#InvalidData) { #err(#StorageError("Invalid onboarding data")) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to update onboarding step")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Complete onboarding
+    public func completeOnboarding(sessionId: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await onboardingStorage.completeOnboarding(session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#NotFound) { #err(#StorageError("Onboarding record not found")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to complete onboarding")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get onboarding record
+    public func getOnboardingRecord(sessionId: Text) : async Result.Result<OnboardingRecord, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await onboardingStorage.getOnboardingRecord(session.email);
+                    switch (result) {
+                        case (#ok(record)) { #ok(record) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#NotFound) { #err(#StorageError("Onboarding record not found")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding record")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get all onboarding records (admin function)
+    public func getAllOnboardingRecords(sessionId: Text) : async Result.Result<[(Text, OnboardingRecord)], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await onboardingStorage.getAllOnboardingRecords();
+                    switch (result) {
+                        case (#ok(records)) { #ok(records) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get all onboarding records")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get onboarding records by status
+    public func getOnboardingRecordsByStatus(sessionId: Text, isComplete: Bool) : async Result.Result<[(Text, OnboardingRecord)], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await onboardingStorage.getOnboardingRecordsByStatus(isComplete);
+                    switch (result) {
+                        case (#ok(records)) { #ok(records) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding records by status")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get onboarding records by user type
+    public func getOnboardingRecordsByUserType(sessionId: Text, userType: Text) : async Result.Result<[(Text, OnboardingRecord)], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await onboardingStorage.getOnboardingRecordsByUserType(userType);
+                    switch (result) {
+                        case (#ok(records)) { #ok(records) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#InvalidUserType) { #err(#InvalidUserType) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding records by user type")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get onboarding statistics
+    public func getOnboardingStats(sessionId: Text) : async Result.Result<{
+        totalRecords: Nat;
+        completedRecords: Nat;
+        pendingRecords: Nat;
+        freelancerRecords: Nat;
+        clientRecords: Nat;
+    }, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await onboardingStorage.getOnboardingStats();
+                    switch (result) {
+                        case (#ok(stats)) { #ok(stats) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding statistics")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
+                }
+            };
+        }
+    };
+
+    // BOUNTIES FUNCTIONS
+
+    // Create a new bounty
+    public func createBounty(sessionId: Text, input: BountyInput) : async Result.Result<Bounty, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await bountiesStorage.createBounty(session.email, input);
+                    switch (result) {
+                        case (#ok(bounty)) { #ok(bounty) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Update an existing bounty
+    public func updateBounty(sessionId: Text, bountyId: Text, update: BountyUpdate) : async Result.Result<Bounty, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await bountiesStorage.updateBounty(bountyId, session.email, update);
+                    switch (result) {
+                        case (#ok(bounty)) { #ok(bounty) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Register for a bounty
+    public func registerForBounty(sessionId: Text, bountyId: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await bountiesStorage.registerForBounty(bountyId, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Submit to a bounty
+    public func submitToBounty(sessionId: Text, bountyId: Text, submissionUrl: Text, description: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await bountiesStorage.submitToBounty(bountyId, session.email, submissionUrl, description);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get bounty by ID
+    public query func getBounty(bountyId: Text) : async ?Bounty {
+        try {
+            await bountiesStorage.getBounty(bountyId)
+        } catch (_error) {
+            null
+        }
+    };
+
+    // Get all bounties
+    public query func getAllBounties() : async [Bounty] {
+        try {
+            await bountiesStorage.getAllBounties()
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get bounties by status
+    public query func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
+        try {
+            await bountiesStorage.getBountiesByStatus(status)
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get bounties by category
+    public query func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
+        try {
+            await bountiesStorage.getBountiesByCategory(category)
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get featured bounties
+    public query func getFeaturedBounties() : async [Bounty] {
+        try {
+            await bountiesStorage.getFeaturedBounties()
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get bounties by organizer
+    public func getBountiesByOrganizer(sessionId: Text) : async Result.Result<[Bounty], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let bounties = await bountiesStorage.getBountiesByOrganizer(session.email);
+                    #ok(bounties)
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get user's registered bounties
+    public func getUserBounties(sessionId: Text) : async Result.Result<[Bounty], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let bounties = await bountiesStorage.getUserBounties(session.email);
+                    #ok(bounties)
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get bounty statistics
+    public query func getBountyStats() : async BountyStats {
+        try {
+            await bountiesStorage.getBountyStats()
+        } catch (_error) {
+            {
+                totalBounties = 0;
+                openBounties = 0;
+                completedBounties = 0;
+                totalPrizePool = "$0";
+                totalParticipants = 0;
+            }
+        }
+    };
+
+    // Delete bounty (organizer only)
+    public func deleteBounty(sessionId: Text, bountyId: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await bountiesStorage.deleteBounty(bountyId, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
     };
 }
