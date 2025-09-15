@@ -1,331 +1,370 @@
-import Principal "mo:base/Principal";
 import Time "mo:base/Time";
-import HashMap "mo:base/HashMap";
+import Map "mo:base/HashMap";
 import Result "mo:base/Result";
+import Principal "mo:base/Principal";
 import Array "mo:base/Array";
 import Iter "mo:base/Iter";
-import Int "mo:base/Int";
+import Nat32 "mo:base/Nat32";
 
-persistent actor EscrowCanister {
+persistent actor EscrowBank {
     
     // Types
-    public type EscrowId = Nat;
-    public type ICP = Nat64; // ICP amount in e8s (smallest unit)
+    type EscrowId = Nat;
+    type Balance = Nat;
+    type Timestamp = Int;
     
     public type EscrowStatus = {
-        #Active;
+        #Pending;
         #Completed;
+        #Disputed;
         #Cancelled;
-        #Expired;
+        #Refunded;
     };
     
-    public type EscrowCondition = {
-        #TimeDelay: Int; // Unix timestamp when funds can be released
-        #ManualApproval: Principal; // Principal who can approve release
-        #MultiSig: [Principal]; // Multiple principals required for approval
-        #External: Text; // External condition identifier (for custom logic)
-    };
-    
-    public type EscrowDetails = {
+    public type EscrowAgreement = {
         id: EscrowId;
-        depositor: Principal;
-        beneficiary: Principal;
-        amount: ICP;
-        condition: EscrowCondition;
+        buyer: Principal;
+        seller: Principal;
+        arbitrator: ?Principal;
+        amount: Balance;
+        description: Text;
         status: EscrowStatus;
-        created_at: Int;
-        expires_at: ?Int;
-        approvals: [Principal]; // For multi-sig conditions
+        createdAt: Timestamp;
+        completedAt: ?Timestamp;
+        buyerApproved: Bool;
+        sellerApproved: Bool;
     };
     
     public type CreateEscrowArgs = {
-        beneficiary: Principal;
-        amount: ICP;
-        condition: EscrowCondition;
-        expires_at: ?Int;
+        seller: Principal;
+        arbitrator: ?Principal;
+        amount: Balance;
+        description: Text;
     };
     
     // State
-    private var nextEscrowId: EscrowId = 0;
-    private var escrowEntries: [(EscrowId, EscrowDetails)] = [];
-    private transient var escrows = HashMap.fromIter<EscrowId, EscrowDetails>(
-        escrowEntries.vals(), 
-        10, 
-        func(a: EscrowId, b: EscrowId): Bool { a == b }, 
-        func(a: EscrowId): Nat32 { Int.hash(a) }
-    );
+    private var nextEscrowId: EscrowId = 1;
+    private transient var escrows = Map.HashMap<EscrowId, EscrowAgreement>(10, func(a: EscrowId, b: EscrowId) : Bool { a == b }, func(id: EscrowId) : Nat32 { Nat32.fromNat(id) });
+    private transient var balances = Map.HashMap<Principal, Balance>(10, Principal.equal, Principal.hash);
     
-    // Canister balance tracking
-    private var totalHeld: ICP = 0;
-    
-    // Upgrade hooks
-    system func preupgrade() {
-        escrowEntries := Iter.toArray(escrows.entries());
-    };
-    
-    system func postupgrade() {
-        escrowEntries := [];
-    };
-    
-    // Helper functions
-    private func generateEscrowId(): EscrowId {
-        let id = nextEscrowId;
-        nextEscrowId += 1;
-        id
-    };
-    
-    private func getCurrentTime(): Int {
-        Time.now()
-    };
-    
-    // Public methods
-    
-    // Create a new escrow
-    public shared(msg) func createEscrow(args: CreateEscrowArgs): async Result.Result<EscrowId, Text> {
-        let caller = msg.caller;
-        
-        // Validate inputs
-        if (Principal.isAnonymous(caller)) {
-            return #err("Anonymous principals cannot create escrows");
+    // Helper function to get caller's balance
+    private func getBalance(principal: Principal) : Balance {
+        switch (balances.get(principal)) {
+            case null 0;
+            case (?balance) balance;
         };
+    };
+    
+    // Helper function to update balance
+    private func updateBalance(principal: Principal, newBalance: Balance) {
+        balances.put(principal, newBalance);
+    };
+    
+    // Deposit funds to user's account
+    public shared(msg) func deposit(amount: Balance) : async Result.Result<Balance, Text> {
+        let caller = msg.caller;
+        if (amount == 0) {
+            return #err("Amount must be greater than 0");
+        };
+        
+        let currentBalance = getBalance(caller);
+        let newBalance = currentBalance + amount;
+        updateBalance(caller, newBalance);
+        
+        #ok(newBalance)
+    };
+    
+    // Withdraw funds from user's account
+    public shared(msg) func withdraw(amount: Balance) : async Result.Result<Balance, Text> {
+        let caller = msg.caller;
+        let currentBalance = getBalance(caller);
+        
+        if (amount > currentBalance) {
+            return #err("Insufficient balance");
+        };
+        
+        // Safe subtraction since we've verified currentBalance >= amount
+        let newBalance = currentBalance - amount;
+        updateBalance(caller, newBalance);
+        
+        #ok(newBalance)
+    };
+    
+    // Get user's balance
+    public shared(msg) func getMyBalance() : async Balance {
+        getBalance(msg.caller)
+    };
+    
+    // Create new escrow agreement
+    public shared(msg) func createEscrow(args: CreateEscrowArgs) : async Result.Result<EscrowId, Text> {
+        let caller = msg.caller;
+        let currentBalance = getBalance(caller);
         
         if (args.amount == 0) {
             return #err("Escrow amount must be greater than 0");
         };
         
-        if (caller == args.beneficiary) {
-            return #err("Depositor and beneficiary cannot be the same");
+        if (currentBalance < args.amount) {
+            return #err("Insufficient balance to create escrow");
         };
         
-        // Check expiration time if provided
-        switch (args.expires_at) {
-            case (?expiry) {
-                if (expiry <= getCurrentTime()) {
-                    return #err("Expiration time must be in the future");
-                };
-            };
-            case null {};
+        if (caller == args.seller) {
+            return #err("Buyer and seller cannot be the same");
         };
         
-        // TODO: In a real implementation, you would need to:
-        // 1. Implement ICP transfer from caller to this canister
-        // 2. Verify the transfer was successful before creating the escrow
-        // For now, we'll assume the transfer logic is handled elsewhere
+        // Deduct amount from buyer's balance
+        updateBalance(caller, currentBalance - args.amount);
         
-        let escrowId = generateEscrowId();
-        let escrow: EscrowDetails = {
+        let escrowId = nextEscrowId;
+        nextEscrowId += 1;
+        
+        let newEscrow: EscrowAgreement = {
             id = escrowId;
-            depositor = caller;
-            beneficiary = args.beneficiary;
+            buyer = caller;
+            seller = args.seller;
+            arbitrator = args.arbitrator;
             amount = args.amount;
-            condition = args.condition;
-            status = #Active;
-            created_at = getCurrentTime();
-            expires_at = args.expires_at;
-            approvals = [];
+            description = args.description;
+            status = #Pending;
+            createdAt = Time.now();
+            completedAt = null;
+            buyerApproved = false;
+            sellerApproved = false;
         };
         
-        escrows.put(escrowId, escrow);
-        totalHeld += args.amount;
-        
+        escrows.put(escrowId, newEscrow);
         #ok(escrowId)
     };
     
+    // Buyer approves the transaction
+    public shared(msg) func buyerApprove(escrowId: EscrowId) : async Result.Result<Text, Text> {
+        let caller = msg.caller;
+        
+        switch (escrows.get(escrowId)) {
+            case null { #err("Escrow not found") };
+            case (?escrow) {
+                if (escrow.buyer != caller) {
+                    return #err("Only buyer can approve");
+                };
+                
+                if (escrow.status != #Pending) {
+                    return #err("Escrow is not in pending status");
+                };
+                
+                let updatedEscrow = {
+                    escrow with
+                    buyerApproved = true;
+                };
+                
+                // If both parties approved, complete the transaction
+                if (escrow.sellerApproved) {
+                    let completedEscrow = {
+                        updatedEscrow with
+                        status = #Completed;
+                        completedAt = ?Time.now();
+                    };
+                    escrows.put(escrowId, completedEscrow);
+                    
+                    // Transfer funds to seller
+                    let sellerBalance = getBalance(escrow.seller);
+                    updateBalance(escrow.seller, sellerBalance + escrow.amount);
+                    
+                    #ok("Escrow completed successfully")
+                } else {
+                    escrows.put(escrowId, updatedEscrow);
+                    #ok("Buyer approval recorded, waiting for seller approval")
+                }
+            };
+        };
+    };
+    
+    // Seller approves the transaction
+    public shared(msg) func sellerApprove(escrowId: EscrowId) : async Result.Result<Text, Text> {
+        let caller = msg.caller;
+        
+        switch (escrows.get(escrowId)) {
+            case null { #err("Escrow not found") };
+            case (?escrow) {
+                if (escrow.seller != caller) {
+                    return #err("Only seller can approve");
+                };
+                
+                if (escrow.status != #Pending) {
+                    return #err("Escrow is not in pending status");
+                };
+                
+                let updatedEscrow = {
+                    escrow with
+                    sellerApproved = true;
+                };
+                
+                // If both parties approved, complete the transaction
+                if (escrow.buyerApproved) {
+                    let completedEscrow = {
+                        updatedEscrow with
+                        status = #Completed;
+                        completedAt = ?Time.now();
+                    };
+                    escrows.put(escrowId, completedEscrow);
+                    
+                    // Transfer funds to seller
+                    let sellerBalance = getBalance(escrow.seller);
+                    updateBalance(escrow.seller, sellerBalance + escrow.amount);
+                    
+                    #ok("Escrow completed successfully")
+                } else {
+                    escrows.put(escrowId, updatedEscrow);
+                    #ok("Seller approval recorded, waiting for buyer approval")
+                }
+            };
+        };
+    };
+    
+    // Cancel escrow (only buyer can cancel, refunds the amount)
+    public shared(msg) func cancelEscrow(escrowId: EscrowId) : async Result.Result<Text, Text> {
+        let caller = msg.caller;
+        
+        switch (escrows.get(escrowId)) {
+            case null { #err("Escrow not found") };
+            case (?escrow) {
+                if (escrow.buyer != caller) {
+                    return #err("Only buyer can cancel escrow");
+                };
+                
+                if (escrow.status != #Pending) {
+                    return #err("Can only cancel pending escrows");
+                };
+                
+                // Refund amount to buyer
+                let buyerBalance = getBalance(escrow.buyer);
+                updateBalance(escrow.buyer, buyerBalance + escrow.amount);
+                
+                let cancelledEscrow = {
+                    escrow with
+                    status = #Cancelled;
+                    completedAt = ?Time.now();
+                };
+                
+                escrows.put(escrowId, cancelledEscrow);
+                #ok("Escrow cancelled and refunded")
+            };
+        };
+    };
+    
+    // Raise dispute (can be called by buyer or seller)
+    public shared(msg) func raiseDispute(escrowId: EscrowId) : async Result.Result<Text, Text> {
+        let caller = msg.caller;
+        
+        switch (escrows.get(escrowId)) {
+            case null { #err("Escrow not found") };
+            case (?escrow) {
+                if (escrow.buyer != caller and escrow.seller != caller) {
+                    return #err("Only buyer or seller can raise dispute");
+                };
+                
+                if (escrow.status != #Pending) {
+                    return #err("Can only dispute pending escrows");
+                };
+                
+                switch (escrow.arbitrator) {
+                    case null { #err("No arbitrator assigned to this escrow") };
+                    case (?_) {
+                        let disputedEscrow = {
+                            escrow with
+                            status = #Disputed;
+                        };
+                        
+                        escrows.put(escrowId, disputedEscrow);
+                        #ok("Dispute raised successfully")
+                    };
+                };
+            };
+        };
+    };
+    
+    // Resolve dispute (only arbitrator can call this)
+    public shared(msg) func resolveDispute(escrowId: EscrowId, favorBuyer: Bool) : async Result.Result<Text, Text> {
+        let caller = msg.caller;
+        
+        switch (escrows.get(escrowId)) {
+            case null { #err("Escrow not found") };
+            case (?escrow) {
+                switch (escrow.arbitrator) {
+                    case null { #err("No arbitrator assigned") };
+                    case (?arbitrator) {
+                        if (arbitrator != caller) {
+                            return #err("Only assigned arbitrator can resolve dispute");
+                        };
+                        
+                        if (escrow.status != #Disputed) {
+                            return #err("Escrow is not in disputed status");
+                        };
+                        
+                        if (favorBuyer) {
+                            // Refund to buyer
+                            let buyerBalance = getBalance(escrow.buyer);
+                            updateBalance(escrow.buyer, buyerBalance + escrow.amount);
+                            
+                            let resolvedEscrow = {
+                                escrow with
+                                status = #Refunded;
+                                completedAt = ?Time.now();
+                            };
+                            escrows.put(escrowId, resolvedEscrow);
+                            #ok("Dispute resolved in favor of buyer, funds refunded")
+                        } else {
+                            // Pay to seller
+                            let sellerBalance = getBalance(escrow.seller);
+                            updateBalance(escrow.seller, sellerBalance + escrow.amount);
+                            
+                            let resolvedEscrow = {
+                                escrow with
+                                status = #Completed;
+                                completedAt = ?Time.now();
+                            };
+                            escrows.put(escrowId, resolvedEscrow);
+                            #ok("Dispute resolved in favor of seller, funds transferred")
+                        }
+                    };
+                };
+            };
+        };
+    };
+    
     // Get escrow details
-    public query func getEscrow(escrowId: EscrowId): async ?EscrowDetails {
+    public query func getEscrow(escrowId: EscrowId) : async ?EscrowAgreement {
         escrows.get(escrowId)
     };
     
-    // Get all escrows for a principal
-    public query func getEscrowsForPrincipal(principal: Principal): async [EscrowDetails] {
-        let result = Array.filter<EscrowDetails>(
-            Iter.toArray(escrows.vals()),
-            func(escrow: EscrowDetails): Bool {
-                escrow.depositor == principal or escrow.beneficiary == principal
-            }
-        );
-        result
-    };
-    
-    // Approve escrow release (for manual approval or multi-sig)
-    public shared(msg) func approveRelease(escrowId: EscrowId): async Result.Result<(), Text> {
+    // Get all escrows for a user (as buyer or seller)
+    public shared(msg) func getMyEscrows() : async [EscrowAgreement] {
         let caller = msg.caller;
+        let allEscrows = Iter.toArray(escrows.vals());
         
-        switch (escrows.get(escrowId)) {
-            case null { #err("Escrow not found") };
-            case (?escrow) {
-                if (escrow.status != #Active) {
-                    return #err("Escrow is not active");
-                };
-                
-                // Check if escrow has expired
-                switch (escrow.expires_at) {
-                    case (?expiry) {
-                        if (getCurrentTime() > expiry) {
-                            // Update status to expired
-                            let updatedEscrow = {
-                                escrow with status = #Expired
-                            };
-                            escrows.put(escrowId, updatedEscrow);
-                            return #err("Escrow has expired");
-                        };
-                    };
-                    case null {};
-                };
-                
-                switch (escrow.condition) {
-                    case (#ManualApproval(approver)) {
-                        if (caller != approver) {
-                            return #err("Only the designated approver can approve this escrow");
-                        };
-                        // Proceed to release funds
-                        return await releaseFunds(escrowId);
-                    };
-                    case (#MultiSig(approvers)) {
-                        // Check if caller is an authorized approver
-                        let isAuthorized = Array.find<Principal>(approvers, func(p) { p == caller });
-                        switch (isAuthorized) {
-                            case null { return #err("Caller is not authorized to approve this escrow") };
-                            case (?_) {
-                                // Add approval if not already present
-                                let hasApproved = Array.find<Principal>(escrow.approvals, func(p) { p == caller });
-                                switch (hasApproved) {
-                                    case (?_) { return #err("Principal has already approved") };
-                                    case null {
-                                        let newApprovals = Array.append(escrow.approvals, [caller]);
-                                        let updatedEscrow = {
-                                            escrow with approvals = newApprovals
-                                        };
-                                        escrows.put(escrowId, updatedEscrow);
-                                        
-                                        // Check if we have enough approvals
-                                        if (newApprovals.size() >= approvers.size()) {
-                                            return await releaseFunds(escrowId);
-                                        };
-                                        
-                                        #ok(())
-                                    };
-                                };
-                            };
-                        };
-                    };
-                    case (#TimeDelay(_)) { #err("Time-delayed escrows don't require manual approval") };
-                    case (#External(_)) { #err("External condition escrows require custom approval logic") };
-                };
-            };
-        };
+        Array.filter<EscrowAgreement>(allEscrows, func(escrow: EscrowAgreement) : Bool {
+            escrow.buyer == caller or escrow.seller == caller
+        })
     };
     
-    // Release funds based on time delay
-    public func releaseTimedEscrow(escrowId: EscrowId): async Result.Result<(), Text> {
-        switch (escrows.get(escrowId)) {
-            case null { #err("Escrow not found") };
-            case (?escrow) {
-                if (escrow.status != #Active) {
-                    return #err("Escrow is not active");
-                };
-                
-                switch (escrow.condition) {
-                    case (#TimeDelay(releaseTime)) {
-                        if (getCurrentTime() >= releaseTime) {
-                            return await releaseFunds(escrowId);
-                        } else {
-                            return #err("Release time has not been reached yet");
-                        };
-                    };
-                    case (_) { #err("This escrow is not time-based") };
-                };
-            };
-        };
-    };
-    
-    // Cancel escrow (only depositor can cancel active escrows)
-    public shared(msg) func cancelEscrow(escrowId: EscrowId): async Result.Result<(), Text> {
+    // Get escrows where user is arbitrator
+    public shared(msg) func getArbitrationEscrows() : async [EscrowAgreement] {
         let caller = msg.caller;
+        let allEscrows = Iter.toArray(escrows.vals());
         
-        switch (escrows.get(escrowId)) {
-            case null { #err("Escrow not found") };
-            case (?escrow) {
-                if (escrow.depositor != caller) {
-                    return #err("Only the depositor can cancel the escrow");
-                };
-                
-                if (escrow.status != #Active) {
-                    return #err("Escrow is not active");
-                };
-                
-                // TODO: Implement ICP transfer back to depositor
-                // For now, we'll just update the status
-                
-                let updatedEscrow = {
-                    escrow with status = #Cancelled
-                };
-                escrows.put(escrowId, updatedEscrow);
-                totalHeld -= escrow.amount;
-                
-                #ok(())
-            };
-        };
-    };
-    
-    // Private function to release funds
-    private func releaseFunds(escrowId: EscrowId): async Result.Result<(), Text> {
-        switch (escrows.get(escrowId)) {
-            case null { #err("Escrow not found") };
-            case (?escrow) {
-                // TODO: Implement ICP transfer to beneficiary
-                // This would involve calling the ICP ledger canister
-                // For now, we'll simulate the transfer
-                
-                let updatedEscrow = {
-                    escrow with status = #Completed
-                };
-                escrows.put(escrowId, updatedEscrow);
-                totalHeld -= escrow.amount;
-                
-                #ok(())
-            };
-        };
-    };
-    
-    // Query functions
-    public query func getTotalHeld(): async ICP {
-        totalHeld
-    };
-    
-    public query func getActiveEscrows(): async [EscrowDetails] {
-        Array.filter<EscrowDetails>(
-            Iter.toArray(escrows.vals()),
-            func(escrow: EscrowDetails): Bool {
-                escrow.status == #Active
+        Array.filter<EscrowAgreement>(allEscrows, func(escrow: EscrowAgreement) : Bool {
+            switch (escrow.arbitrator) {
+                case null false;
+                case (?arbitrator) arbitrator == caller and escrow.status == #Disputed;
             }
-        )
+        })
     };
     
-    // Admin function to handle expired escrows
-    public func cleanupExpiredEscrows(): async Nat {
-        let currentTime = getCurrentTime();
-        var cleanedUp = 0;
-        
-        for ((id, escrow) in escrows.entries()) {
-            if (escrow.status == #Active) {
-                switch (escrow.expires_at) {
-                    case (?expiry) {
-                        if (currentTime > expiry) {
-                            let updatedEscrow = {
-                                escrow with status = #Expired
-                            };
-                            escrows.put(id, updatedEscrow);
-                            // TODO: Return funds to depositor
-                            totalHeld -= escrow.amount;
-                            cleanedUp += 1;
-                        };
-                    };
-                    case null {};
-                };
-            };
-        };
-        
-        cleanedUp
+    // System upgrade functions
+    system func preupgrade() {
+        // State is already stable, no action needed
+    };
+    
+    system func postupgrade() {
+        // State is restored automatically, no action needed
     };
 }
