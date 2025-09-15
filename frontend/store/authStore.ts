@@ -2,8 +2,16 @@ import { useState } from 'react';
 import { getUser, login, register, verifyOTP, resendOTP, changePassword } from '@/api/auth';
 import { UserType } from '@/types/icp';
 
+interface User{
+    success: boolean;
+    user: {
+        email: string;
+        userType: string;
+    }
+}
+
 export const useAuthStore = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +32,7 @@ export const useAuthStore = () => {
     setLoading(true);
     setError(null);
     try {
+      // Convert userType to match backend expectations
       const result = await register(email, username, password, userType);
       setUser(result);
     } catch (err: any) {
@@ -33,7 +42,47 @@ export const useAuthStore = () => {
     }
   };
 
-  // ...other auth actions (verifyOTP, resendOTP, changePassword)
+  const verifyUserOTP = async (userId: string, otp: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await verifyOTP(userId, otp);
+      return result;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendUserOTP = async (userId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await resendOTP(userId);
+      return result;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeUserPassword = async (userId: string, otp: string, newPassword: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await changePassword(userId, otp, newPassword);
+      return result;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     user,
@@ -41,6 +90,8 @@ export const useAuthStore = () => {
     error,
     loginUser,
     registerUser,
-    // ...other actions
+    verifyUserOTP,
+    resendUserOTP,
+    changeUserPassword,
   };
 };

@@ -40,7 +40,7 @@ export default function FreelancerOnboarding() {
 
   const handleCardSelect = (type: UserType): void => {
     setSelectedType(type);
-    router.push('/login');
+    router.push(`/login?user=${type}`);
   };
 
   const getSelectedOption = (): UserOption | undefined => {
