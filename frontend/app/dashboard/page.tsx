@@ -9,6 +9,7 @@ import {
   Users, 
   Briefcase, 
   Megaphone, 
+  MessageSquare,
   User, 
   Mail, 
   Code, 
@@ -19,8 +20,8 @@ import {
   ArrowDownLeft,
   Plus,
   Eye,
-  TrendingUp
-  ,Menu, X
+  TrendingUp,
+  Menu, X
 } from 'lucide-react';
 
 // Design tokens from Figma
@@ -88,7 +89,10 @@ import PaymentView from './views/payments';
 import MessageView from './views/messages';
 import MyProjectsView from './views/my-projects';
 import ProjectFlowView from './views/project-flow';
+import SwapInterface from './views/icpswap';
+import Analytics from './views/analytics';
 import { StatCard, ProjectRow } from './views/components';
+import CaffineAI from './views/caffine-ai';
 
 const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ item, onClick }) => {
   // logo gradient used for active background
@@ -227,9 +231,13 @@ const FreelancerDashboard: React.FC = () => {
     { id: 'messages', label: 'Messages', icon: <Mail size={20} className="text-[#555555]" /> },
     { id: 'hackathons', label: 'Hackathons', icon: <Code size={20} className="text-[#525252]" /> },
     { id: 'payments', label: 'Payments', icon: <DollarSign size={20} className="text-[#525252]" /> },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> }
-  ];
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
+  { id: 'caffine-ai', label: 'Caffine AI', icon: <MessageSquare size={20} className="text-[#525252]" /> },
+    // { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
+    { id: 'icp-swap', label: 'ICP Swap', icon: <ArrowDownLeft size={20} className="text-[#525252]" /> },
+    
 
+  ];
   const handleNavClick = (navId: string) => {
     if (!sidebarItems.find(item => item.id === navId)?.disabled) {
       setActiveNav(navId);
@@ -244,12 +252,7 @@ const FreelancerDashboard: React.FC = () => {
 
 
 
-  const AnalyticsView = () => (
-    <div>
-      <h1 className="text-[20px] font-semibold mb-3">Analytics</h1>
-      <p className="text-sm text-gray-600">Platform analytics.</p>
-    </div>
-  );
+
 
   const renderContent = (navId: string) => {
   if (activeProject) {
@@ -271,7 +274,9 @@ const FreelancerDashboard: React.FC = () => {
       case 'messages': return <MessageView />;
       case 'hackathons': return <HackathonsView />;
       case 'payments': return <PaymentView />;
-      case 'analytics': return <AnalyticsView />;
+      case 'analytics': return <Analytics />;
+  case 'caffine-ai': return <CaffineAI />;
+      case 'icp-swap': return <SwapInterface />;
       default: return <DashboardView />;
     }
   };

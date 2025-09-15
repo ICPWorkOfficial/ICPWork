@@ -15,7 +15,7 @@ type Props = {
 
 export default function ProjectFlowRightPanel({ project }: Props) {
   return (
-    <aside className="w-80 ml-6">
+    <aside className="sm:w-80 sm:ml-6">
       <div className="bg-white p-4 rounded-lg shadow-sm mb-4 flex items-center gap-3">
         <div className="w-14 h-14 bg-gray-100 rounded-md flex items-center justify-center">{project.image ? <img src={project.image} alt="img" className="w-full h-full object-cover rounded" /> : 'IMG'}</div>
         <div>

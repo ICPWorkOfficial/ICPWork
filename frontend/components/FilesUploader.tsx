@@ -25,19 +25,54 @@ export default function FilesUploader({ projectId, initialFiles = [], showRevisi
   }
 
   async function handleSubmit() {
-    let names: string[] = [];
+  let uploadedPaths: string[] = [];
+
+    // If there are selected File objects, upload them first
     if (selected && selected.length > 0) {
-      names = selected.map((f) => f.name);
-      setFiles((s) => [...names, ...s]);
+      try {
+        const fd = new FormData();
+        selected.forEach((f) => fd.append('files', f));
+
+        const upRes = await fetch('/api/projects/upload', {
+          method: 'POST',
+          body: fd,
+        });
+        const upJson = await upRes.json();
+        if (upJson?.ok && Array.isArray(upJson.files)) {
+          uploadedPaths = upJson.files;
+          // add to local recent files list (use paths, not just names)
+          setFiles((s) => [...uploadedPaths, ...s]);
+        } else {
+          console.error('upload failed', upJson);
+        }
+      } catch (e) {
+        console.error('file upload error', e);
+      }
     }
 
-    // call API to persist files and advance status to 'in-progress' (demo)
-  if (projectId) {
+    // compute next status by fetching current project, then PATCH
+    const computeNextStatus = (current: string) => {
+      const s = (current || '').toLowerCase();
+      if (s.includes('cancel')) return s;
+      if (s.includes('revision')) return 'in-progress'; // revision submitted -> back to in-progress
+      if (s.includes('in-progress') || s.includes('work')) return 'completed'; // final submission
+      if (s.includes('pending') || s.includes('new') || s.includes('escrow')) return 'in-progress';
+      if (s.includes('complete') || s.includes('completed')) return 'completed';
+      return 'in-progress';
+    };
+
+    if (projectId) {
       try {
-  const res = await fetch('/api/projects', {
+        // get current project status
+        const r = await fetch(`/api/projects?id=${encodeURIComponent(projectId)}`);
+        const pj = await r.json();
+        const currentStatus = pj?.project?.status || '';
+        const nextStatus = computeNextStatus(currentStatus);
+
+        const res = await fetch('/api/projects', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: projectId, status: 'in-progress', files: names, comment })
+          body: JSON.stringify({ id: projectId, status: nextStatus, files: uploadedPaths, comment }),
         });
         const json = await res.json();
         if (json?.ok && onUpdate) onUpdate(json.project);
@@ -46,9 +81,9 @@ export default function FilesUploader({ projectId, initialFiles = [], showRevisi
       }
     }
 
-  setModalOpen(false);
-  setSelected([]);
-  setComment('');
+    setModalOpen(false);
+    setSelected([]);
+    setComment('');
   }
 
   return (
@@ -63,7 +98,8 @@ export default function FilesUploader({ projectId, initialFiles = [], showRevisi
               <input type="file" multiple className="hidden" onChange={handleFileChange} />
               Select file(s)
             </label>
-            <button onClick={() => setModalOpen(true)} className="px-3 py-2 bg-[#041D37] text-white rounded">Submit Project</button>
+            <button onClick={() => setModalOpen(true)} className="px-3 py-2 bg-[#041D37] text-white rounded"
+                style={{ background: 'linear-gradient(90deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>Submit Project</button>
           </div>
         </div>
       )}
@@ -77,7 +113,7 @@ export default function FilesUploader({ projectId, initialFiles = [], showRevisi
               <input type="file" multiple className="hidden" onChange={handleFileChange} />
               Select file(s)
             </label>
-            <button onClick={() => setModalOpen(true)} className="ml-3 px-5 py-2 bg-[#041D37] text-white rounded-full "  style={{ background: 'linear-gradient(90deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>Submit Files</button>
+            <button onClick={() => setModalOpen(true)} className="sm:ml-3 mt-0 px-5 py-2 bg-[#041D37] text-white rounded-full "  style={{ background: 'linear-gradient(90deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>Submit Files</button>
           </div>
         </div>
       )}
