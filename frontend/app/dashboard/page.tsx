@@ -9,6 +9,7 @@ import {
   Users, 
   Briefcase, 
   Megaphone, 
+  MessageSquare,
   User, 
   Mail, 
   Code, 
@@ -91,6 +92,7 @@ import ProjectFlowView from './views/project-flow';
 import SwapInterface from './views/icpswap';
 import Analytics from './views/analytics';
 import { StatCard, ProjectRow } from './views/components';
+import CaffineAI from './views/caffine-ai';
 
 const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ item, onClick }) => {
   // logo gradient used for active background
@@ -230,6 +232,7 @@ const FreelancerDashboard: React.FC = () => {
     { id: 'hackathons', label: 'Hackathons', icon: <Code size={20} className="text-[#525252]" /> },
     { id: 'payments', label: 'Payments', icon: <DollarSign size={20} className="text-[#525252]" /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
+  { id: 'caffine-ai', label: 'Caffine AI', icon: <MessageSquare size={20} className="text-[#525252]" /> },
     // { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} className="text-[#525252]" /> },
     { id: 'icp-swap', label: 'ICP Swap', icon: <ArrowDownLeft size={20} className="text-[#525252]" /> },
     
@@ -272,6 +275,7 @@ const FreelancerDashboard: React.FC = () => {
       case 'hackathons': return <HackathonsView />;
       case 'payments': return <PaymentView />;
       case 'analytics': return <Analytics />;
+  case 'caffine-ai': return <CaffineAI />;
       case 'icp-swap': return <SwapInterface />;
       default: return <DashboardView />;
     }

@@ -1,0 +1,45 @@
+{
+  "services": [
+    {
+      "id": "svc_1694770000000",
+      "overview": {
+        "serviceTitle": "Professional UI/UX Design for Web & Mobile",
+        "mainCategory": "Design",
+        "subCategory": "UI/UX Design",
+        "description": "I design modern, responsive and user-friendly interfaces for web and mobile apps. I focus on usability and visual polish, delivering Figma/Adobe XD/PSD files, design systems, and developer-ready assets."
+      },
+      "projectTiers": {
+        "Basic": {
+          "title": "Basic UI Kit",
+          "description": "A starter UI kit for small projects including 3 screens and basic components.",
+          "price": "49"
+        },
+        "Advanced": {
+          "title": "Standard App Design",
+          "description": "Complete app design for up to 10 screens, interactive prototype, and style guide.",
+          "price": "79"
+        },
+        "Premium": {
+          "title": "Premium End-to-End Design",
+          "description": "Full product design with up to 30 screens, design system, and handoff-ready assets.",
+          "price": "129"
+        }
+      },
+      "additionalCharges": [
+        { "name": "Fast Delivery (3 days)", "price": "50" },
+        { "name": "Extra Revision", "price": "20" }
+      ],
+      "portfolioImages": [
+        "https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg",
+        "https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg",
+        "https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg"
+      ],
+      "questions": [
+        { "question": "What is the primary goal of your product?", "type": "text", "options": [] },
+        { "question": "Select required deliverables", "type": "checkbox", "options": ["Wireframes", "Prototype", "Style Guide"] },
+        { "question": "Target platform", "type": "dropdown", "options": ["Web", "iOS", "Android"] }
+      ],
+      "createdAt": "2025-09-15T10:00:00.000Z"
+    }
+  ]
+}
