@@ -1,14 +1,16 @@
-export type UserType = 'FREELANCER' | 'CLIENT';
+export type UserType = 'freelancer' | 'client';
 
-export interface AuthUser {
-  id: string;
+// Backend User type matching auth.mo exactly
+export interface BackendUser {
   email: string;
-  username: string;
-  passwordHash: string;
+  passwordHash: number[]; // Blob type from Motoko (Vec Nat8)
   userType: UserType;
-  isVerified: boolean;
-  otp?: string;
-  otpExpiry?: number;
+}
+
+// Frontend User type (without password hash for security)
+export interface User {
+  email: string;
+  userType: UserType;
 }
 
 export interface AuthRequest {
@@ -16,15 +18,30 @@ export interface AuthRequest {
   password: string;
 }
 
-export interface OTPRequest {
-  userId: string;
-  otp: string;
+// Backend AuthError types matching auth.mo exactly
+export type AuthError = 
+  | 'UserAlreadyExists'
+  | 'UserNotFound' 
+  | 'InvalidCredentials'
+  | 'InvalidEmail'
+  | 'WeakPassword';
+
+// API Response types
+export interface LoginResponse {
+  sessionId: string;
+  user: User;
 }
 
-export interface PasswordChangeRequest {
-  userId: string;
-  otp: string;
-  newPassword: string;
+export interface SignupResponse {
+  sessionId: string;
+  user: User;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data?: T;
+  errors?: { [key: string]: string };
 }
 
 export interface Address {

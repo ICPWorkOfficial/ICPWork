@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Type definitions
 type AuthMode = 'login' | 'signup';
@@ -21,12 +22,14 @@ interface SignupFormData {
   email: string;
   password: string;
   confirmPassword: string;
+  userType: 'freelancer' | 'client' | '';
 }
 
 interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  userType?: string;
 }
 
 interface PasswordValidation {
@@ -40,6 +43,9 @@ interface PasswordValidation {
 // SVG assets
 
 export default function AuthForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const user = searchParams.get('user');
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: '',
@@ -48,7 +54,8 @@ export default function AuthForm() {
   const [signupData, setSignupData] = useState<SignupFormData>({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    userType: ''
   });
   
   const [errors, setErrors] = useState<FormErrors>({});
@@ -161,6 +168,10 @@ export default function AuthForm() {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (signupData.password !== signupData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!signupData.userType) {
+      newErrors.userType = 'Please select your account type';
     }
 
     setErrors(newErrors);
@@ -410,6 +421,52 @@ export default function AuthForm() {
                 </div>
               )}
 
+              {/* User Type Selection - Only for Signup */}
+              {authMode === 'signup' && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">
+                    I want to join as:
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSignupInputChange('userType', 'freelancer')}
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                        signupData.userType === 'freelancer'
+                          ? 'border-[#161616] bg-gray-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-center">
+                        <div className="text-lg font-medium">Freelancer</div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          I want to work on projects
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSignupInputChange('userType', 'client')}
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                        signupData.userType === 'client'
+                          ? 'border-[#161616] bg-gray-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-center">
+                        <div className="text-lg font-medium">Client</div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          I want to hire freelancers
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                  {errors.userType && (
+                    <p className="text-red-500 text-sm ml-2">{errors.userType}</p>
+                  )}
+                </div>
+              )}
+
               {/* Forgot Password Link - Only for Login */}
               {authMode === 'login' && (
                 <div className="text-right">
@@ -427,18 +484,16 @@ export default function AuthForm() {
               )}
 
               {/* Submit Button */}
-              <Link href="/onboarding">
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-14 bg-[#161616] hover:bg-gray-800 text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
-                >
-                  {isLoading 
-                    ? (authMode === 'login' ? 'Logging In...' : 'Creating Account...') 
-                    : (authMode === 'login' ? 'Login' : 'Create Account')
-                  }
-                </Button>
-              </Link>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-14 bg-[#161616] hover:bg-gray-800 text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+              >
+                {isLoading 
+                  ? (authMode === 'login' ? 'Logging In...' : 'Creating Account...') 
+                  : (authMode === 'login' ? 'Login' : 'Create Account')
+                }
+              </Button>
             </form>
 
             {/* Toggle Auth Mode */}

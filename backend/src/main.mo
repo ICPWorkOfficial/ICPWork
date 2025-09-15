@@ -7,6 +7,9 @@ persistent actor Main {
     
     // Import types from modules
     type SessionInfo = SessionManager.SessionInfo;
+    type User = Auth.User;
+    type UserType = Auth.UserType;
+    type AuthError = Auth.AuthError;
     
     // Import storage canister types
     public type Freelancer = {
@@ -41,6 +44,11 @@ persistent actor Main {
         #InvalidUserType;
         #EmailRequired;
         #InvalidSession;
+        #UserAlreadyExists;
+        #UserNotFound;
+        #InvalidCredentials;
+        #InvalidEmail;
+        #WeakPassword;
     };
 
     // Storage canister actors - REPLACE WITH ACTUAL CANISTER IDs
@@ -81,21 +89,78 @@ persistent actor Main {
 
     // AUTHENTICATION FUNCTIONS
 
-    // Register new user
-    public func registerUser(userType: Text, email: Text, password: Text) : async Result.Result<(), Error> {
+    // Helper function to convert UserType text to enum
+    func parseUserType(userTypeText: Text) : ?UserType {
+        switch (userTypeText) {
+            case ("freelancer") { ?#freelancer };
+            case ("client") { ?#client };
+            case _ { null };
+        }
+    };
+
+    // Helper function to convert AuthError to main Error
+    func convertAuthError(authError: AuthError) : Error {
+        switch (authError) {
+            case (#UserAlreadyExists) { #UserAlreadyExists };
+            case (#UserNotFound) { #UserNotFound };
+            case (#InvalidCredentials) { #InvalidCredentials };
+            case (#InvalidEmail) { #InvalidEmail };
+            case (#WeakPassword) { #WeakPassword };
+        }
+    };
+
+    // Signup new user
+    public func signup(email: Text, password: Text, userType: Text) : async Result.Result<{sessionId: Text; user: User}, Error> {
         if (Text.size(email) == 0) {
             return #err(#EmailRequired);
         };
 
-        if (userType != "client" and userType != "freelancer") {
-            return #err(#InvalidUserType);
-        };
-
-        let _user = auth.auth(email, password);
-        #ok(())
+        switch (parseUserType(userType)) {
+            case null { return #err(#InvalidUserType); };
+            case (?userTypeEnum) {
+                switch (auth.signup(email, password, userTypeEnum)) {
+                    case (#err(authError)) { 
+                        #err(convertAuthError(authError))
+                    };
+                    case (#ok(user)) {
+                        let sessionId = await sessionManager.createSession(email, userType);
+                        #ok({sessionId = sessionId; user = user})
+                    };
+                }
+            };
+        }
     };
 
     // Login user and create session
+    public func login(email: Text, password: Text) : async Result.Result<{sessionId: Text; user: User}, Error> {
+        if (Text.size(email) == 0) {
+            return #err(#EmailRequired);
+        };
+
+        switch (auth.login(email, password)) {
+            case (#err(authError)) { 
+                #err(convertAuthError(authError))
+            };
+            case (#ok(user)) {
+                let userTypeText = switch (user.userType) {
+                    case (#freelancer) { "freelancer" };
+                    case (#client) { "client" };
+                };
+                let sessionId = await sessionManager.createSession(email, userTypeText);
+                #ok({sessionId = sessionId; user = user})
+            };
+        }
+    };
+
+    // Register new user (legacy function for backward compatibility)
+    public func registerUser(userType: Text, email: Text, password: Text) : async Result.Result<(), Error> {
+        switch (signup(email, password, userType)) {
+            case (#ok(_)) { #ok(()) };
+            case (#err(error)) { #err(error) };
+        }
+    };
+
+    // Login user and create session (legacy function for backward compatibility)
     public func loginUser(userType: Text, email: Text, password: Text) : async Result.Result<SessionInfo, Error> {
         if (Text.size(email) == 0) {
             return #err(#EmailRequired);
@@ -105,20 +170,49 @@ persistent actor Main {
             return #err(#InvalidUserType);
         };
 
-        let isAuthenticated = auth.login(email, password);
-        if (not isAuthenticated) {
-            return #err(#AuthenticationFailed);
-        };
-
-        let sessionId = await sessionManager.createSession(email, userType);
-        
-        switch (sessionManager.getSessionInfo(sessionId)) {
-            case null { #err(#InvalidSession) };
-            case (?sessionInfo) { #ok(sessionInfo) };
+        switch (auth.login(email, password)) {
+            case (#err(authError)) { 
+                #err(convertAuthError(authError))
+            };
+            case (#ok(_user)) {
+                let sessionId = await sessionManager.createSession(email, userType);
+                
+                switch (sessionManager.getSessionInfo(sessionId)) {
+                    case null { #err(#InvalidSession) };
+                    case (?sessionInfo) { #ok(sessionInfo) };
+                }
+            };
         }
     };
 
-    // Logout user
+    // Get user by email
+    public func getUserByEmail(email: Text) : async Result.Result<User, Error> {
+        switch (auth.getUserByEmail(email)) {
+            case null { #err(#UserNotFound) };
+            case (?user) { #ok(user) };
+        }
+    };
+
+    // Verify OTP (placeholder - implement based on your OTP system)
+    public func verifyOTP(userId: Text, otp: Text) : async Result.Result<Text, Error> {
+        // This is a placeholder implementation
+        // You would need to implement actual OTP verification logic
+        #ok("OTP verified successfully")
+    };
+
+    // Resend OTP (placeholder - implement based on your OTP system)
+    public func resendOTP(userId: Text) : async Result.Result<Text, Error> {
+        // This is a placeholder implementation
+        // You would need to implement actual OTP resending logic
+        #ok("OTP sent successfully")
+    };
+
+    // Change password (placeholder - implement based on your OTP system)
+    public func changePassword(userId: Text, otp: Text, newPassword: Text) : async Result.Result<Text, Error> {
+        // This is a placeholder implementation
+        // You would need to implement actual password change with OTP verification
+        #ok("Password changed successfully")
+    };
     public func logoutUser(sessionId: Text) : async Result.Result<(), Error> {
         if (sessionManager.removeSession(sessionId)) {
             #ok(())
