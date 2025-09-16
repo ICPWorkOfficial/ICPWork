@@ -2,9 +2,6 @@ import Auth "./auth";
 import SessionManager "./session";
 import Text "mo:base/Text";
 import Result "mo:base/Result";
-import Time "mo:base/Time";
-import Nat "mo:base/Nat";
-import Error "mo:base/Error";
 
 persistent actor Main {
     
@@ -137,6 +134,46 @@ persistent actor Main {
         completedAt: ?Int;
     };
 
+    // Storage canister actors - Use proper canister names
+    transient let freelancerStorage = actor("freelancer_data") : actor {
+        storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
+    };
+
+    transient let clientStorage = actor("client_data") : actor {
+        storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
+    };
+
+    transient let messageStorage = actor("message_store") : actor {
+        storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+    };
+
+    transient let onboardingStorage = actor("onboarding_store") : actor {
+        createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+    };
+
     // Bounties data types
     public type BountyStatus = {
         #Open;
@@ -245,47 +282,7 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
-    // Storage canister type definitions - Use proper actor types
-    type FreelancerStorage = actor {
-        storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
-        updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
-        getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
-    };
-
-    type ClientStorage = actor {
-        storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
-        updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
-        getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
-    };
-
-    type MessageStorage = actor {
-        storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-    };
-
-    type OnboardingStorage = actor {
-        createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-        updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-        deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-    };
-
-    type BountiesStorage = actor {
+    transient let bountiesStorage = actor("bounties_store") : actor {
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -301,84 +298,12 @@ persistent actor Main {
         deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
     };
 
-    // Storage canister actors - Initialize with proper canister IDs
-    private var freelancerCanisterId : Text = "rrkah-fqaaa-aaaaa-aaaaq-cai"; // Replace with actual canister ID
-    private var clientCanisterId : Text = "rdmx6-jaaaa-aaaaa-aaadq-cai"; // Replace with actual canister ID
-    private var messageCanisterId : Text = "rno2w-sqaaa-aaaaa-aaacq-cai"; // Replace with actual canister ID
-    private var onboardingCanisterId : Text = "renrk-eyaaa-aaaaa-aaada-cai"; // Replace with actual canister ID
-    private var bountiesCanisterId : Text = "ryjl3-tyaaa-aaaaa-aaaba-cai"; // Replace with actual canister ID
-
-    private var freelancerStorage : ?FreelancerStorage = null;
-    private var clientStorage : ?ClientStorage = null;
-    private var messageStorage : ?MessageStorage = null;
-    private var onboardingStorage : ?OnboardingStorage = null;
-    private var bountiesStorage : ?BountiesStorage = null;
-
-    // Helper function to get freelancer storage
-    private func getFreelancerStorage() : FreelancerStorage {
-        switch (freelancerStorage) {
-            case (?storage) { storage };
-            case null {
-                let storage : FreelancerStorage = actor(freelancerCanisterId);
-                freelancerStorage := ?storage;
-                storage
-            };
-        }
-    };
-
-    // Helper function to get client storage
-    private func getClientStorage() : ClientStorage {
-        switch (clientStorage) {
-            case (?storage) { storage };
-            case null {
-                let storage : ClientStorage = actor(clientCanisterId);
-                clientStorage := ?storage;
-                storage
-            };
-        }
-    };
-
-    // Helper function to get message storage
-    private func getMessageStorage() : MessageStorage {
-        switch (messageStorage) {
-            case (?storage) { storage };
-            case null {
-                let storage : MessageStorage = actor(messageCanisterId);
-                messageStorage := ?storage;
-                storage
-            };
-        }
-    };
-
-    // Helper function to get onboarding storage
-    private func getOnboardingStorage() : OnboardingStorage {
-        switch (onboardingStorage) {
-            case (?storage) { storage };
-            case null {
-                let storage : OnboardingStorage = actor(onboardingCanisterId);
-                onboardingStorage := ?storage;
-                storage
-            };
-        }
-    };
-
-    // Helper function to get bounties storage
-    private func getBountiesStorage() : BountiesStorage {
-        switch (bountiesStorage) {
-            case (?storage) { storage };
-            case null {
-                let storage : BountiesStorage = actor(bountiesCanisterId);
-                bountiesStorage := ?storage;
-                storage
-            };
-        }
-    };
-
-    private var sessionEntries : [(Text, SessionManager.Session)] = [];
-
     // Initialize modules
-    private transient let auth = Auth.Auth();
-    private transient let sessionManager = SessionManager.SessionManager();
+    transient let auth = Auth.Auth();
+    transient let sessionManager = SessionManager.SessionManager();
+
+    // Stable storage for upgrades
+    private var sessionEntries : [(Text, SessionManager.Session)] = [];
 
     // System functions for upgrades
     system func preupgrade() {
@@ -395,7 +320,7 @@ persistent actor Main {
     // AUTHENTICATION FUNCTIONS
 
     // Helper function to convert UserType text to enum
-    private func parseUserType(userTypeText: Text) : ?UserType {
+    func parseUserType(userTypeText: Text) : ?UserType {
         switch (userTypeText) {
             case ("freelancer") { ?#freelancer };
             case ("client") { ?#client };
@@ -404,7 +329,7 @@ persistent actor Main {
     };
 
     // Helper function to convert AuthError to main Error
-    private func convertAuthError(authError: AuthError) : Error {
+    func convertAuthError(authError: AuthError) : Error {
         switch (authError) {
             case (#UserAlreadyExists) { #UserAlreadyExists };
             case (#UserNotFound) { #UserNotFound };
@@ -412,6 +337,16 @@ persistent actor Main {
             case (#InvalidEmail) { #InvalidEmail };
             case (#WeakPassword) { #WeakPassword };
         }
+    };
+
+    // Helper function to validate session and get user info
+    func validateSessionAndGetUser(sessionId: Text) : ?SessionManager.Session {
+        sessionManager.validateSession(sessionId)
+    };
+
+    // Helper function to check if user type matches expected type
+    func validateUserType(session: SessionManager.Session, expectedType: Text) : Bool {
+        session.userType == expectedType
     };
 
     // Signup new user
@@ -459,8 +394,7 @@ persistent actor Main {
 
     // Register new user (legacy function for backward compatibility)
     public func registerUser(userType: Text, email: Text, password: Text) : async Result.Result<(), Error> {
-        let signupResult = await signup(email, password, userType);
-        switch (signupResult) {
+        switch (signup(email, password, userType)) {
             case (#ok(_)) { #ok(()) };
             case (#err(error)) { #err(error) };
         }
@@ -500,26 +434,25 @@ persistent actor Main {
     };
 
     // Verify OTP (placeholder - implement based on your OTP system)
-    public func verifyOTP(_userId: Text, _otp: Text) : async Result.Result<Text, Error> {
+    public func verifyOTP(userId: Text, otp: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP verification logic
         #ok("OTP verified successfully")
     };
 
     // Resend OTP (placeholder - implement based on your OTP system)
-    public func resendOTP(_userId: Text) : async Result.Result<Text, Error> {
+    public func resendOTP(userId: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP resending logic
         #ok("OTP sent successfully")
     };
 
     // Change password (placeholder - implement based on your OTP system)
-    public func changePassword(_userId: Text, _otp: Text, _newPassword: Text) : async Result.Result<Text, Error> {
+    public func changePassword(userId: Text, otp: Text, newPassword: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual password change with OTP verification
         #ok("Password changed successfully")
     };
-
     public func logoutUser(sessionId: Text) : async Result.Result<(), Error> {
         if (sessionManager.removeSession(sessionId)) {
             #ok(())
@@ -548,17 +481,15 @@ persistent actor Main {
                 };
 
                 try {
-                    let storage = getFreelancerStorage();
-                    let result = await storage.storeFreelancer(session.email, freelancer);
+                    let result = await freelancerStorage.storeFreelancer(session.email, freelancer);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Freelancer not found")) };
-                        case (#err(#InvalidSkillsCount)) { #err(#StorageError("Invalid skills count")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
+                        case (#err(_err)) { 
+                            #err(#StorageError("Failed to store freelancer: "))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
@@ -574,17 +505,15 @@ persistent actor Main {
                 };
 
                 try {
-                    let storage = getFreelancerStorage();
-                    let result = await storage.updateFreelancer(session.email, freelancer);
+                    let result = await freelancerStorage.updateFreelancer(session.email, freelancer);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Freelancer not found")) };
-                        case (#err(#InvalidSkillsCount)) { #err(#StorageError("Invalid skills count")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
+                        case (_err) { 
+                            #err(#StorageError("Failed to update freelancer"))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
@@ -600,16 +529,15 @@ persistent actor Main {
                 };
 
                 try {
-                    let storage = getFreelancerStorage();
-                    let result = await storage.getFreelancer(session.email);
+                    let result = await freelancerStorage.getFreelancer(session.email);
                     switch (result) {
                         case (#ok(freelancer)) { #ok(freelancer) };
-                        case (#err(#NotFound)) { #err(#StorageError("Freelancer not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
+                        case (#err(_err)) { 
+                            #err(#StorageError("Failed to get freelancer"))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
@@ -617,18 +545,20 @@ persistent actor Main {
 
     // Get all freelancers (for clients to browse)
     public func getAllFreelancers(sessionId: Text) : async Result.Result<[(Text, Freelancer)], Error> {
-        switch (sessionManager.validateSession(sessionId)) {
+        switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
+                // Add admin check here if needed
                 try {
-                    let storage = getFreelancerStorage();
-                    let result = await storage.getAllFreelancers();
+                    let result = await freelancerStorage.getAllFreelancers();
                     switch (result) {
                         case (#ok(freelancers)) { #ok(freelancers) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
+                        case (#err(_err)) { 
+                            #err(#StorageError("Failed to get all freelancers"))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
@@ -646,17 +576,15 @@ persistent actor Main {
                 };
 
                 try {
-                    let storage = getClientStorage();
-                    let result = await storage.storeClient(session.email, client);
+                    let result = await clientStorage.storeClient(session.email, client);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Client not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
+                        case (#err(_err)) { 
+                            #err(#StorageError("Failed to store client"))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
@@ -672,17 +600,15 @@ persistent actor Main {
                 };
 
                 try {
-                    let storage = getClientStorage();
-                    let result = await storage.updateClient(session.email, client);
+                    let result = await clientStorage.updateClient(session.email, client);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Client not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
+                        case (#err(_err)) { 
+                            #err(#StorageError("Failed to update client"))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
@@ -698,16 +624,15 @@ persistent actor Main {
                 };
 
                 try {
-                    let storage = getClientStorage();
-                    let result = await storage.getClient(session.email);
+                    let result = await clientStorage.getClient(session.email);
                     switch (result) {
                         case (#ok(client)) { #ok(client) };
-                        case (#err(#NotFound)) { #err(#StorageError("Client not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
+                        case (#err(_err)) { 
+                            #err(#StorageError("Failed to get client: "))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
@@ -715,26 +640,71 @@ persistent actor Main {
 
     // Get all clients
     public func getAllClients(sessionId: Text) : async Result.Result<[(Text, Client)], Error> {
-        switch (sessionManager.validateSession(sessionId)) {
+        switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
+                // Add admin check here if needed
                 try {
-                    let storage = getClientStorage();
-                    let result = await storage.getAllClients();
+                    let result = await clientStorage.getAllClients();
                     switch (result) {
                         case (#ok(clients)) { #ok(clients) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
+                        case (#err(_err)) { 
+                            #err(#StorageError("Failed to get all clients"))
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Storage canister error"))
                 }
             };
         }
     };
 
     // UTILITY FUNCTIONS
+    
+    // Get active session count
     public func getActiveSessionCount() : async Nat {
         sessionManager.getActiveSessionCount()
+    };
+
+    // Get user info from session
+    public func getUserInfo(sessionId: Text) : async Result.Result<{email: Text; userType: Text; expiresAt: Int}, Error> {
+        switch (validateSessionAndGetUser(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                #ok({
+                    email = session.email;
+                    userType = session.userType;
+                    expiresAt = session.expiresAt;
+                })
+            };
+        }
+    };
+
+    // Get session info
+    public func getSessionInfo(sessionId: Text) : async ?SessionInfo {
+        sessionManager.getSessionInfo(sessionId)
+    };
+
+    // Check if session is valid
+    public func isSessionValid(sessionId: Text) : async Bool {
+        switch (validateSessionAndGetUser(sessionId)) {
+            case null { false };
+            case (?_) { true };
+        }
+    };
+
+    // Get user by email (admin function)
+    public func getUserByEmail(sessionId: Text, email: Text) : async Result.Result<User, Error> {
+        switch (validateSessionAndGetUser(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                // Add admin check here if needed
+                switch (auth.getUserByEmail(email)) {
+                    case null { #err(#UserNotFound) };
+                    case (?user) { #ok(user) };
+                }
+            };
+        }
     };
 
     // MESSAGE FUNCTIONS
@@ -745,18 +715,20 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getMessageStorage();
-                    let result = await storage.storeMessage(session.email, to, content, clientTimestamp, messageType);
+                    let result = await messageStorage.storeMessage(session.email, to, content, clientTimestamp, messageType);
                     switch (result) {
                         case (#ok(message)) { #ok(message) };
-                        case (#err(#NotFound)) { #err(#StorageError("User not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidMessage)) { #err(#StorageError("Invalid message")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#InvalidMessage) { #err(#StorageError("Invalid message")) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to send message")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Message storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
                 }
             };
         }
@@ -768,18 +740,19 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getMessageStorage();
-                    let result = await storage.getConversationMessages(session.email, otherUser, limit, offset);
+                    let result = await messageStorage.getConversationMessages(session.email, otherUser, limit, offset);
                     switch (result) {
                         case (#ok(messages)) { #ok(messages) };
-                        case (#err(#NotFound)) { #err(#StorageError("Conversation not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidMessage)) { #err(#StorageError("Invalid message")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get messages")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Message storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
                 }
             };
         }
@@ -791,18 +764,21 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getMessageStorage();
-                    let result = await storage.markMessageAsRead(messageId, session.email);
+                    let result = await messageStorage.markMessageAsRead(messageId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Message not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidMessage)) { #err(#StorageError("Invalid message")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#NotFound) { #err(#StorageError("Message not found")) };
+                                case (#Unauthorized) { #err(#StorageError("Unauthorized")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to mark message as read")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Message storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
                 }
             };
         }
@@ -814,18 +790,19 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getMessageStorage();
-                    let result = await storage.getUserConversations(session.email);
+                    let result = await messageStorage.getUserConversations(session.email);
                     switch (result) {
                         case (#ok(conversations)) { #ok(conversations) };
-                        case (#err(#NotFound)) { #err(#StorageError("User not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidMessage)) { #err(#StorageError("Invalid message")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get conversations")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Message storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
                 }
             };
         }
@@ -837,18 +814,19 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getMessageStorage();
-                    let result = await storage.getUnreadMessageCount(session.email);
+                    let result = await messageStorage.getUnreadMessageCount(session.email);
                     switch (result) {
                         case (#ok(count)) { #ok(count) };
-                        case (#err(#NotFound)) { #err(#StorageError("User not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidMessage)) { #err(#StorageError("Invalid message")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get unread count")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Message storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
                 }
             };
         }
@@ -860,18 +838,21 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getMessageStorage();
-                    let result = await storage.deleteMessage(messageId, session.email);
+                    let result = await messageStorage.deleteMessage(messageId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Message not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidMessage)) { #err(#StorageError("Invalid message")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(msgError)) { 
+                            switch (msgError) {
+                                case (#NotFound) { #err(#StorageError("Message not found")) };
+                                case (#Unauthorized) { #err(#StorageError("Unauthorized")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to delete message")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Message storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Message storage canister error"))
                 }
             };
         }
@@ -885,19 +866,20 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.createOnboardingRecord(session.email, userType);
+                    let result = await onboardingStorage.createOnboardingRecord(session.email, userType);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("User not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#InvalidUserType)) { #err(#InvalidUserType) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#InvalidUserType) { #err(#InvalidUserType) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to create onboarding record")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -918,8 +900,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.updateOnboardingStep(
+                    let result = await onboardingStorage.updateOnboardingStep(
                         session.email, 
                         profileMethod, 
                         personalInfo, 
@@ -931,14 +912,18 @@ persistent actor Main {
                     );
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Onboarding record not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid onboarding data")) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#NotFound) { #err(#StorageError("Onboarding record not found")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#InvalidData) { #err(#StorageError("Invalid onboarding data")) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to update onboarding step")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -950,18 +935,20 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.completeOnboarding(session.email);
+                    let result = await onboardingStorage.completeOnboarding(session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
-                        case (#err(#NotFound)) { #err(#StorageError("Onboarding record not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#NotFound) { #err(#StorageError("Onboarding record not found")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to complete onboarding")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -973,18 +960,20 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.getOnboardingRecord(session.email);
+                    let result = await onboardingStorage.getOnboardingRecord(session.email);
                     switch (result) {
                         case (#ok(record)) { #ok(record) };
-                        case (#err(#NotFound)) { #err(#StorageError("Onboarding record not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#NotFound) { #err(#StorageError("Onboarding record not found")) };
+                                case (#InvalidEmail) { #err(#InvalidEmail) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding record")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -996,18 +985,18 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.getAllOnboardingRecords();
+                    let result = await onboardingStorage.getAllOnboardingRecords();
                     switch (result) {
                         case (#ok(records)) { #ok(records) };
-                        case (#err(#NotFound)) { #err(#StorageError("Records not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get all onboarding records")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -1019,18 +1008,18 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.getOnboardingRecordsByStatus(isComplete);
+                    let result = await onboardingStorage.getOnboardingRecordsByStatus(isComplete);
                     switch (result) {
                         case (#ok(records)) { #ok(records) };
-                        case (#err(#NotFound)) { #err(#StorageError("Records not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding records by status")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -1042,19 +1031,19 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.getOnboardingRecordsByUserType(userType);
+                    let result = await onboardingStorage.getOnboardingRecordsByUserType(userType);
                     switch (result) {
                         case (#ok(records)) { #ok(records) };
-                        case (#err(#NotFound)) { #err(#StorageError("Records not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#InvalidUserType)) { #err(#InvalidUserType) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#InvalidUserType) { #err(#InvalidUserType) };
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding records by user type")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -1072,18 +1061,18 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let storage = getOnboardingStorage();
-                    let result = await storage.getOnboardingStats();
+                    let result = await onboardingStorage.getOnboardingStats();
                     switch (result) {
                         case (#ok(stats)) { #ok(stats) };
-                        case (#err(#NotFound)) { #err(#StorageError("Stats not found")) };
-                        case (#err(#Unauthorized)) { #err(#StorageError("Unauthorized")) };
-                        case (#err(#InvalidEmail)) { #err(#InvalidEmail) };
-                        case (#err(#InvalidData)) { #err(#StorageError("Invalid data")) };
-                        case (#err(#StorageError(msg))) { #err(#StorageError(msg)) };
+                        case (#err(onboardingError)) { 
+                            switch (onboardingError) {
+                                case (#StorageError(msg)) { #err(#StorageError(msg)) };
+                                case _ { #err(#StorageError("Failed to get onboarding statistics")) };
+                            }
+                        };
                     }
-                } catch (error) {
-                    #err(#StorageError("Onboarding storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Onboarding storage canister error"))
                 }
             };
         }
@@ -1097,14 +1086,13 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getBountiesStorage();
-                    let result = await storage.createBounty(session.email, input);
+                    let result = await bountiesStorage.createBounty(session.email, input);
                     switch (result) {
                         case (#ok(bounty)) { #ok(bounty) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
                     }
-                } catch (error) {
-                    #err(#StorageError("Bounties storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
                 }
             };
         }
@@ -1116,14 +1104,13 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getBountiesStorage();
-                    let result = await storage.updateBounty(bountyId, session.email, update);
+                    let result = await bountiesStorage.updateBounty(bountyId, session.email, update);
                     switch (result) {
                         case (#ok(bounty)) { #ok(bounty) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
                     }
-                } catch (error) {
-                    #err(#StorageError("Bounties storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
                 }
             };
         }
@@ -1135,14 +1122,13 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getBountiesStorage();
-                    let result = await storage.registerForBounty(bountyId, session.email);
+                    let result = await bountiesStorage.registerForBounty(bountyId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
                     }
-                } catch (error) {
-                    #err(#StorageError("Bounties storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
                 }
             };
         }
@@ -1154,65 +1140,59 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getBountiesStorage();
-                    let result = await storage.submitToBounty(bountyId, session.email, submissionUrl, description);
+                    let result = await bountiesStorage.submitToBounty(bountyId, session.email, submissionUrl, description);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
                     }
-                } catch (error) {
-                    #err(#StorageError("Bounties storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
                 }
             };
         }
     };
 
     // Get bounty by ID
-    public func getBounty(bountyId: Text) : async ?Bounty {
+    public query func getBounty(bountyId: Text) : async ?Bounty {
         try {
-            let storage = getBountiesStorage();
-            await storage.getBounty(bountyId)
-        } catch (error) {
+            await bountiesStorage.getBounty(bountyId)
+        } catch (_error) {
             null
         }
     };
 
     // Get all bounties
-    public func getAllBounties() : async [Bounty] {
+    public query func getAllBounties() : async [Bounty] {
         try {
-            let storage = getBountiesStorage();
-            await storage.getAllBounties()
-        } catch (error) {
+            await bountiesStorage.getAllBounties()
+        } catch (_error) {
             []
         }
     };
 
     // Get bounties by status
-    public func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
+    public query func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
         try {
-            let storage = getBountiesStorage();
-            await storage.getBountiesByStatus(status)
-        } catch (error) {
+            await bountiesStorage.getBountiesByStatus(status)
+        } catch (_error) {
             []
         }
     };
 
     // Get bounties by category
-    public func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
+    public query func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
         try {
-            let storage = getBountiesStorage();
-            await storage.getBountiesByCategory(category)
-        } catch (error) {
+            await bountiesStorage.getBountiesByCategory(category)
+        } catch (_error) {
             []
         }
     };
 
     // Get featured bounties
-    public func getFeaturedBounties() : async [Bounty] {
+    public query func getFeaturedBounties() : async [Bounty] {
         try {
-            let storage = getBountiesStorage();
-            await storage.getFeaturedBounties()
-        } catch (error) {
+            await bountiesStorage.getFeaturedBounties()
+        } catch (_error) {
             []
         }
     };
@@ -1223,11 +1203,10 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getBountiesStorage();
-                    let bounties = await storage.getBountiesByOrganizer(session.email);
+                    let bounties = await bountiesStorage.getBountiesByOrganizer(session.email);
                     #ok(bounties)
-                } catch (error) {
-                    #err(#StorageError("Bounties storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
                 }
             };
         }
@@ -1239,22 +1218,20 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getBountiesStorage();
-                    let bounties = await storage.getUserBounties(session.email);
+                    let bounties = await bountiesStorage.getUserBounties(session.email);
                     #ok(bounties)
-                } catch (error) {
-                    #err(#StorageError("Bounties storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
                 }
             };
         }
     };
 
     // Get bounty statistics
-    public func getBountyStats() : async BountyStats {
+    public query func getBountyStats() : async BountyStats {
         try {
-            let storage = getBountiesStorage();
-            await storage.getBountyStats()
-        } catch (error) {
+            await bountiesStorage.getBountyStats()
+        } catch (_error) {
             {
                 totalBounties = 0;
                 openBounties = 0;
@@ -1271,38 +1248,15 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let storage = getBountiesStorage();
-                    let result = await storage.deleteBounty(bountyId, session.email);
+                    let result = await bountiesStorage.deleteBounty(bountyId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
                     }
-                } catch (error) {
-                    #err(#StorageError("Bounties storage canister error: " # Error.message(error)))
+                } catch (_error) {
+                    #err(#StorageError("Bounties storage canister error"))
                 }
             };
         }
-    };
-
-    // UPDATE CANISTER IDs FUNCTION (for deployment)
-    public func updateCanisterIds(
-        freelancerId: Text,
-        clientId: Text, 
-        messageId: Text,
-        onboardingId: Text,
-        bountiesId: Text
-    ) : async () {
-        freelancerCanisterId := freelancerId;
-        clientCanisterId := clientId;
-        messageCanisterId := messageId;
-        onboardingCanisterId := onboardingId;
-        bountiesCanisterId := bountiesId;
-        
-        // Reset storage references to use new IDs
-        freelancerStorage := null;
-        clientStorage := null;
-        messageStorage := null;
-        onboardingStorage := null;
-        bountiesStorage := null;
     };
 }
