@@ -394,7 +394,7 @@ persistent actor Main {
 
     // Register new user (legacy function for backward compatibility)
     public func registerUser(userType: Text, email: Text, password: Text) : async Result.Result<(), Error> {
-        switch (signup(email, password, userType)) {
+        switch (await signup(email, password, userType)) {
             case (#ok(_)) { #ok(()) };
             case (#err(error)) { #err(error) };
         }
@@ -1146,7 +1146,7 @@ persistent actor Main {
     };
 
     // Get bounty by ID
-    public query func getBounty(bountyId: Text) : async ?Bounty {
+    public func getBounty(bountyId: Text) : async ?Bounty {
         try {
             await bountiesStorage.getBounty(bountyId)
         } catch (_error) {
@@ -1155,7 +1155,7 @@ persistent actor Main {
     };
 
     // Get all bounties
-    public query func getAllBounties() : async [Bounty] {
+    public func getAllBounties() : async [Bounty] {
         try {
             await bountiesStorage.getAllBounties()
         } catch (_error) {
@@ -1164,7 +1164,7 @@ persistent actor Main {
     };
 
     // Get bounties by status
-    public query func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
+    public func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
         try {
             await bountiesStorage.getBountiesByStatus(status)
         } catch (_error) {
@@ -1173,7 +1173,7 @@ persistent actor Main {
     };
 
     // Get bounties by category
-    public query func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
+    public func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
         try {
             await bountiesStorage.getBountiesByCategory(category)
         } catch (_error) {
@@ -1182,7 +1182,7 @@ persistent actor Main {
     };
 
     // Get featured bounties
-    public query func getFeaturedBounties() : async [Bounty] {
+    public func getFeaturedBounties() : async [Bounty] {
         try {
             await bountiesStorage.getFeaturedBounties()
         } catch (_error) {
@@ -1221,7 +1221,7 @@ persistent actor Main {
     };
 
     // Get bounty statistics
-    public query func getBountyStats() : async BountyStats {
+    public func getBountyStats() : async BountyStats {
         try {
             await bountiesStorage.getBountyStats()
         } catch (_error) {
