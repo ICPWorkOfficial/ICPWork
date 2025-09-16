@@ -76,9 +76,8 @@ persistent actor OnboardingStorage {
         #InvalidUserType;
     };
 
-    // Main canister principal - SET THIS TO YOUR MAIN CANISTER ID
-    private transient let MAIN_CANISTER_ID : Text = "rrkah-fqaaa-aaaaa-aaaaq-cai"; // Replace with actual main canister ID
-    private transient let mainCanisterPrincipal : Principal = Principal.fromText(MAIN_CANISTER_ID);
+    // Main canister principal - will be set during initialization
+    private transient var mainCanisterPrincipal : ?Principal = null;
 
     // Stable storage for upgrades
     private var onboardingEntries : [(Text, OnboardingRecord)] = [];
@@ -99,9 +98,17 @@ persistent actor OnboardingStorage {
         onboardingEntries := [];
     };
 
+    // Set main canister principal (called during initialization)
+    public shared(msg) func setMainCanister() : async () {
+        mainCanisterPrincipal := ?msg.caller;
+    };
+
     // Access control modifier
     private func onlyMainCanister(caller: Principal) : Bool {
-        Principal.equal(caller, mainCanisterPrincipal)
+        switch (mainCanisterPrincipal) {
+            case null false;
+            case (?principal) Principal.equal(caller, principal);
+        }
     };
 
     // Validate email format (basic validation)
@@ -185,13 +192,13 @@ persistent actor OnboardingStorage {
                 let updatedRecord : OnboardingRecord = {
                     email = existingRecord.email;
                     userType = existingRecord.userType;
-                    profileMethod = Option.get(profileMethod, existingRecord.profileMethod);
-                    personalInfo = Option.get(personalInfo, existingRecord.personalInfo);
-                    skills = Option.get(skills, existingRecord.skills);
-                    address = Option.get(address, existingRecord.address);
-                    profile = Option.get(profile, existingRecord.profile);
-                    final = Option.get(final, existingRecord.final);
-                    companyData = Option.get(companyData, existingRecord.companyData);
+                    profileMethod = switch (profileMethod) { case null existingRecord.profileMethod; case (?pm) ?pm };
+                    personalInfo = switch (personalInfo) { case null existingRecord.personalInfo; case (?pi) ?pi };
+                    skills = switch (skills) { case null existingRecord.skills; case (?s) s };
+                    address = switch (address) { case null existingRecord.address; case (?a) ?a };
+                    profile = switch (profile) { case null existingRecord.profile; case (?p) ?p };
+                    final = switch (final) { case null existingRecord.final; case (?f) ?f };
+                    companyData = switch (companyData) { case null existingRecord.companyData; case (?cd) ?cd };
                     isComplete = existingRecord.isComplete;
                     createdAt = existingRecord.createdAt;
                     updatedAt = Time.now();
@@ -337,7 +344,7 @@ persistent actor OnboardingStorage {
         };
 
         let totalCount = allRecords.size();
-        let pendingCount = totalCount - completedCount;
+        let pendingCount = if (totalCount > completedCount) totalCount - completedCount else 0;
 
         #ok({
             totalRecords = totalCount;

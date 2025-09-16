@@ -68,7 +68,7 @@ persistent actor Main {
         #text;
         #file;
         #image;
-        #system;
+        #systemMessage;
     };
 
     public type ConversationSummary = {
@@ -135,7 +135,7 @@ persistent actor Main {
     };
 
     // Storage canister actors - REPLACE WITH ACTUAL CANISTER IDs
-    transient let freelancerStorage = actor("rdmx6-jaaaa-aaaaa-aaadq-cai") : actor {
+    transient let freelancerStorage = actor("freelancer_data") : actor {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -143,7 +143,7 @@ persistent actor Main {
         getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
     };
 
-    transient let clientStorage = actor("ryjl3-tyaaa-aaaaa-aaaba-cai") : actor {
+    transient let clientStorage = actor("client_data") : actor {
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -151,7 +151,7 @@ persistent actor Main {
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
     };
 
-    transient let messageStorage = actor("rrkah4-fqaaa-aaaah-qcu7q-cai") : actor {
+    transient let messageStorage = actor("message_store") : actor {
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -162,7 +162,7 @@ persistent actor Main {
         getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
     };
 
-    transient let onboardingStorage = actor("onboarding-canister-id") : actor {
+    transient let onboardingStorage = actor("onboarding_store") : actor {
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -282,7 +282,7 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
-    transient let bountiesStorage = actor("bounties-canister-id") : actor {
+    transient let bountiesStorage = actor("bounties_store") : actor {
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -298,12 +298,11 @@ persistent actor Main {
         deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
     };
 
+    private var sessionEntries : [(Text, SessionManager.Session)] = [];
+
     // Initialize modules
     transient let auth = Auth.Auth();
     transient let sessionManager = SessionManager.SessionManager();
-
-    // Stable storage for upgrades
-    private var sessionEntries : [(Text, SessionManager.Session)] = [];
 
     // System functions for upgrades
     system func preupgrade() {
@@ -316,6 +315,7 @@ persistent actor Main {
         sessionManager.postupgrade(sessionEntries);
         sessionEntries := [];
     };
+
 
     // AUTHENTICATION FUNCTIONS
 
@@ -390,7 +390,6 @@ persistent actor Main {
         case (#err(error)) { #err(error) };
         }
     };
-
     // Login user and create session (legacy function for backward compatibility)
     public func loginUser(userType: Text, email: Text, password: Text) : async Result.Result<SessionInfo, Error> {
         if (Text.size(email) == 0) {
@@ -1099,7 +1098,7 @@ persistent actor Main {
     };
 
     // Get bounty by ID
-    public query func getBounty(bountyId: Text) : async ?Bounty {
+    public func getBounty(bountyId: Text) : async ?Bounty {
         try {
             await bountiesStorage.getBounty(bountyId)
         } catch (_error) {
@@ -1108,7 +1107,7 @@ persistent actor Main {
     };
 
     // Get all bounties
-    public query func getAllBounties() : async [Bounty] {
+    public func getAllBounties() : async [Bounty] {
         try {
             await bountiesStorage.getAllBounties()
         } catch (_error) {
@@ -1117,7 +1116,7 @@ persistent actor Main {
     };
 
     // Get bounties by status
-    public query func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
+    public func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
         try {
             await bountiesStorage.getBountiesByStatus(status)
         } catch (_error) {
@@ -1126,7 +1125,7 @@ persistent actor Main {
     };
 
     // Get bounties by category
-    public query func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
+    public func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
         try {
             await bountiesStorage.getBountiesByCategory(category)
         } catch (_error) {
@@ -1135,7 +1134,7 @@ persistent actor Main {
     };
 
     // Get featured bounties
-    public query func getFeaturedBounties() : async [Bounty] {
+    public func getFeaturedBounties() : async [Bounty] {
         try {
             await bountiesStorage.getFeaturedBounties()
         } catch (_error) {
@@ -1174,7 +1173,7 @@ persistent actor Main {
     };
 
     // Get bounty statistics
-    public query func getBountyStats() : async BountyStats {
+    public func getBountyStats() : async BountyStats {
         try {
             await bountiesStorage.getBountyStats()
         } catch (_error) {

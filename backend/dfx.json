@@ -12,12 +12,20 @@
       "main": "src/client_data/src/main.mo",
       "type": "motoko"
     },
-    "work_store": {
-      "main": "src/work_store/src/main.mo",
-      "type": "motoko"
-    },
     "escrow": {
       "main": "src/escrow/src/main.mo",
+      "type": "motoko"
+    },
+    "onboarding_store": {
+      "main": "src/onboarding_store/src/main.mo",
+      "type": "motoko"
+    },
+    "message_store": {
+      "main": "src/message_store/src/main.mo",
+      "type": "motoko"
+    },
+    "bounties_store": {
+      "main": "src/bounties_store/src/main.mo",
       "type": "motoko"
     }
   },

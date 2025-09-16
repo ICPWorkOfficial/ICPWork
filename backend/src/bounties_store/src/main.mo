@@ -120,7 +120,7 @@ persistent actor BountiesStorage {
 
     // Stable storage for bounties
     private stable var bountyEntries : [(Text, Bounty)] = [];
-    private var bounties = HashMap.HashMap<Text, Bounty>(0, Text.equal, Text.hash);
+    private transient var bounties = HashMap.HashMap<Text, Bounty>(0, Text.equal, Text.hash);
 
     // Stable storage for bounty counter
     private stable var bountyCounter : Nat = 0;

@@ -28,9 +28,8 @@ persistent actor FreelancerStorage {
         #InvalidEmail;
     };
 
-    // Main canister principal - SET THIS TO YOUR MAIN CANISTER ID
-    private transient let MAIN_CANISTER_ID : Text = "rrkah-fqaaa-aaaaa-aaaaq-cai"; // Replace with actual main canister ID
-    private transient let mainCanisterPrincipal : Principal = Principal.fromText(MAIN_CANISTER_ID);
+    // Main canister principal - will be set during initialization
+    private transient var mainCanisterPrincipal : ?Principal = null;
 
     // Stable storage for upgrades
     private var freelancersEntries : [(Text, Freelancer)] = [];
@@ -51,9 +50,17 @@ persistent actor FreelancerStorage {
         freelancersEntries := [];
     };
 
+    // Set main canister principal (called during initialization)
+    public shared(msg) func setMainCanister() : async () {
+        mainCanisterPrincipal := ?msg.caller;
+    };
+
     // Access control modifier
     private func onlyMainCanister(caller: Principal) : Bool {
-        Principal.equal(caller, mainCanisterPrincipal)
+        switch (mainCanisterPrincipal) {
+            case null false;
+            case (?principal) Principal.equal(caller, principal);
+        }
     };
 
     // Validate skills array (max 5 skills)
