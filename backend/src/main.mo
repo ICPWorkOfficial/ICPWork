@@ -134,12 +134,6 @@ persistent actor Main {
         completedAt: ?Int;
     };
 
-    // Storage canister IDs - Stable variables for compatibility
-    private stable var freelancerCanisterId : Text = "freelancer_data";
-    private stable var clientCanisterId : Text = "client_data";
-    private stable var messageCanisterId : Text = "message_store";
-    private stable var onboardingCanisterId : Text = "onboarding_store";
-    private stable var bountiesCanisterId : Text = "bounties_store";
 
     // Storage canister actors - Transient with lazy initialization
     private transient var freelancerStorage : ?actor {
@@ -335,7 +329,7 @@ persistent actor Main {
     } {
         switch (freelancerStorage) {
             case null {
-                let actor_ref = actor(freelancerCanisterId) : actor {
+                let actor_ref = actor("freelancer_data") : actor {
                     storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
                     updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
                     getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -358,7 +352,7 @@ persistent actor Main {
     } {
         switch (clientStorage) {
             case null {
-                let actor_ref = actor(clientCanisterId) : actor {
+                let actor_ref = actor("client_data") : actor {
                     storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
                     updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
                     getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -384,7 +378,7 @@ persistent actor Main {
     } {
         switch (messageStorage) {
             case null {
-                let actor_ref = actor(messageCanisterId) : actor {
+                let actor_ref = actor("message_store") : actor {
                     storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
                     getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
                     markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -414,7 +408,7 @@ persistent actor Main {
     } {
         switch (onboardingStorage) {
             case null {
-                let actor_ref = actor(onboardingCanisterId) : actor {
+                let actor_ref = actor("onboarding_store") : actor {
                     createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
                     updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
                     completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -449,7 +443,7 @@ persistent actor Main {
     } {
         switch (bountiesStorage) {
             case null {
-                let actor_ref = actor(bountiesCanisterId) : actor {
+                let actor_ref = actor("bounties_store") : actor {
                     createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
                     updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
                     registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -874,6 +868,7 @@ persistent actor Main {
     ) : async Result.Result<(), Error> {
         // This function allows updating canister IDs after deployment
         // For now, we'll just return success since we're using hardcoded names
+        // In the future, this could be used to update the actor references dynamically
         #ok(())
     };
 
