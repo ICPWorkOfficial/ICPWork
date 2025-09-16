@@ -425,13 +425,6 @@ persistent actor Main {
         }
     };
 
-    // Get user by email
-    public func getUserByEmail(email: Text) : async Result.Result<User, Error> {
-        switch (auth.getUserByEmail(email)) {
-            case null { #err(#UserNotFound) };
-            case (?user) { #ok(user) };
-        }
-    };
 
     // Verify OTP (placeholder - implement based on your OTP system)
     public func verifyOTP(userId: Text, otp: Text) : async Result.Result<Text, Error> {
