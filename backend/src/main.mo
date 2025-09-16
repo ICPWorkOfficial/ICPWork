@@ -134,6 +134,13 @@ persistent actor Main {
         completedAt: ?Int;
     };
 
+    // Storage canister IDs - Stable variables for compatibility
+    private stable var freelancerCanisterId : Text = "freelancer_data";
+    private stable var clientCanisterId : Text = "client_data";
+    private stable var messageCanisterId : Text = "message_store";
+    private stable var onboardingCanisterId : Text = "onboarding_store";
+    private stable var bountiesCanisterId : Text = "bounties_store";
+
     // Storage canister actors - Use proper canister names
     transient let freelancerStorage = actor("freelancer_data") : actor {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
@@ -298,6 +305,13 @@ persistent actor Main {
         deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
     };
 
+    // Stable storage variables for compatibility
+    private stable var freelancerStorageStable : ?Text = null;
+    private stable var clientStorageStable : ?Text = null;
+    private stable var messageStorageStable : ?Text = null;
+    private stable var onboardingStorageStable : ?Text = null;
+    private stable var bountiesStorageStable : ?Text = null;
+
     // Initialize modules
     transient let auth = Auth.Auth();
     transient let sessionManager = SessionManager.SessionManager();
@@ -315,6 +329,13 @@ persistent actor Main {
         auth.postupgrade();
         sessionManager.postupgrade(sessionEntries);
         sessionEntries := [];
+        
+        // Migration: Clear old stable variables that are no longer needed
+        freelancerStorageStable := null;
+        clientStorageStable := null;
+        messageStorageStable := null;
+        onboardingStorageStable := null;
+        bountiesStorageStable := null;
     };
 
     // AUTHENTICATION FUNCTIONS
@@ -686,8 +707,16 @@ persistent actor Main {
         }
     };
 
-    // Get user by email (admin function)
-    public func getUserByEmail(sessionId: Text, email: Text) : async Result.Result<User, Error> {
+    // Get user by email (backward compatible)
+    public func getUserByEmail(email: Text) : async Result.Result<User, Error> {
+        switch (auth.getUserByEmail(email)) {
+            case null { #err(#UserNotFound) };
+            case (?user) { #ok(user) };
+        }
+    };
+
+    // Get user by email with session validation (admin function)
+    public func getUserByEmailWithSession(sessionId: Text, email: Text) : async Result.Result<User, Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
             case (?session) {
