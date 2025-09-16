@@ -141,24 +141,24 @@ persistent actor Main {
     private stable var onboardingCanisterId : Text = "onboarding_store";
     private stable var bountiesCanisterId : Text = "bounties_store";
 
-    // Storage canister actors - Stable for compatibility
-    private stable var freelancerStorage = actor("freelancer_data") : actor {
+    // Storage canister actors - Transient with lazy initialization
+    private transient var freelancerStorage : ?actor {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
         deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
         getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
-    };
+    } = null;
 
-    private stable var clientStorage = actor("client_data") : actor {
+    private transient var clientStorage : ?actor {
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
         deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
-    };
+    } = null;
 
-    private stable var messageStorage = actor("message_store") : actor {
+    private transient var messageStorage : ?actor {
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -167,9 +167,9 @@ persistent actor Main {
         getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-    };
+    } = null;
 
-    private stable var onboardingStorage = actor("onboarding_store") : actor {
+    private transient var onboardingStorage : ?actor {
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -179,7 +179,7 @@ persistent actor Main {
         getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-    };
+    } = null;
 
     // Bounties data types
     public type BountyStatus = {
@@ -289,7 +289,7 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
-    private stable var bountiesStorage = actor("bounties_store") : actor {
+    private transient var bountiesStorage : ?actor {
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -303,7 +303,7 @@ persistent actor Main {
         getUserBounties: (Text) -> async [Bounty];
         getBountyStats: () -> async BountyStats;
         deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
-    };
+    } = null;
 
 
     // Initialize modules
@@ -323,6 +323,152 @@ persistent actor Main {
         auth.postupgrade();
         sessionManager.postupgrade(sessionEntries);
         sessionEntries := [];
+    };
+
+    // Helper functions for lazy actor initialization
+    private func getFreelancerStorage() : actor {
+        storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
+    } {
+        switch (freelancerStorage) {
+            case null {
+                let actor_ref = actor(freelancerCanisterId) : actor {
+                    storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+                    updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+                    getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
+                    deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+                    getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
+                };
+                freelancerStorage := ?actor_ref;
+                actor_ref
+            };
+            case (?actor_ref) actor_ref;
+        }
+    };
+
+    private func getClientStorage() : actor {
+        storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
+    } {
+        switch (clientStorage) {
+            case null {
+                let actor_ref = actor(clientCanisterId) : actor {
+                    storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+                    updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+                    getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
+                    deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+                    getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
+                };
+                clientStorage := ?actor_ref;
+                actor_ref
+            };
+            case (?actor_ref) actor_ref;
+        }
+    };
+
+    private func getMessageStorage() : actor {
+        storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+    } {
+        switch (messageStorage) {
+            case null {
+                let actor_ref = actor(messageCanisterId) : actor {
+                    storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                };
+                messageStorage := ?actor_ref;
+                actor_ref
+            };
+            case (?actor_ref) actor_ref;
+        }
+    };
+
+    private func getOnboardingStorage() : actor {
+        createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+    } {
+        switch (onboardingStorage) {
+            case null {
+                let actor_ref = actor(onboardingCanisterId) : actor {
+                    createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+                    updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+                    deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                };
+                onboardingStorage := ?actor_ref;
+                actor_ref
+            };
+            case (?actor_ref) actor_ref;
+        }
+    };
+
+    private func getBountiesStorage() : actor {
+        createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
+        updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
+        registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
+        submitToBounty: (Text, Text, Text, Text) -> async Result.Result<(), Text>;
+        getBounty: (Text) -> async ?Bounty;
+        getAllBounties: () -> async [Bounty];
+        getBountiesByStatus: (BountyStatus) -> async [Bounty];
+        getBountiesByCategory: (BountyCategory) -> async [Bounty];
+        getFeaturedBounties: () -> async [Bounty];
+        getBountiesByOrganizer: (Text) -> async [Bounty];
+        getUserBounties: (Text) -> async [Bounty];
+        getBountyStats: () -> async BountyStats;
+        deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
+    } {
+        switch (bountiesStorage) {
+            case null {
+                let actor_ref = actor(bountiesCanisterId) : actor {
+                    createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
+                    updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
+                    registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
+                    submitToBounty: (Text, Text, Text, Text) -> async Result.Result<(), Text>;
+                    getBounty: (Text) -> async ?Bounty;
+                    getAllBounties: () -> async [Bounty];
+                    getBountiesByStatus: (BountyStatus) -> async [Bounty];
+                    getBountiesByCategory: (BountyCategory) -> async [Bounty];
+                    getFeaturedBounties: () -> async [Bounty];
+                    getBountiesByOrganizer: (Text) -> async [Bounty];
+                    getUserBounties: (Text) -> async [Bounty];
+                    getBountyStats: () -> async BountyStats;
+                    deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
+                };
+                bountiesStorage := ?actor_ref;
+                actor_ref
+            };
+            case (?actor_ref) actor_ref;
+        }
     };
 
     // AUTHENTICATION FUNCTIONS
@@ -482,7 +628,7 @@ persistent actor Main {
                 };
 
                 try {
-                    let result = await freelancerStorage.storeFreelancer(session.email, freelancer);
+                    let result = await getFreelancerStorage().storeFreelancer(session.email, freelancer);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(_err)) { 
@@ -506,7 +652,7 @@ persistent actor Main {
                 };
 
                 try {
-                    let result = await freelancerStorage.updateFreelancer(session.email, freelancer);
+                    let result = await getFreelancerStorage().updateFreelancer(session.email, freelancer);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (_err) { 
@@ -530,7 +676,7 @@ persistent actor Main {
                 };
 
                 try {
-                    let result = await freelancerStorage.getFreelancer(session.email);
+                    let result = await getFreelancerStorage().getFreelancer(session.email);
                     switch (result) {
                         case (#ok(freelancer)) { #ok(freelancer) };
                         case (#err(_err)) { 
@@ -551,7 +697,7 @@ persistent actor Main {
             case (?session) {
                 // Add admin check here if needed
                 try {
-                    let result = await freelancerStorage.getAllFreelancers();
+                    let result = await getFreelancerStorage().getAllFreelancers();
                     switch (result) {
                         case (#ok(freelancers)) { #ok(freelancers) };
                         case (#err(_err)) { 
@@ -577,7 +723,7 @@ persistent actor Main {
                 };
 
                 try {
-                    let result = await clientStorage.storeClient(session.email, client);
+                    let result = await getClientStorage().storeClient(session.email, client);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(_err)) { 
@@ -601,7 +747,7 @@ persistent actor Main {
                 };
 
                 try {
-                    let result = await clientStorage.updateClient(session.email, client);
+                    let result = await getClientStorage().updateClient(session.email, client);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(_err)) { 
@@ -625,7 +771,7 @@ persistent actor Main {
                 };
 
                 try {
-                    let result = await clientStorage.getClient(session.email);
+                    let result = await getClientStorage().getClient(session.email);
                     switch (result) {
                         case (#ok(client)) { #ok(client) };
                         case (#err(_err)) { 
@@ -646,7 +792,7 @@ persistent actor Main {
             case (?session) {
                 // Add admin check here if needed
                 try {
-                    let result = await clientStorage.getAllClients();
+                    let result = await getClientStorage().getAllClients();
                     switch (result) {
                         case (#ok(clients)) { #ok(clients) };
                         case (#err(_err)) { 
@@ -739,7 +885,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await messageStorage.storeMessage(session.email, to, content, clientTimestamp, messageType);
+                    let result = await getMessageStorage().storeMessage(session.email, to, content, clientTimestamp, messageType);
                     switch (result) {
                         case (#ok(message)) { #ok(message) };
                         case (#err(msgError)) { 
@@ -764,7 +910,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await messageStorage.getConversationMessages(session.email, otherUser, limit, offset);
+                    let result = await getMessageStorage().getConversationMessages(session.email, otherUser, limit, offset);
                     switch (result) {
                         case (#ok(messages)) { #ok(messages) };
                         case (#err(msgError)) { 
@@ -788,7 +934,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await messageStorage.markMessageAsRead(messageId, session.email);
+                    let result = await getMessageStorage().markMessageAsRead(messageId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msgError)) { 
@@ -814,7 +960,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await messageStorage.getUserConversations(session.email);
+                    let result = await getMessageStorage().getUserConversations(session.email);
                     switch (result) {
                         case (#ok(conversations)) { #ok(conversations) };
                         case (#err(msgError)) { 
@@ -838,7 +984,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await messageStorage.getUnreadMessageCount(session.email);
+                    let result = await getMessageStorage().getUnreadMessageCount(session.email);
                     switch (result) {
                         case (#ok(count)) { #ok(count) };
                         case (#err(msgError)) { 
@@ -862,7 +1008,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await messageStorage.deleteMessage(messageId, session.email);
+                    let result = await getMessageStorage().deleteMessage(messageId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msgError)) { 
@@ -890,7 +1036,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await onboardingStorage.createOnboardingRecord(session.email, userType);
+                    let result = await getOnboardingStorage().createOnboardingRecord(session.email, userType);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(onboardingError)) { 
@@ -924,7 +1070,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await onboardingStorage.updateOnboardingStep(
+                    let result = await getOnboardingStorage().updateOnboardingStep(
                         session.email, 
                         profileMethod, 
                         personalInfo, 
@@ -959,7 +1105,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await onboardingStorage.completeOnboarding(session.email);
+                    let result = await getOnboardingStorage().completeOnboarding(session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(onboardingError)) { 
@@ -984,7 +1130,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await onboardingStorage.getOnboardingRecord(session.email);
+                    let result = await getOnboardingStorage().getOnboardingRecord(session.email);
                     switch (result) {
                         case (#ok(record)) { #ok(record) };
                         case (#err(onboardingError)) { 
@@ -1009,7 +1155,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let result = await onboardingStorage.getAllOnboardingRecords();
+                    let result = await getOnboardingStorage().getAllOnboardingRecords();
                     switch (result) {
                         case (#ok(records)) { #ok(records) };
                         case (#err(onboardingError)) { 
@@ -1032,7 +1178,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let result = await onboardingStorage.getOnboardingRecordsByStatus(isComplete);
+                    let result = await getOnboardingStorage().getOnboardingRecordsByStatus(isComplete);
                     switch (result) {
                         case (#ok(records)) { #ok(records) };
                         case (#err(onboardingError)) { 
@@ -1055,7 +1201,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let result = await onboardingStorage.getOnboardingRecordsByUserType(userType);
+                    let result = await getOnboardingStorage().getOnboardingRecordsByUserType(userType);
                     switch (result) {
                         case (#ok(records)) { #ok(records) };
                         case (#err(onboardingError)) { 
@@ -1085,7 +1231,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?_session) {
                 try {
-                    let result = await onboardingStorage.getOnboardingStats();
+                    let result = await getOnboardingStorage().getOnboardingStats();
                     switch (result) {
                         case (#ok(stats)) { #ok(stats) };
                         case (#err(onboardingError)) { 
@@ -1110,7 +1256,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await bountiesStorage.createBounty(session.email, input);
+                    let result = await getBountiesStorage().createBounty(session.email, input);
                     switch (result) {
                         case (#ok(bounty)) { #ok(bounty) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
@@ -1128,7 +1274,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await bountiesStorage.updateBounty(bountyId, session.email, update);
+                    let result = await getBountiesStorage().updateBounty(bountyId, session.email, update);
                     switch (result) {
                         case (#ok(bounty)) { #ok(bounty) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
@@ -1146,7 +1292,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await bountiesStorage.registerForBounty(bountyId, session.email);
+                    let result = await getBountiesStorage().registerForBounty(bountyId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
@@ -1164,7 +1310,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await bountiesStorage.submitToBounty(bountyId, session.email, submissionUrl, description);
+                    let result = await getBountiesStorage().submitToBounty(bountyId, session.email, submissionUrl, description);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
@@ -1179,7 +1325,7 @@ persistent actor Main {
     // Get bounty by ID
     public func getBounty(bountyId: Text) : async ?Bounty {
         try {
-            await bountiesStorage.getBounty(bountyId)
+            await getBountiesStorage().getBounty(bountyId)
         } catch (_error) {
             null
         }
@@ -1188,7 +1334,7 @@ persistent actor Main {
     // Get all bounties
     public func getAllBounties() : async [Bounty] {
         try {
-            await bountiesStorage.getAllBounties()
+            await getBountiesStorage().getAllBounties()
         } catch (_error) {
             []
         }
@@ -1197,7 +1343,7 @@ persistent actor Main {
     // Get bounties by status
     public func getBountiesByStatus(status: BountyStatus) : async [Bounty] {
         try {
-            await bountiesStorage.getBountiesByStatus(status)
+            await getBountiesStorage().getBountiesByStatus(status)
         } catch (_error) {
             []
         }
@@ -1206,7 +1352,7 @@ persistent actor Main {
     // Get bounties by category
     public func getBountiesByCategory(category: BountyCategory) : async [Bounty] {
         try {
-            await bountiesStorage.getBountiesByCategory(category)
+            await getBountiesStorage().getBountiesByCategory(category)
         } catch (_error) {
             []
         }
@@ -1215,7 +1361,7 @@ persistent actor Main {
     // Get featured bounties
     public func getFeaturedBounties() : async [Bounty] {
         try {
-            await bountiesStorage.getFeaturedBounties()
+            await getBountiesStorage().getFeaturedBounties()
         } catch (_error) {
             []
         }
@@ -1227,7 +1373,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let bounties = await bountiesStorage.getBountiesByOrganizer(session.email);
+                    let bounties = await getBountiesStorage().getBountiesByOrganizer(session.email);
                     #ok(bounties)
                 } catch (_error) {
                     #err(#StorageError("Bounties storage canister error"))
@@ -1242,7 +1388,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let bounties = await bountiesStorage.getUserBounties(session.email);
+                    let bounties = await getBountiesStorage().getUserBounties(session.email);
                     #ok(bounties)
                 } catch (_error) {
                     #err(#StorageError("Bounties storage canister error"))
@@ -1254,7 +1400,7 @@ persistent actor Main {
     // Get bounty statistics
     public func getBountyStats() : async BountyStats {
         try {
-            await bountiesStorage.getBountyStats()
+            await getBountiesStorage().getBountyStats()
         } catch (_error) {
             {
                 totalBounties = 0;
@@ -1272,7 +1418,7 @@ persistent actor Main {
             case null { return #err(#InvalidSession) };
             case (?session) {
                 try {
-                    let result = await bountiesStorage.deleteBounty(bountyId, session.email);
+                    let result = await getBountiesStorage().deleteBounty(bountyId, session.email);
                     switch (result) {
                         case (#ok()) { #ok(()) };
                         case (#err(msg)) { #err(#StorageError(msg)) };
