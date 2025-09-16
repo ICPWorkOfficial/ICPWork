@@ -141,8 +141,8 @@ persistent actor Main {
     private stable var onboardingCanisterId : Text = "onboarding_store";
     private stable var bountiesCanisterId : Text = "bounties_store";
 
-    // Storage canister actors - Use proper canister names
-    transient let freelancerStorage = actor("freelancer_data") : actor {
+    // Storage canister actors - Stable for compatibility
+    private stable var freelancerStorage = actor("freelancer_data") : actor {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -150,7 +150,7 @@ persistent actor Main {
         getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
     };
 
-    transient let clientStorage = actor("client_data") : actor {
+    private stable var clientStorage = actor("client_data") : actor {
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -158,7 +158,7 @@ persistent actor Main {
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
     };
 
-    transient let messageStorage = actor("message_store") : actor {
+    private stable var messageStorage = actor("message_store") : actor {
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -169,7 +169,7 @@ persistent actor Main {
         getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
     };
 
-    transient let onboardingStorage = actor("onboarding_store") : actor {
+    private stable var onboardingStorage = actor("onboarding_store") : actor {
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -289,7 +289,7 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
-    transient let bountiesStorage = actor("bounties_store") : actor {
+    private stable var bountiesStorage = actor("bounties_store") : actor {
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -305,12 +305,6 @@ persistent actor Main {
         deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
     };
 
-    // Stable storage variables for compatibility
-    private stable var freelancerStorageStable : ?Text = null;
-    private stable var clientStorageStable : ?Text = null;
-    private stable var messageStorageStable : ?Text = null;
-    private stable var onboardingStorageStable : ?Text = null;
-    private stable var bountiesStorageStable : ?Text = null;
 
     // Initialize modules
     transient let auth = Auth.Auth();
@@ -329,13 +323,6 @@ persistent actor Main {
         auth.postupgrade();
         sessionManager.postupgrade(sessionEntries);
         sessionEntries := [];
-        
-        // Migration: Clear old stable variables that are no longer needed
-        freelancerStorageStable := null;
-        clientStorageStable := null;
-        messageStorageStable := null;
-        onboardingStorageStable := null;
-        bountiesStorageStable := null;
     };
 
     // AUTHENTICATION FUNCTIONS
@@ -727,6 +714,21 @@ persistent actor Main {
                 }
             };
         }
+    };
+
+    // ADMIN FUNCTIONS
+
+    // Update canister IDs (admin function)
+    public func updateCanisterIds(
+        freelancerId: ?Text,
+        clientId: ?Text,
+        messageId: ?Text,
+        onboardingId: ?Text,
+        bountiesId: ?Text
+    ) : async Result.Result<(), Error> {
+        // This function allows updating canister IDs after deployment
+        // For now, we'll just return success since we're using hardcoded names
+        #ok(())
     };
 
     // MESSAGE FUNCTIONS
