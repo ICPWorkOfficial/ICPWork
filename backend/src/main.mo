@@ -68,7 +68,7 @@ persistent actor Main {
         #text;
         #file;
         #image;
-        #system;
+        #systemMessage;
     };
 
     public type ConversationSummary = {
@@ -134,8 +134,8 @@ persistent actor Main {
         completedAt: ?Int;
     };
 
-    // Storage canister actors - REPLACE WITH ACTUAL CANISTER IDs
-    transient let freelancerStorage = actor("rdmx6-jaaaa-aaaaa-aaadq-cai") : actor {
+    // Storage canister actors - Use proper canister names
+    transient let freelancerStorage = actor("freelancer_data") : actor {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -143,7 +143,7 @@ persistent actor Main {
         getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
     };
 
-    transient let clientStorage = actor("ryjl3-tyaaa-aaaaa-aaaba-cai") : actor {
+    transient let clientStorage = actor("client_data") : actor {
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -151,7 +151,7 @@ persistent actor Main {
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
     };
 
-    transient let messageStorage = actor("rrkah4-fqaaa-aaaah-qcu7q-cai") : actor {
+    transient let messageStorage = actor("message_store") : actor {
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -162,7 +162,7 @@ persistent actor Main {
         getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
     };
 
-    transient let onboardingStorage = actor("onboarding-canister-id") : actor {
+    transient let onboardingStorage = actor("onboarding_store") : actor {
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -282,7 +282,7 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
-    transient let bountiesStorage = actor("bounties-canister-id") : actor {
+    transient let bountiesStorage = actor("bounties_store") : actor {
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -337,6 +337,16 @@ persistent actor Main {
             case (#InvalidEmail) { #InvalidEmail };
             case (#WeakPassword) { #WeakPassword };
         }
+    };
+
+    // Helper function to validate session and get user info
+    func validateSessionAndGetUser(sessionId: Text) : ?SessionManager.Session {
+        sessionManager.validateSession(sessionId)
+    };
+
+    // Helper function to check if user type matches expected type
+    func validateUserType(session: SessionManager.Session, expectedType: Text) : Bool {
+        session.userType == expectedType
     };
 
     // Signup new user
@@ -535,9 +545,10 @@ persistent actor Main {
 
     // Get all freelancers (for clients to browse)
     public func getAllFreelancers(sessionId: Text) : async Result.Result<[(Text, Freelancer)], Error> {
-        switch (sessionManager.validateSession(sessionId)) {
+        switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
+                // Add admin check here if needed
                 try {
                     let result = await freelancerStorage.getAllFreelancers();
                     switch (result) {
@@ -629,15 +640,16 @@ persistent actor Main {
 
     // Get all clients
     public func getAllClients(sessionId: Text) : async Result.Result<[(Text, Client)], Error> {
-        switch (sessionManager.validateSession(sessionId)) {
+        switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
+                // Add admin check here if needed
                 try {
                     let result = await clientStorage.getAllClients();
                     switch (result) {
                         case (#ok(clients)) { #ok(clients) };
                         case (#err(_err)) { 
-                            #err(#StorageError("Failed to get all clients: "))
+                            #err(#StorageError("Failed to get all clients"))
                         };
                     }
                 } catch (_error) {
@@ -648,8 +660,51 @@ persistent actor Main {
     };
 
     // UTILITY FUNCTIONS
+    
+    // Get active session count
     public func getActiveSessionCount() : async Nat {
         sessionManager.getActiveSessionCount()
+    };
+
+    // Get user info from session
+    public func getUserInfo(sessionId: Text) : async Result.Result<{email: Text; userType: Text; expiresAt: Int}, Error> {
+        switch (validateSessionAndGetUser(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                #ok({
+                    email = session.email;
+                    userType = session.userType;
+                    expiresAt = session.expiresAt;
+                })
+            };
+        }
+    };
+
+    // Get session info
+    public func getSessionInfo(sessionId: Text) : async ?SessionInfo {
+        sessionManager.getSessionInfo(sessionId)
+    };
+
+    // Check if session is valid
+    public func isSessionValid(sessionId: Text) : async Bool {
+        switch (validateSessionAndGetUser(sessionId)) {
+            case null { false };
+            case (?_) { true };
+        }
+    };
+
+    // Get user by email (admin function)
+    public func getUserByEmail(sessionId: Text, email: Text) : async Result.Result<User, Error> {
+        switch (validateSessionAndGetUser(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                // Add admin check here if needed
+                switch (auth.getUserByEmail(email)) {
+                    case null { #err(#UserNotFound) };
+                    case (?user) { #ok(user) };
+                }
+            };
+        }
     };
 
     // MESSAGE FUNCTIONS
