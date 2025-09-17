@@ -1,19 +1,23 @@
 {
   "canisters": {
-    "main": {
-      "main": "src/main.mo",
+    "user_management": {
+      "main": "src/user_management/src/main.mo",
       "type": "motoko"
     },
-    "freelancer_data": {
-      "main": "src/freelancer_data/src/main.mo",
+    "escrow": {
+      "main": "src/escrow/src/main.mo",
+      "type": "motoko"
+    },
+    "main": {
+      "main": "src/main.mo",
       "type": "motoko"
     },
     "client_data": {
       "main": "src/client_data/src/main.mo",
       "type": "motoko"
     },
-    "escrow": {
-      "main": "src/escrow/src/main.mo",
+    "freelancer_data": {
+      "main": "src/freelancer_data/src/main.mo",
       "type": "motoko"
     },
     "onboarding_store": {
@@ -31,8 +35,7 @@
   },
   "defaults": {
     "build": {
-      "args": "",
-      "packtool": "mops sources"
+      "args": ""
     }
   },
   "output_env_file": ".env",

@@ -1,0 +1,57 @@
+type Result_1 = 
+ variant {
+   err: text;
+   ok: EscrowId;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok;
+ };
+type ICP = nat64;
+type EscrowStatus = 
+ variant {
+   Active;
+   Cancelled;
+   Completed;
+   Expired;
+ };
+type EscrowId = nat;
+type EscrowDetails = 
+ record {
+   amount: ICP;
+   approvals: vec principal;
+   beneficiary: principal;
+   condition: EscrowCondition;
+   created_at: int;
+   depositor: principal;
+   expires_at: opt int;
+   id: EscrowId;
+   status: EscrowStatus;
+ };
+type EscrowCondition = 
+ variant {
+   External: text;
+   ManualApproval: principal;
+   MultiSig: vec principal;
+   TimeDelay: int;
+ };
+type CreateEscrowArgs = 
+ record {
+   amount: ICP;
+   beneficiary: principal;
+   condition: EscrowCondition;
+   expires_at: opt int;
+ };
+service : {
+  approveRelease: (escrowId: EscrowId) -> (Result);
+  cancelEscrow: (escrowId: EscrowId) -> (Result);
+  cleanupExpiredEscrows: () -> (nat);
+  createEscrow: (args: CreateEscrowArgs) -> (Result_1);
+  getActiveEscrows: () -> (vec EscrowDetails) query;
+  getEscrow: (escrowId: EscrowId) -> (opt EscrowDetails) query;
+  getEscrowsForPrincipal: ("principal": principal) ->
+   (vec EscrowDetails) query;
+  getTotalHeld: () -> (ICP) query;
+  releaseTimedEscrow: (escrowId: EscrowId) -> (Result);
+}

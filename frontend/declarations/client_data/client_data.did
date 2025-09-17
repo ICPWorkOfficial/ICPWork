@@ -1,0 +1,40 @@
+type Result_1 = 
+ variant {
+   err: Error;
+   ok: Client;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Error = 
+ variant {
+   AlreadyExists;
+   InvalidData;
+   NotFound;
+   Unauthorized;
+ };
+type Client = 
+ record {
+   businessType: text;
+   companyName: text;
+   companyWebsite: opt text;
+   description: text;
+   firstName: text;
+   industry: text;
+   lastName: text;
+   numberOfEmployees: nat;
+   phoneNumber: text;
+ };
+service : {
+  deleteClient: () -> (Result);
+  getAllClients: () -> (vec record {
+                              principal;
+                              Client;
+                            }) query;
+  getClient: ("principal": principal) -> (Result_1) query;
+  getMyProfile: () -> (Result_1);
+  storeClient: (client: Client) -> (Result);
+  updateClient: (client: Client) -> (Result);
+}

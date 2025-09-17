@@ -1,0 +1,57 @@
+type Result_4 = 
+ variant {
+   err: Error;
+   ok: bool;
+ };
+type Result_3 = 
+ variant {
+   err: Error;
+   ok: vec record {
+             text;
+             Freelancer;
+           };
+ };
+type Result_2 = 
+ variant {
+   err: Error;
+   ok: Freelancer;
+ };
+type Result_1 = 
+ variant {
+   err: Error;
+   ok: nat;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Freelancer = 
+ record {
+   city: text;
+   country: text;
+   linkedinProfile: opt text;
+   name: text;
+   phoneNumber: text;
+   photo: opt text;
+   skills: vec text;
+   state: text;
+   streetAddress: text;
+   zipCode: text;
+ };
+type Error = 
+ variant {
+   InvalidEmail;
+   InvalidSkillsCount;
+   NotFound;
+   Unauthorized;
+ };
+service : {
+  deleteFreelancer: (email: text) -> (Result);
+  freelancerExists: (email: text) -> (Result_4);
+  getAllFreelancers: () -> (Result_3);
+  getFreelancer: (email: text) -> (Result_2);
+  getTotalFreelancers: () -> (Result_1);
+  storeFreelancer: (email: text, freelancer: Freelancer) -> (Result);
+  updateFreelancer: (email: text, freelancer: Freelancer) -> (Result);
+}
