@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
     const result = await icpAgent.signup(email, password, userType);
 
     if (result.success) {
-      // Generate a simple session ID (in production, use proper session management)
-      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // The backend now returns a sessionId
+      const sessionId = result.sessionId;
       
       // Set session cookie
       const response = NextResponse.json({
