@@ -366,3 +366,9 @@ class ICPAgent {
 }
 
 export const icpAgent = new ICPAgent();
+
+// Re-export the new connection system
+export * from './canister-connections';
+export * from './api-services';
+export { default as ICPWorkService } from './api-services';
+export { default as UsageExamples } from './usage-examples';
