@@ -16,6 +16,7 @@ type AuthMode = 'login' | 'signup';
 interface LoginFormData {
   email: string;
   password: string;
+  userType: string;
 }
 
 interface SignupFormData {
@@ -49,7 +50,8 @@ export default function AuthForm() {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: '',
-    password: ''
+    password: '',
+    userType: 'freelancer'
   });
   const [signupData, setSignupData] = useState<SignupFormData>({
     email: '',
@@ -297,6 +299,46 @@ export default function AuthForm() {
                 )}
               </div>
 
+              {/* User Type Selection */}
+              <div className="space-y-1">
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (authMode === 'login') {
+                        setLoginData(prev => ({ ...prev, userType: 'freelancer' }));
+                      } else {
+                        setSignupData(prev => ({ ...prev, userType: 'freelancer' }));
+                      }
+                    }}
+                    className={`flex-1 h-16 px-6 text-lg border rounded-xl transition-all ${
+                      (authMode === 'login' ? loginData.userType : signupData.userType) === 'freelancer'
+                        ? 'border-gray-900 bg-gray-50 text-gray-900'
+                        : 'border-[#7d7d7d] text-gray-600 hover:border-gray-900'
+                    }`}
+                  >
+                    Freelancer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (authMode === 'login') {
+                        setLoginData(prev => ({ ...prev, userType: 'client' }));
+                      } else {
+                        setSignupData(prev => ({ ...prev, userType: 'client' }));
+                      }
+                    }}
+                    className={`flex-1 h-16 px-6 text-lg border rounded-xl transition-all ${
+                      (authMode === 'login' ? loginData.userType : signupData.userType) === 'client'
+                        ? 'border-gray-900 bg-gray-50 text-gray-900'
+                        : 'border-[#7d7d7d] text-gray-600 hover:border-gray-900'
+                    }`}
+                  >
+                    Client
+                  </button>
+                </div>
+              </div>
+
               {/* Password Input */}
               <div className="space-y-1 relative">
                 <div className="relative">
@@ -330,6 +372,8 @@ export default function AuthForm() {
                     <div className="relative w-[215px] h-[219px]">
                       {/* Background SVG from Figma */}
                       <Image
+                        width={215}
+                        height={219}
                         src="/icons/tooltip.svg"
                         alt="Tooltip" 
                         className="absolute inset-0 w-full h-full" 

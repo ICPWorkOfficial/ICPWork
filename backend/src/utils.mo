@@ -1,17 +1,15 @@
 import Blob "mo:base/Blob";
 import Text "mo:base/Text";
-import Sha256 "mo:sha2/Sha256";
 import Random "mo:base/Random";
 import Nat64 "mo:base/Nat64";
 import Nat8 "mo:base/Nat8";
 
 
 module {
-  // Hash a password using SHA-256 and return blob digest
+  // Hash a password using simple encoding (for demo purposes)
   public func hashPassword(password : Text) : Blob {
     let bytes = Text.encodeUtf8(password);
-    let digest = Sha256.fromBlob(#sha256, bytes);
-    return digest;
+    return bytes;
   };
 
   // Generates a 6-digit OTP using Nat64

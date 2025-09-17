@@ -1,0 +1,80 @@
+type User = 
+ record {
+   businessType: opt text;
+   city: opt text;
+   companyName: opt text;
+   companyWebsite: opt text;
+   country: opt text;
+   createdAt: int;
+   description: opt text;
+   email: text;
+   firstName: opt text;
+   industry: opt text;
+   lastName: opt text;
+   linkedinProfile: opt text;
+   numberOfEmployees: opt nat;
+   passwordHash: blob;
+   phoneNumber: opt text;
+   photo: opt text;
+   skills: vec text;
+   state: opt text;
+   streetAddress: opt text;
+   updatedAt: int;
+   userId: text;
+   userType: text;
+   zipCode: opt text;
+ };
+type Result_1 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok: User;
+ };
+type Error = 
+ variant {
+   AlreadyExists;
+   InvalidData;
+   InvalidEmail;
+   InvalidPassword;
+   InvalidUserType;
+   NotFound;
+   Unauthorized;
+ };
+service : {
+  changePassword: (email: text, oldPassword: text, newPassword: text) ->
+   (Result_1);
+  deleteUser: (email: text) -> (Result_1);
+  getAllUsers: () -> (vec record {
+                            text;
+                            User;
+                          }) query;
+  getUser: (email: text) -> (Result) query;
+  getUserById: (userId: text) -> (Result) query;
+  getUsersByType: (userType: text) -> (vec User) query;
+  loginUser: (email: text, password: text) -> (Result);
+  registerUser: (email: text, password: text, userType: text) -> (Result);
+  updateUserProfile: (email: text, profileData:
+   record {
+     businessType: opt text;
+     city: opt text;
+     companyName: opt text;
+     companyWebsite: opt text;
+     country: opt text;
+     description: opt text;
+     firstName: opt text;
+     industry: opt text;
+     lastName: opt text;
+     linkedinProfile: opt text;
+     numberOfEmployees: opt nat;
+     phoneNumber: opt text;
+     photo: opt text;
+     skills: vec text;
+     state: opt text;
+     streetAddress: opt text;
+     zipCode: opt text;
+   }) -> (Result);
+}

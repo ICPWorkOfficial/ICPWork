@@ -1,0 +1,96 @@
+type SessionInfo = 
+ record {
+   expiresAt: int;
+   sessionId: text;
+   userType: text;
+ };
+type Result_5 = 
+ variant {
+   err: Error;
+   ok: vec record {
+             text;
+             Client;
+           };
+ };
+type Result_4 = 
+ variant {
+   err: Error;
+   ok: vec record {
+             text;
+             Freelancer;
+           };
+ };
+type Result_3 = 
+ variant {
+   err: Error;
+   ok: Client;
+ };
+type Result_2 = 
+ variant {
+   err: Error;
+   ok: Freelancer;
+ };
+type Result_1 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok: SessionInfo;
+ };
+type Freelancer = 
+ record {
+   city: text;
+   country: text;
+   linkedinProfile: opt text;
+   name: text;
+   phoneNumber: text;
+   photo: opt text;
+   skills: vec text;
+   state: text;
+   streetAddress: text;
+   zipCode: text;
+ };
+type Error = 
+ variant {
+   AuthenticationFailed;
+   EmailRequired;
+   InvalidSession;
+   InvalidUserType;
+   RegistrationFailed;
+   StorageError: text;
+ };
+type Client = 
+ record {
+   businessType: text;
+   companyName: text;
+   companyWebsite: opt text;
+   description: text;
+   firstName: text;
+   industry: text;
+   lastName: text;
+   numberOfEmployees: nat;
+   phoneNumber: text;
+ };
+service : {
+  createClientProfile: (sessionId: text, client: Client) -> (Result_1);
+  createFreelancerProfile: (sessionId: text, freelancer: Freelancer) ->
+   (Result_1);
+  getActiveSessionCount: () -> (nat);
+  getAllClients: (sessionId: text) -> (Result_5);
+  getAllFreelancers: (sessionId: text) -> (Result_4);
+  getClientProfile: (sessionId: text) -> (Result_3);
+  getFreelancerProfile: (sessionId: text) -> (Result_2);
+  getUserRole: (email: text) -> (opt text);
+  login: (email: text, password: text) -> (bool);
+  loginUser: (userType: text, email: text, password: text) -> (Result);
+  logoutUser: (sessionId: text) -> (Result_1);
+  registerUser: (userType: text, email: text, password: text) -> (Result_1);
+  setUserRole: (email: text, role: text) -> (Result_1);
+  updateClientProfile: (sessionId: text, client: Client) -> (Result_1);
+  updateFreelancerProfile: (sessionId: text, freelancer: Freelancer) ->
+   (Result_1);
+  validateUserSession: (sessionId: text) -> (Result);
+}
