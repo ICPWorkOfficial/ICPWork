@@ -46,7 +46,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Call the backend canister signup method
+    console.log('Calling icpAgent.signup with:', { email, password: '***', userType });
     const result = await icpAgent.signup(email, password, userType);
+    console.log('icpAgent.signup result:', result);
 
     if (result.success) {
       // Generate a simple session ID (in production, use proper session management)
@@ -75,6 +77,9 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     // Handle signup errors from the canister
+    console.error('Signup API error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     const errorMessage = error.message || 'Signup failed';
     const fieldErrors = getFieldErrors(errorMessage);
     

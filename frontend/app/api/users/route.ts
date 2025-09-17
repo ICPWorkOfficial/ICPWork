@@ -12,28 +12,11 @@ async function getUserManagementActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'ufxgi-4p777-77774-qaadq-cai'; // User management canister ID
+  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // User management canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
-// GET - Get all users
-export async function GET() {
-  try {
-    const actor = await getUserManagementActor();
-    const users = await actor.getAllUsers();
-    
-    return NextResponse.json({ 
-      success: true,
-      users: users
-    });
-  } catch (error) {
-    console.error('Get users error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
+// Note: GET method removed - use /api/users/all instead
 
 // POST - Register new user
 export async function POST(request: Request) {
@@ -78,7 +61,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Register user error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

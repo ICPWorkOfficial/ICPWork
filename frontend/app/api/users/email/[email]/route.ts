@@ -12,7 +12,7 @@ async function getUserManagementActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'ufxgi-4p777-77774-qaadq-cai'; // User management canister ID
+  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // User management canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
@@ -43,7 +43,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ emai
   } catch (error) {
     console.error('Get user by email error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

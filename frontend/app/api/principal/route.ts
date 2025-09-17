@@ -21,10 +21,11 @@ export async function GET() {
       success: true,
       principalId: anonymousPrincipal.toText(),
       canisterIds: {
-        main: 'umunu-kh777-77774-qaaca-cai',
-        clientData: 'uxrrr-q7777-77774-qaaaq-cai',
-        freelancerData: 'uzt4z-lp777-77774-qaabq-cai',
-        escrow: 'u6s2n-gx777-77774-qaaba-cai'
+        main: 'ulvla-h7777-77774-qaacq-cai',
+        userManagement: 'vizcg-th777-77774-qaaea-cai',
+        clientData: 'u6s2n-gx777-77774-qaaba-cai',
+        freelancerData: 'umunu-kh777-77774-qaaca-cai',
+        escrow: 'uzt4z-lp777-77774-qaabq-cai'
       }
     });
   } catch (error) {

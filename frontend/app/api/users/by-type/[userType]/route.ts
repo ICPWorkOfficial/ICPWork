@@ -12,7 +12,7 @@ async function getUserManagementActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'ufxgi-4p777-77774-qaadq-cai'; // User management canister ID
+  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // User management canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
@@ -20,6 +20,14 @@ async function getUserManagementActor() {
 export async function GET(request: Request, { params }: { params: Promise<{ userType: string }> }) {
   try {
     const { userType } = await params;
+    
+    // Validate userType parameter
+    if (!userType) {
+      return NextResponse.json(
+        { error: 'userType parameter is required' },
+        { status: 400 }
+      );
+    }
     
     if (userType !== 'client' && userType !== 'freelancer') {
       return NextResponse.json(
@@ -31,15 +39,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ user
     const actor = await getUserManagementActor();
     const users = await actor.getUsersByType(userType);
     
+    // Convert BigInt values to strings for JSON serialization
+    const serializedUsers = JSON.parse(JSON.stringify(users, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+    
     return NextResponse.json({ 
       success: true,
-      users: users,
-      count: users.length
+      users: serializedUsers,
+      count: serializedUsers.length,
+      message: `Retrieved ${serializedUsers.length} ${userType} users`
     });
   } catch (error) {
     console.error('Get users by type error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

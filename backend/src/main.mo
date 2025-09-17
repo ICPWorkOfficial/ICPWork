@@ -135,7 +135,7 @@ persistent actor Main {
     };
 
     // Storage canister actors - Use proper canister names
-    transient let freelancerStorage = actor("freelancer_data") : actor {
+    transient let freelancerStorage = actor("umunu-kh777-77774-qaaca-cai") : actor {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -143,7 +143,7 @@ persistent actor Main {
         getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
     };
 
-    transient let clientStorage = actor("client_data") : actor {
+    transient let clientStorage = actor("u6s2n-gx777-77774-qaaba-cai") : actor {
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -151,7 +151,7 @@ persistent actor Main {
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
     };
 
-    transient let messageStorage = actor("message_store") : actor {
+    transient let messageStorage = actor("ucwa4-rx777-77774-qaada-cai") : actor {
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -162,7 +162,7 @@ persistent actor Main {
         getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
     };
 
-    transient let onboardingStorage = actor("onboarding_store") : actor {
+    transient let onboardingStorage = actor("ufxgi-4p777-77774-qaadq-cai") : actor {
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -282,7 +282,7 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
-    transient let bountiesStorage = actor("bounties_store") : actor {
+    transient let bountiesStorage = actor("uxrrr-q7777-77774-qaaaq-cai") : actor {
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -394,7 +394,7 @@ persistent actor Main {
 
     // Register new user (legacy function for backward compatibility)
     public func registerUser(userType: Text, email: Text, password: Text) : async Result.Result<(), Error> {
-        switch (signup(email, password, userType)) {
+        switch (await signup(email, password, userType)) {
             case (#ok(_)) { #ok(()) };
             case (#err(error)) { #err(error) };
         }
@@ -433,21 +433,6 @@ persistent actor Main {
         }
     };
 
-    // Simple login without user type (for backward compatibility)
-    public func login(email: Text, password: Text) : async Bool {
-        if (Text.size(email) == 0) {
-            return false;
-        };
-
-        let isAuthenticated = auth.login(email, password);
-        if (not isAuthenticated) {
-            return false;
-        };
-
-        // Create session with default role (freelancer)
-        let sessionId = await sessionManager.createSession(email, "freelancer");
-        return true;
-    };
 
     // Logout user
     public func logoutUser(sessionId: Text) : async Result.Result<(), Error> {
