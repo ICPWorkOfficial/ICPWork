@@ -75,8 +75,19 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll, onOpenProjec
     return () => { mounted = false; };
   }, []);
 
+  const refreshProjects = async () => {
+    try {
+      const res = await fetch('/api/projects');
+      const json = await res.json();
+      if (json?.ok) setProjects(json.projects || []);
+    } catch (e) {
+      console.error('failed to refresh projects', e);
+    }
+  };
+
     const handleProjectUpdate = (updated: Project) => {
       setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+      if (selectedProject?.id === updated.id) setSelectedProject(updated);
       onProjectUpdated?.(updated);
     };
 
@@ -249,10 +260,30 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll, onOpenProjec
                               </div>
                             </div>
                             
-                              
-                 
                           </div>
                         </button>
+                        {/* <div className="p-3 border-t bg-gray-50 flex items-center justify-end gap-2">
+                          <button onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const res = await fetch('/api/projects', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: p.id, status: 'completed' }),
+                              });
+                              const json = await res.json();
+                              if (json?.ok) {
+                                const updated = json.project as Project;
+                                setProjects(prev => prev.map(item => item.id === p.id ? updated : item));
+                                setSelectedProject(prev => (prev && prev.id === p.id ? updated : prev));
+                                onProjectUpdated?.(updated);
+                                await refreshProjects();
+                              }
+                            } catch (err) {
+                              console.error('Failed to mark complete', err);
+                            }
+                          }} className="px-3 py-1 rounded bg-green-600 text-white text-sm">Mark Complete</button>
+                        </div> */}
                       </div>
                       );
                     })

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, MapPin, FileText, User, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext'
 
 // Design tokens from Figma
 const designTokens = {
@@ -252,7 +253,8 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
-  const [role, setRole] = useState<'Client' | 'Freelancer'>('Freelancer');
+  const auth = useAuth()
+  const [role, setRole] = useState<'Client' | 'Freelancer'>(auth?.user?.userType === 'client' ? 'Client' : 'Freelancer');
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
@@ -297,7 +299,7 @@ const SkillsInputPage: React.FC = () => {
         if (prof?.skills && Array.isArray(prof.skills)) {
           setSkills(prof.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })));
         }
-        if (prof.role === 'Client' || prof.role === 'Freelancer') setRole(prof.role);
+  if (prof.role === 'client' || prof.role === 'Client') setRole('Client');
         if (typeof prof.available === 'boolean') setIsAvailable(prof.available);
         if (prof.profilePhoto) setProfilePhoto(prof.profilePhoto);
         if (prof.phone) setPhone(prof.phone);
@@ -319,9 +321,10 @@ const SkillsInputPage: React.FC = () => {
         const res = await fetch('/api/demo/profile');
         const json = await res.json();
         if (!mounted || !json?.ok) return;
-        const p = json.profile || {};
-        if (p.role) setRole(p.role);
-        if (p.profilePhoto) setProfilePhoto(p.profilePhoto);
+    const p = json.profile || {};
+    console.debug('[onboarding/step4] GET /api/demo/profile =>', p)
+    // if (p.role === 'client' || p.role === 'Client') setRole('Client');
+    if (p.profilePhoto) setProfilePhoto(p.profilePhoto);
         if (p.companyName) setCompanyName(p.companyName);
         if (p.companyWebsite) setCompanyWebsite(p.companyWebsite);
   // address may be part of profile but this step does not manage address fields
@@ -333,6 +336,66 @@ const SkillsInputPage: React.FC = () => {
     load();
     return () => { mounted = false; };
   }, []);
+
+  // If auth has a userType, prefer that (default to Freelancer)
+  useEffect(() => {
+    try {
+      const ut = auth?.user?.userType
+      console.debug('[onboarding/step4] auth.user?.userType =>', ut)
+      if (ut) {
+        setRole(ut === 'client' || ut === 'Client' ? 'Client' : 'Freelancer')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [auth?.user?.userType])
+
+  // Ensure onboarding record exists and load profile fields if present
+  useEffect(() => {
+    let mounted = true
+    const ensureRecord = async () => {
+      try {
+        const res = await fetch('/api/onboarding', { credentials: 'same-origin' })
+        if (res.ok) {
+          const json = await res.json()
+          console.debug('[onboarding/step4] GET /api/onboarding =>', json)
+          if (!mounted) return
+          if (json?.success && json.onboardingRecord) {
+            const p = json.onboardingRecord.profile || {}
+            if (p.profilePhoto) setProfilePhoto(p.profilePhoto)
+            if (p.phone) setPhone(p.phone)
+            if (typeof p.phoneVerified === 'boolean') setIsVerified(Boolean(p.phoneVerified))
+            if (p.companyName) setCompanyName(p.companyName)
+            if (p.companyWebsite) setCompanyWebsite(p.companyWebsite)
+            if (p.industry) setIndustry(p.industry)
+            if (p.businessType) setBusinessType(p.businessType)
+            if (p.employeeCount) setEmployeeCount(p.employeeCount)
+            if (json.onboardingRecord.skills && Array.isArray(json.onboardingRecord.skills)) {
+              setSkills(json.onboardingRecord.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })))
+            }
+            return
+          }
+        }
+      } catch (e) {
+        // ignore GET errors
+      }
+
+      // create onboarding record if not found
+      try {
+        await fetch('/api/onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ userType: role.toLowerCase() })
+        })
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    ensureRecord()
+    return () => { mounted = false }
+  }, [role])
 
   // Prepare preview data from local dummy storage when modal opens
   useEffect(() => {
@@ -357,7 +420,7 @@ const SkillsInputPage: React.FC = () => {
 
   const handleBack = () => {
     console.log('Navigate back');
-    router.push('/onboarding/step1');
+    router.push('/onboarding/step3');
   };
 
   const handleNext = async () => {
@@ -378,7 +441,21 @@ const SkillsInputPage: React.FC = () => {
         businessType,
         employeeCount
       };
-      // POST to demo API (non-blocking)
+      // First, persist to onboarding API (await so server has latest before navigation)
+      try {
+        await fetch('/api/onboarding/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ profile: { profilePhoto: profilePhoto || null, phone: phone || null, phoneVerified: isVerified, companyName, companyWebsite, industry, businessType, employeeCount }, skills: skills.map(s => ({ name: s.name })) })
+        })
+      } catch (e) {
+        // non-fatal
+        // eslint-disable-next-line no-console
+        console.warn('onboarding update failed', e);
+      }
+
+      // POST to demo API as fallback (non-blocking)
       try {
         await fetch('/api/demo', {
           method: 'POST',
@@ -389,8 +466,9 @@ const SkillsInputPage: React.FC = () => {
         // eslint-disable-next-line no-console
         console.warn('demo POST failed', e);
       }
+
       // proceed to next step
-      router.push('/onboarding/step4');
+      router.push('/onboarding/step5');
     } catch (err) {
       // ignore
     } finally {

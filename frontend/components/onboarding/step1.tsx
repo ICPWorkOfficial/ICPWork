@@ -5,6 +5,7 @@ import { Upload, ArrowRight, Info, X } from "lucide-react";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext'
 
 // OptionCard Component
 interface OptionCardProps {
@@ -86,7 +87,8 @@ const Logo: React.FC = () => (
 
 const FreelancerOnboarding: React.FC<{ initialRole?: 'Client' | 'Freelancer' }> = ({ initialRole }) => {
   const router = useRouter();
-  const [role, setRole] = useState<'Client' | 'Freelancer'>(initialRole ?? 'Client');
+  const auth = useAuth()
+  const [role, setRole] = useState<'Client' | 'Freelancer'>(initialRole ?? 'Freelancer');
   // persist role to localStorage when changed
   useEffect(() => {
     try {
@@ -112,13 +114,72 @@ const FreelancerOnboarding: React.FC<{ initialRole?: 'Client' | 'Freelancer' }> 
     }
   }, []);
 
-  const handleResumeUpload = () => console.log("Resume upload clicked");
-  const handleManualFill = () => console.log("Manual fill clicked");
+  // if auth has a userType, prefer that (default to Freelancer)
+  useEffect(() => {
+    try {
+      const ut = auth?.user?.userType
+      if (ut) {
+        setRole(ut === 'client' || ut === 'Client' ? 'Client' : 'Freelancer')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [auth?.user?.userType])
+
+  // Ensure onboarding record exists and load personalInfo if present
+  useEffect(() => {
+    let mounted = true
+    const ensureRecord = async () => {
+      try {
+        const res = await fetch('/api/onboarding', { credentials: 'same-origin' })
+        if (res.ok) {
+          const json = await res.json()
+          console.debug('[onboarding/step1] GET /api/onboarding =>', json)
+          if (!mounted) return
+          if (json?.success && json.onboardingRecord) {
+            const p = json.onboardingRecord.personalInfo
+            if (p?.firstName) setFirstName(p.firstName)
+            if (p?.lastName) setLastName(p.lastName)
+            return
+          }
+        }
+      } catch (e) {
+        // ignore GET errors
+      }
+
+      // create onboarding record if not found
+      try {
+        await fetch('/api/onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ userType: role.toLowerCase() })
+        })
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    ensureRecord()
+    return () => { mounted = false }
+  }, [role])
+
+
 
   const handleSave = () => {
     const payload = { name: `${firstName} ${lastName}`.trim(), role };
     if (typeof window !== 'undefined') localStorage.setItem('demo_profile', JSON.stringify(payload));
-    // small feedback can be added later
+    // also POST personalInfo to onboarding API
+    try {
+      fetch('/api/onboarding/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ personalInfo: { firstName: firstName.trim(), lastName: lastName.trim() } })
+      }).catch(() => {})
+    } catch (e) {
+      // ignore
+    }
   };
 
   const handleNextForClient = async () => {
@@ -136,6 +197,17 @@ const FreelancerOnboarding: React.FC<{ initialRole?: 'Client' | 'Freelancer' }> 
       // don't block navigation on API failure, but log for debugging
       // eslint-disable-next-line no-console
       console.warn('demo POST failed', err);
+    }
+    // update onboarding personalInfo on server as well
+    try {
+      await fetch('/api/onboarding/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ personalInfo: { firstName: firstName.trim(), lastName: lastName.trim() } })
+      })
+    } catch (e) {
+      // ignore
     }
     router.push('/onboarding/step2');
   };
@@ -214,20 +286,24 @@ const FreelancerOnboarding: React.FC<{ initialRole?: 'Client' | 'Freelancer' }> 
                   <button onClick={handleNextForClient} className="w-full md:w-[220px] h-12 bg-[#161616] text-white rounded-[30px]">Next</button>
                 </div>
                </>
-             ) : (
-               <div className="flex flex-col gap-5 md:flex-row md:flex-wrap">
-                 <OptionCard
-                   title="Import from your resume"
-                   description="Click here to upload Your Resume"
-                   isFile
-                   onClick={handleResumeUpload}
-                 />
-                 <OptionCard
-                   title="Fill out manually"
-                   description="Click here"
-                   onClick={handleManualFill}
-                 />
+            ) : (
+               <>
+               <div className="flex flex-col gap-6 mb-4">
+                 <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white max-w-[700px] w-full">
+                   <label className="text-[14px] font-medium text-[#6F6F6F] block mb-2">FIRST NAME</label>
+                   <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]" />
+                 </div>
+
+                 <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white max-w-[700px] w-full">
+                   <label className="text-[14px] font-medium text-[#6F6F6F] block mb-2">LAST NAME</label>
+                   <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]" />
+                 </div>
                </div>
+
+            <Button onClick={() => { handleSave(); router.push('/onboarding/step2') }}>
+              Continue
+            </Button>
+               </>
              )}
             </div>
 
@@ -240,13 +316,7 @@ const FreelancerOnboarding: React.FC<{ initialRole?: 'Client' | 'Freelancer' }> 
                 description="Unlock the full potential of your freelance career with Organaise. Begin a rewarding journey where your skills are valued and your professional growth is inevitable. Start now and pave the path to your success."
               />
             </div>
-            {role !== 'Client' && (
-              <Button asChild>
-                <Link href="/onboarding/step2" className="no-underline">
-                  Continue
-                </Link>
-              </Button>
-            )}
+          
            </div>
          </div>
        </div>

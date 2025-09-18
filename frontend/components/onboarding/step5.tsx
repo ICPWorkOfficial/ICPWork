@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, MapPin, FileText, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext'
 
 // Design tokens from Figma
 const designTokens = {
@@ -254,7 +255,8 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
-  const [role, setRole] = useState<'Client' | 'Freelancer'>('Client');
+  const auth = useAuth()
+  const [role, setRole] = useState<'Client' | 'Freelancer'>(auth?.user?.userType === 'client' ? 'Client' : 'Freelancer');
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'UI UX DESIGN' },
     { id: '2', name: 'UI UX DESIGN' }
@@ -300,7 +302,7 @@ const SkillsInputPage: React.FC = () => {
   if (p.resumeFileName) setResumeFileName(p.resumeFileName);
         if (p.linkedin) setLinkedin(p.linkedin);
         if (p.companyDescription) setCompanyDescription(p.companyDescription);
-        if (p.role) setRole(p.role);
+
       } catch (e) {
         // ignore
       }
@@ -308,6 +310,61 @@ const SkillsInputPage: React.FC = () => {
     load();
     return () => { mounted = false; };
   }, []);
+
+  // If auth has a userType, prefer that (default to Client)
+  useEffect(() => {
+    try {
+      const ut = auth?.user?.userType
+      console.debug('[onboarding/step5] auth.user?.userType =>', ut)
+      if (ut) {
+        setRole(ut === 'client' || ut === 'Client' ? 'Client' : 'Freelancer')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [auth?.user?.userType])
+
+  // Ensure onboarding record exists and load final fields if present
+  useEffect(() => {
+    let mounted = true
+    const ensureRecord = async () => {
+      try {
+        const res = await fetch('/api/onboarding', { credentials: 'same-origin' })
+        if (res.ok) {
+          const json = await res.json()
+            console.debug('[onboarding/step5] GET /api/onboarding =>', json)
+          if (!mounted) return
+          if (json?.success && json.onboardingRecord) {
+            const p = json.onboardingRecord.final || {}
+            if (p.resumeFileName) setResumeFileName(p.resumeFileName)
+            if (p.linkedin) setLinkedin(p.linkedin)
+            if (p.companyDescription) setCompanyDescription(p.companyDescription)
+            if (json.onboardingRecord.skills && Array.isArray(json.onboardingRecord.skills)) {
+              setSkills(json.onboardingRecord.skills.map((s: any, i: number) => ({ id: String(i + 1), name: (s.name || s).toUpperCase() })))
+            }
+            return
+          }
+        }
+      } catch (e) {
+        // ignore GET errors
+      }
+
+      // create onboarding record if not found
+      try {
+        await fetch('/api/onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ userType: role.toLowerCase() })
+        })
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    ensureRecord()
+    return () => { mounted = false }
+  }, [role])
 
   // Prepare preview data from local dummy storage when modal opens
   useEffect(() => {
@@ -322,7 +379,7 @@ const SkillsInputPage: React.FC = () => {
 
   const handleBack = () => {
     console.log('Navigate back');
-    router.push('/onboarding/step1');
+    router.push('/onboarding/step4');
   };
 
   const handleNext = async () => {
@@ -337,6 +394,29 @@ const SkillsInputPage: React.FC = () => {
         resumeFileName: resumeFileName || null,
         linkedin: linkedin || null
       };
+      // Persist final fields to onboarding API and mark complete
+      try {
+        await fetch('/api/onboarding/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ final: { resumeFileName: resumeFileName || null, linkedin: linkedin || null, companyDescription: companyDescription || null }, skills: skills.map(s => ({ name: s.name })) })
+        })
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('onboarding update failed', e);
+      }
+
+      try {
+        await fetch('/api/onboarding/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin'
+        })
+      } catch (e) {
+        // ignore
+      }
+
       // POST to demo API so backend copy of onboarding data exists for testing
       try {
         await fetch('/api/demo', {
@@ -348,8 +428,9 @@ const SkillsInputPage: React.FC = () => {
         // eslint-disable-next-line no-console
         console.warn('demo POST failed', e);
       }
-      // proceed to next step (finish)
-      router.push('/onboarding/step5');
+
+      // navigate to a final page (using dashboard by role)
+      router.push(role === 'Client' ? '/client-dashboard' : '/dashboard');
     } catch (err) {
       // ignore
     } finally {

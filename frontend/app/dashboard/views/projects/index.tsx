@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -23,58 +23,7 @@ interface ProjectCard {
   featured?: boolean
 }
 
-const projectData: ProjectCard[] = [
-  {
-    id: '1',
-    title: 'ICP Dapp Frontend Development',
-    description: 'Great entry point into Web3 dev. It\'s all about plugging into an existing canister and building clean UI. Less competition too.',
-    category: 'ICP Development',
-    timeline: '3-4 weeks',
-    level: '$75K - $100K',
-    proposals: 5,
-    tags: ['TypeScript', 'DFINITY', 'ICP'],
-    author: 'Engineering Manager Developer Experience',
-    timePosted: '22d',
-    featured: true
-  },
-  {
-    id: '2',
-    title: 'ICP Dapp Frontend Development',
-    description: 'Great entry point into Web3 dev. It\'s all about plugging into an existing canister and building clean UI. Less competition too.',
-    category: 'ICP Development',
-    timeline: '3-4 weeks',
-    level: '$75K - $100K',
-    proposals: 5,
-    tags: ['TypeScript', 'DFINITY', 'ICP'],
-    author: 'Engineering Manager Developer Experience',
-    timePosted: '22d'
-  },
-  {
-    id: '3',
-    title: 'ICP Dapp Frontend Development',
-    description: 'Great entry point into Web3 dev. It\'s all about plugging into an existing canister and building clean UI. Less competition too.',
-    category: 'ICP Development',
-    timeline: '3-4 weeks',
-    level: '$75K - $100K',
-    proposals: 5,
-    tags: ['TypeScript', 'DFINITY', 'ICP'],
-    author: 'Engineering Manager Developer Experience',
-    timePosted: '22d',
-    featured: true
-  },
-  {
-    id: '4',
-    title: 'ICP Dapp Frontend Development',
-    description: 'Great entry point into Web3 dev. It\'s all about plugging into an existing canister and building clean UI. Less competition too.',
-    category: 'ICP Development',
-    timeline: '3-4 weeks',
-    level: '$75K - $100K',
-    proposals: 5,
-    tags: ['TypeScript', 'DFINITY', 'ICP'],
-    author: 'Engineering Manager Developer Experience',
-    timePosted: '22d'
-  }
-]
+// projects are fetched from the API and stored in state
 
 // sidebar removed - only main content kept
 
@@ -116,6 +65,33 @@ export default function FreelancerDashboard() {
   const [selectedJobTypes, setSelectedJobTypes] = useState<string[]>([])
   const [selectedJobRoles, setSelectedJobRoles] = useState<string[]>(['Programming'])
   const [selectedSalaryRanges, setSelectedSalaryRanges] = useState<string[]>([])
+  const [projects, setProjects] = useState<ProjectCard[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    setLoading(true)
+    fetch('/api/projects')
+      .then((res) => res.json())
+      .then((json) => {
+        if (!mounted) return
+        if (json?.ok && Array.isArray(json.projects)) {
+          setProjects(json.projects)
+        } else if (Array.isArray(json)) {
+          // some APIs return array directly
+          setProjects(json)
+        } else {
+          setProjects([])
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch projects', err)
+        setError('Failed to load projects')
+      })
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
+  }, [])
 
   const handleJobTypeChange = (jobType: string, checked: boolean) => {
     if (checked) {
@@ -140,6 +116,25 @@ export default function FreelancerDashboard() {
       setSelectedSalaryRanges(selectedSalaryRanges.filter(r => r !== range))
     }
   }
+
+  const filteredProjects = projects.filter((project) => {
+    if (selectedCategory && selectedCategory !== 'All Categories' && project.category !== selectedCategory) return false
+    if (remoteOnly && !/remote/i.test(project.description)) return false
+    if (selectedJobTypes.length > 0) {
+      const match = selectedJobTypes.some(t => new RegExp(t, 'i').test(project.description))
+      if (!match) return false
+    }
+    if (selectedJobRoles.length > 0) {
+      const match = selectedJobRoles.some(r => project.tags?.some(tag => tag.toLowerCase().includes(r.toLowerCase())))
+      if (!match) return false
+    }
+    if (selectedSalaryRanges.length > 0) {
+      const match = selectedSalaryRanges.some(range => project.level?.includes(range))
+      if (!match) return false
+    }
+    if (searchQuery && !(`${project.title} ${project.description} ${project.tags?.join(' ')}`).toLowerCase().includes(searchQuery.toLowerCase())) return false
+    return true
+  })
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -172,7 +167,15 @@ export default function FreelancerDashboard() {
 
               {/* Project Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {projectData.map((project) => (
+                {loading && (
+                  <div className="col-span-2 p-6 text-center">Loading projects…</div>
+                )}
+
+                {!loading && error && (
+                  <div className="col-span-2 p-6 text-center text-red-600">{error}</div>
+                )}
+
+                {!loading && !error && filteredProjects.map((project) => (
                   <Card key={project.id} className={`p-5 ${project.featured ? 'shadow-lg' : ''}`}>
                     <CardHeader className="p-0 mb-5">
                       <div className="flex justify-between items-start mb-4">
@@ -190,7 +193,7 @@ export default function FreelancerDashboard() {
                       </div>
 
                       <div className="flex gap-2 mb-4">
-                        {project.tags.map((tag) => (
+                        {project.tags?.map((tag) => (
                           <Badge key={tag} className="bg-blue-500 text-white text-xs px-3 py-1">
                             {tag}
                           </Badge>

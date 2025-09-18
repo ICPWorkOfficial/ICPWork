@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext'
 import { X, MapPin, FileText, User, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -187,7 +188,18 @@ const Logo: React.FC = () => (
 // Main Page Component
 const SkillsInputPage: React.FC = () => {
   const router = useRouter();
-  const [role, setRole] = useState<'Client' | 'Freelancer'>('Freelancer');
+  const auth = useAuth()
+  // Default to Freelancer unless auth/user or onboarding record explicitly says 'client'
+  const [role, setRole] = useState<'Client' | 'Freelancer'>(() => {
+    try {
+      const ut = auth?.user?.userType
+      console.log('Detected userType from auth/user:', ut)
+      return (ut === 'client' || ut === 'Client') ? 'Client' : 'Freelancer'
+    } catch (e) {
+      return 'Freelancer'
+    }
+  });
+  console.log('Initial role:', role)
   const [companyName, setCompanyName] = useState<string>('');
   const [companyWebsite, setCompanyWebsite] = useState<string>('');
   const [skills, setSkills] = useState<Skill[]>([
@@ -220,12 +232,31 @@ const SkillsInputPage: React.FC = () => {
     let mounted = true;
     const load = async () => {
       try {
-        const res = await fetch('/api/demo/profile');
+        // Try onboarding record first
+        let res = await fetch('/api/onboarding', { credentials: 'same-origin' })
+        if (res.ok) {
+          const json = await res.json()
+          console.debug('[onboarding/step2] GET /api/onboarding =>', json)
+          if (!mounted) return
+          if (json?.success && json.onboardingRecord) {
+            const rec = json.onboardingRecord
+            if (rec.role && (rec.role === 'client' || rec.role === 'Client')) setRole('Client')
+            if (rec.companyName) setCompanyName(rec.companyName)
+            if (rec.companyWebsite) setCompanyWebsite(rec.companyWebsite)
+            if (rec.skills && Array.isArray(rec.skills)) {
+              setSkills(rec.skills.map((s: any, i: number) => ({ id: String(Date.now() + i), name: String(s.name || s).toUpperCase() })))
+            }
+            return
+          }
+        }
+  // fallback to demo profile (only set to Client if demo explicitly says client)
+        res = await fetch('/api/demo/profile')
         const json = await res.json();
         if (!mounted || !json?.ok) return;
-        const p = json.profile || {};
-        // set role if present in profile
-        if (p.role !== undefined) setRole(p.role);
+  const p = json.profile || {};
+  console.debug('[onboarding/step2] GET /api/demo/profile =>', p)
+  // DO NOT override the `role` from demo profile. Prefer auth or onboarding record.
+  // The demo/profile endpoint is used only to prefill non-role fields during development.
         // set company fields if they exist in profile (allow empty string values)
         if (Object.prototype.hasOwnProperty.call(p, 'companyName')) setCompanyName(p.companyName ?? '');
         if (Object.prototype.hasOwnProperty.call(p, 'companyWebsite')) setCompanyWebsite(p.companyWebsite ?? '');
@@ -313,9 +344,27 @@ const SkillsInputPage: React.FC = () => {
         base.name = (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('demo_profile') || '{}').name) || `${companyName}` || 'Client';
         base.companyName = companyName || undefined;
         base.companyWebsite = companyWebsite || undefined;
+        // POST to onboarding API
+        try {
+          await fetch('/api/onboarding/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ companyName: companyName || undefined })
+          })
+        } catch (e) {}
       } else {
         base.name = 'Demo User';
         base.skills = skills.map(s => ({ name: s.name }));
+        // POST skills to onboarding API
+        try {
+          await fetch('/api/onboarding/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ skills: skills.map(s => s.name) })
+          })
+        } catch (e) {}
       }
       // POST to demo API for temporary persistence (non-blocking)
       try {

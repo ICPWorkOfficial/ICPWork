@@ -1,6 +1,4 @@
 import React from 'react';
-import path from 'path';
-import fs from 'fs';
 import DashboardShell from '@/components/DashboardShell';
 import FilesUploader from '@/components/FilesUploader';
 import ProjectFlowRightPanel from '@/components/ProjectFlowRightPanel';
@@ -20,13 +18,25 @@ type Project = {
 
 async function loadProject(id: string): Promise<Project | null> {
   try {
-    const dataPath = path.join(process.cwd(), 'data', 'projects.json');
-    const raw = await fs.promises.readFile(dataPath, 'utf-8');
-    const data = JSON.parse(raw || '{}');
-    const projects = data.projects || [];
-    return projects.find((p: any) => p.id === id) || null;
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/projects?id=${encodeURIComponent(id)}`);
+    // If the fetch path without base fails on server, fall back to absolute internal fetch
+    if (!res.ok) {
+      // try relative fetch
+      const rel = await fetch(`/api/projects?id=${encodeURIComponent(id)}`);
+      if (!rel.ok) return null;
+      const jsonRel = await rel.json();
+      return jsonRel?.project || null;
+    }
+    const json = await res.json();
+    return json?.project || null;
   } catch (e) {
-    return null;
+    try {
+      const rel = await fetch(`/api/projects?id=${encodeURIComponent(id)}`);
+      const jsonRel = await rel.json();
+      return jsonRel?.project || null;
+    } catch (er) {
+      return null;
+    }
   }
 }
 

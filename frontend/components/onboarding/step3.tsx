@@ -312,8 +312,9 @@ const SkillsInputPage: React.FC = () => {
         const res = await fetch('/api/demo/profile');
         const json = await res.json();
         if (!mounted || !json?.ok) return;
-        const p = json.profile || {};
-        if (p.role) setRole(p.role);
+  const p = json.profile || {};
+  console.debug('[onboarding/step3] GET /api/demo/profile =>', p)
+  // if (p.role === 'client' || p.role === 'Client') setRole('Client');
         if (p.skills && Array.isArray(p.skills)) {
           setSkills(p.skills.map((s: any, i: number) => ({ id: String(Date.now() + i), name: String(s.name || s).toUpperCase() })));
         }
@@ -398,13 +399,21 @@ const SkillsInputPage: React.FC = () => {
       if (role === 'Freelancer') {
         payload.skills = skills.map(s => ({ name: s.name }));
         payload.address = {
-          private: isPrivate,
+          isPublic: !isPrivate,
           country,
           state: stateValue,
           city,
           postalCode,
           streetAddress
         };
+        try {
+          await fetch('/api/onboarding/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ skills: skills.map(s => s.name), address: { country, state: stateValue, city, postalCode, streetAddress, isPublic: !isPrivate } })
+          })
+        } catch (e) {}
       } else {
         payload.companyName = companyName;
         payload.companyWebsite = companyWebsite;

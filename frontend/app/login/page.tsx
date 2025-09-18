@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext'
 
 // Type definitions
 type AuthMode = 'login' | 'signup';
@@ -46,6 +47,7 @@ interface PasswordValidation {
 export default function AuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const auth = useAuth()
   const user = searchParams.get('user');
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [loginData, setLoginData] = useState<LoginFormData>({
@@ -220,14 +222,23 @@ export default function AuthForm() {
 
     console.log(`${authMode} successful:`, result);
     setApiError(null);
+    // store session/user in context
+    try {
+      auth.login(result)
+    } catch (e) {
+      console.warn('Failed to set auth context', e)
+    }
     // Determine userType from API response if available, otherwise fall back to submitted payload
     const returnedUserType = result?.user?.userType || (authMode === 'login' ? loginData.userType : signupData.userType);
 
-    if (returnedUserType === 'client') {
-      router.push('/client-dashboard');
+    if (authMode === 'signup') {
+      router.push('/onboarding');
     } else {
-      // default to freelancer dashboard
+      if (returnedUserType === 'freelancer') {
       router.push('/dashboard');
+      } else {
+      router.push('/client-dashboard');
+      }
     }
   } catch (error) {
     console.error(`${authMode} failed:`, error);
