@@ -1,95 +1,192 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getUser, login, register, verifyOTP, resendOTP, changePassword } from '@/api/auth';
 import { UserType } from '@/types/icp';
 
-interface User{
-    success: boolean;
-    user: {
-        email: string;
-        userType: string;
-    }
+interface User {
+    email: string;
+    userType: string;
+}
+
+interface AuthState {
+    user: User | null;
+    sessionId: string | null;
+    loading: boolean;
+    error: string | null;
 }
 
 export const useAuthStore = () => {
-  const [user, setUser] = useState<User>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    sessionId: null,
+    loading: false,
+    error: null
+  });
+
+  // Check for existing session on mount
+  useEffect(() => {
+    validateSession();
+  }, []);
+
+  const validateSession = async () => {
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const response = await fetch('/api/validate-session', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.valid) {
+        setAuthState(prev => ({
+          ...prev,
+          user: result.user,
+          sessionId: result.user.email, // Using email as session identifier for now
+          loading: false
+        }));
+      } else {
+        setAuthState(prev => ({
+          ...prev,
+          user: null,
+          sessionId: null,
+          loading: false
+        }));
+      }
+    } catch (error) {
+      setAuthState(prev => ({
+        ...prev,
+        user: null,
+        sessionId: null,
+        loading: false,
+        error: 'Session validation failed'
+      }));
+    }
+  };
 
   const loginUser = async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       const result = await login(email, password);
-      setUser(result);
+      if (result.success) {
+        setAuthState(prev => ({
+          ...prev,
+          user: result.user,
+          sessionId: result.sessionId,
+          loading: false
+        }));
+      }
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
     }
   };
 
   const registerUser = async (email: string, username: string, password: string, userType: UserType) => {
-    setLoading(true);
-    setError(null);
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       // Convert userType to match backend expectations
       const result = await register(email, username, password, userType);
-      setUser(result);
+      if (result.success) {
+        setAuthState(prev => ({
+          ...prev,
+          user: result.user,
+          sessionId: result.sessionId,
+          loading: false
+        }));
+      }
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+    }
+  };
+
+  const logoutUser = async () => {
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      setAuthState(prev => ({
+        ...prev,
+        user: null,
+        sessionId: null,
+        loading: false
+      }));
+    } catch (err: any) {
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
     }
   };
 
   const verifyUserOTP = async (userId: string, otp: string) => {
-    setLoading(true);
-    setError(null);
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       const result = await verifyOTP(userId, otp);
+      setAuthState(prev => ({ ...prev, loading: false }));
       return result;
     } catch (err: any) {
-      setError(err.message);
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const resendUserOTP = async (userId: string) => {
-    setLoading(true);
-    setError(null);
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       const result = await resendOTP(userId);
+      setAuthState(prev => ({ ...prev, loading: false }));
       return result;
     } catch (err: any) {
-      setError(err.message);
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const changeUserPassword = async (userId: string, otp: string, newPassword: string) => {
-    setLoading(true);
-    setError(null);
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       const result = await changePassword(userId, otp, newPassword);
+      setAuthState(prev => ({ ...prev, loading: false }));
       return result;
     } catch (err: any) {
-      setError(err.message);
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   return {
-    user,
-    loading,
-    error,
+    user: authState.user,
+    sessionId: authState.sessionId,
+    loading: authState.loading,
+    error: authState.error,
     loginUser,
     registerUser,
+    logoutUser,
+    validateSession,
     verifyUserOTP,
     resendUserOTP,
     changeUserPassword,

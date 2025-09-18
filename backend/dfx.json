@@ -31,6 +31,10 @@
     "bounties_store": {
       "main": "src/bounties_store/src/main.mo",
       "type": "motoko"
+    },
+    "job_posting": {
+      "main": "src/job_posting/src/main.mo",
+      "type": "motoko"
     }
   },
   "defaults": {
