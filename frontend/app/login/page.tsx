@@ -8,13 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import Link from 'next/link';
-<<<<<<< HEAD
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext'
-
-=======
-import {useParams} from 'next/navigation';
->>>>>>> e9e18a98206c0d275f96f6fd73cd4c5c7a2c185d
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 // Type definitions
 type AuthMode = 'login' | 'signup';
 
@@ -48,15 +43,10 @@ interface PasswordValidation {
 // SVG assets
 
 export default function AuthForm() {
-<<<<<<< HEAD
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const auth = useAuth()
-  const user = searchParams.get('user');
-=======
   const params = useParams();
   const userType = params.user as string;
->>>>>>> e9e18a98206c0d275f96f6fd73cd4c5c7a2c185d
+  const router = useRouter();
+  const auth = useAuth();
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: '',
@@ -477,7 +467,7 @@ export default function AuthForm() {
               )}
 
               {/* Submit Button */}
-              <Link href="/onboarding">
+              <div>
                 <Button
                   type="submit"
                   disabled={isLoading}
@@ -488,7 +478,7 @@ export default function AuthForm() {
                     : (authMode === 'login' ? 'Login' : 'Create Account')
                   }
                 </Button>
-              </Link>
+              </div>
             </form>
 
             {/* Toggle Auth Mode */}
