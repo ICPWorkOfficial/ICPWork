@@ -8,8 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-
+import {useParams} from 'next/navigation';
 // Type definitions
 type AuthMode = 'login' | 'signup';
 
@@ -23,14 +22,13 @@ interface SignupFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  userType: 'freelancer' | 'client' | '';
+  userType: string;
 }
 
 interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
-  userType?: string;
 }
 
 interface PasswordValidation {
@@ -44,20 +42,19 @@ interface PasswordValidation {
 // SVG assets
 
 export default function AuthForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const user = searchParams.get('user');
+  const params = useParams();
+  const userType = params.user as string;
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: '',
     password: '',
-    userType: 'freelancer'
+    userType: userType
   });
   const [signupData, setSignupData] = useState<SignupFormData>({
     email: '',
     password: '',
     confirmPassword: '',
-    userType: ''
+    userType: userType
   });
   
   const [errors, setErrors] = useState<FormErrors>({});
@@ -107,7 +104,7 @@ export default function AuthForm() {
 
   const handleLoginInputChange = (field: keyof LoginFormData, value: string): void => {
     setLoginData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
+    if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
@@ -125,7 +122,7 @@ export default function AuthForm() {
       }
     }
     
-    if (errors[field]) {
+    if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
@@ -170,10 +167,6 @@ export default function AuthForm() {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (signupData.password !== signupData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    if (!signupData.userType) {
-      newErrors.userType = 'Please select your account type';
     }
 
     setErrors(newErrors);
@@ -299,45 +292,6 @@ export default function AuthForm() {
                 )}
               </div>
 
-              {/* User Type Selection */}
-              <div className="space-y-1">
-                <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (authMode === 'login') {
-                        setLoginData(prev => ({ ...prev, userType: 'freelancer' }));
-                      } else {
-                        setSignupData(prev => ({ ...prev, userType: 'freelancer' }));
-                      }
-                    }}
-                    className={`flex-1 h-16 px-6 text-lg border rounded-xl transition-all ${
-                      (authMode === 'login' ? loginData.userType : signupData.userType) === 'freelancer'
-                        ? 'border-gray-900 bg-gray-50 text-gray-900'
-                        : 'border-[#7d7d7d] text-gray-600 hover:border-gray-900'
-                    }`}
-                  >
-                    Freelancer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (authMode === 'login') {
-                        setLoginData(prev => ({ ...prev, userType: 'client' }));
-                      } else {
-                        setSignupData(prev => ({ ...prev, userType: 'client' }));
-                      }
-                    }}
-                    className={`flex-1 h-16 px-6 text-lg border rounded-xl transition-all ${
-                      (authMode === 'login' ? loginData.userType : signupData.userType) === 'client'
-                        ? 'border-gray-900 bg-gray-50 text-gray-900'
-                        : 'border-[#7d7d7d] text-gray-600 hover:border-gray-900'
-                    }`}
-                  >
-                    Client
-                  </button>
-                </div>
-              </div>
 
               {/* Password Input */}
               <div className="space-y-1 relative">
@@ -465,52 +419,6 @@ export default function AuthForm() {
                 </div>
               )}
 
-              {/* User Type Selection - Only for Signup */}
-              {authMode === 'signup' && (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">
-                    I want to join as:
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleSignupInputChange('userType', 'freelancer')}
-                      className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                        signupData.userType === 'freelancer'
-                          ? 'border-[#161616] bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className="text-lg font-medium">Freelancer</div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          I want to work on projects
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSignupInputChange('userType', 'client')}
-                      className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                        signupData.userType === 'client'
-                          ? 'border-[#161616] bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className="text-lg font-medium">Client</div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          I want to hire freelancers
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                  {errors.userType && (
-                    <p className="text-red-500 text-sm ml-2">{errors.userType}</p>
-                  )}
-                </div>
-              )}
-
               {/* Forgot Password Link - Only for Login */}
               {authMode === 'login' && (
                 <div className="text-right">
@@ -528,16 +436,18 @@ export default function AuthForm() {
               )}
 
               {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-14 bg-[#161616] hover:bg-gray-800 text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
-              >
-                {isLoading 
-                  ? (authMode === 'login' ? 'Logging In...' : 'Creating Account...') 
-                  : (authMode === 'login' ? 'Login' : 'Create Account')
-                }
-              </Button>
+              <Link href="/onboarding">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-14 bg-[#161616] hover:bg-gray-800 text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                >
+                  {isLoading 
+                    ? (authMode === 'login' ? 'Logging In...' : 'Creating Account...') 
+                    : (authMode === 'login' ? 'Login' : 'Create Account')
+                  }
+                </Button>
+              </Link>
             </form>
 
             {/* Toggle Auth Mode */}

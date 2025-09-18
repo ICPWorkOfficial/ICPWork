@@ -134,26 +134,16 @@ persistent actor Main {
         completedAt: ?Int;
     };
 
-<<<<<<< HEAD
-    // Storage canister actors - Use proper canister names
-    transient let freelancerStorage = actor("umunu-kh777-77774-qaaca-cai") : actor {
-=======
-
     // Storage canister actors - Transient with lazy initialization
-    private transient var freelancerStorage : ?actor {
->>>>>>> origin/main
-        storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
-        updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
-        getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
+    private transient var freelancerStorage : ?{
+        storeFreelancer: shared (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        updateFreelancer: shared (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        getFreelancer: shared Text -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteFreelancer: shared Text -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllFreelancers: shared () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
     } = null;
 
-<<<<<<< HEAD
-    transient let clientStorage = actor("u6s2n-gx777-77774-qaaba-cai") : actor {
-=======
-    private transient var clientStorage : ?actor {
->>>>>>> origin/main
+    private transient var clientStorage : ?{
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -161,11 +151,7 @@ persistent actor Main {
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
     } = null;
 
-<<<<<<< HEAD
-    transient let messageStorage = actor("ucwa4-rx777-77774-qaada-cai") : actor {
-=======
-    private transient var messageStorage : ?actor {
->>>>>>> origin/main
+    private transient var messageStorage : ?{
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -176,11 +162,7 @@ persistent actor Main {
         getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
     } = null;
 
-<<<<<<< HEAD
-    transient let onboardingStorage = actor("ufxgi-4p777-77774-qaadq-cai") : actor {
-=======
-    private transient var onboardingStorage : ?actor {
->>>>>>> origin/main
+    private transient var onboardingStorage : ?{
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -300,11 +282,48 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
-<<<<<<< HEAD
-    transient let bountiesStorage = actor("uxrrr-q7777-77774-qaaaq-cai") : actor {
-=======
-    private transient var bountiesStorage : ?actor {
->>>>>>> origin/main
+    // Freelancer Dashboard types
+    public type FreelancerProfile = {
+        email: Text;
+        serviceTitle: Text;
+        mainCategory: Text;
+        subCategory: Text;
+        description: Text;
+        requirementPlans: RequirementPlans;
+        additionalCharges: AdditionalCharges;
+        portfolioImages: [Text];
+        additionalQuestions: [Text];
+        createdAt: Int;
+        updatedAt: Int;
+        isActive: Bool;
+    };
+
+    public type RequirementPlans = {
+        basic: PlanDetails;
+        advanced: PlanDetails;
+        premium: PlanDetails;
+    };
+
+    public type PlanDetails = {
+        price: Text;
+        description: Text;
+        features: [Text];
+        deliveryTime: Text;
+    };
+
+    public type AdditionalCharges = {
+        fastDelivery: ?ChargeDetails;
+        additionalChanges: ?ChargeDetails;
+        perExtraChange: ?ChargeDetails;
+    };
+
+    public type ChargeDetails = {
+        price: Text;
+        description: Text;
+        isEnabled: Bool;
+    };
+
+    private transient var bountiesStorage : ?{
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -318,6 +337,23 @@ persistent actor Main {
         getUserBounties: (Text) -> async [Bounty];
         getBountyStats: () -> async BountyStats;
         deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
+    } = null;
+
+    private transient var freelancerDashboardStorage : ?{
+        createProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        updateProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        getProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        getAllProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getActiveProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesByCategory: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesBySubCategory: (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        deleteProfile: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        deactivateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        activateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        profileExists: (Text) -> async Result.Result<Bool, {#Unauthorized}>;
+        getTotalProfiles: () -> async Result.Result<Nat, {#Unauthorized}>;
+        getActiveProfilesCount: () -> async Result.Result<Nat, {#Unauthorized}>;
+        searchProfilesByTitle: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
     } = null;
 
 
@@ -341,7 +377,7 @@ persistent actor Main {
     };
 
     // Helper functions for lazy actor initialization
-    private func getFreelancerStorage() : actor {
+    private func getFreelancerStorage() : {
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -364,7 +400,7 @@ persistent actor Main {
         }
     };
 
-    private func getClientStorage() : actor {
+    private func getClientStorage() : {
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
@@ -387,7 +423,7 @@ persistent actor Main {
         }
     };
 
-    private func getMessageStorage() : actor {
+    private func getMessageStorage() : {
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -416,7 +452,7 @@ persistent actor Main {
         }
     };
 
-    private func getOnboardingStorage() : actor {
+    private func getOnboardingStorage() : {
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -447,7 +483,7 @@ persistent actor Main {
         }
     };
 
-    private func getBountiesStorage() : actor {
+    private func getBountiesStorage() : {
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -480,6 +516,47 @@ persistent actor Main {
                     deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
                 };
                 bountiesStorage := ?actor_ref;
+                actor_ref
+            };
+            case (?actor_ref) actor_ref;
+        }
+    };
+
+    private func getFreelancerDashboardStorage() : {
+        createProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        updateProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        getProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        getAllProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getActiveProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesByCategory: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesBySubCategory: (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        deleteProfile: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        deactivateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        activateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        profileExists: (Text) -> async Result.Result<Bool, {#Unauthorized}>;
+        getTotalProfiles: () -> async Result.Result<Nat, {#Unauthorized}>;
+        getActiveProfilesCount: () -> async Result.Result<Nat, {#Unauthorized}>;
+        searchProfilesByTitle: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+    } {
+        switch (freelancerDashboardStorage) {
+            case null {
+                let actor_ref = actor("freelancer_dashboard") : actor {
+                    createProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+                    updateProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+                    getProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
+                    getAllProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    getActiveProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    getProfilesByCategory: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    getProfilesBySubCategory: (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    deleteProfile: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+                    deactivateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+                    activateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+                    profileExists: (Text) -> async Result.Result<Bool, {#Unauthorized}>;
+                    getTotalProfiles: () -> async Result.Result<Nat, {#Unauthorized}>;
+                    getActiveProfilesCount: () -> async Result.Result<Nat, {#Unauthorized}>;
+                    searchProfilesByTitle: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                };
+                freelancerDashboardStorage := ?actor_ref;
                 actor_ref
             };
             case (?actor_ref) actor_ref;
@@ -602,15 +679,12 @@ persistent actor Main {
         #ok("OTP verified successfully")
     };
 
-<<<<<<< HEAD
-=======
     // Resend OTP (placeholder - implement based on your OTP system)
     public func resendOTP(userId: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP resending logic
         #ok("OTP sent successfully")
     };
->>>>>>> origin/main
 
     // Change password (placeholder - implement based on your OTP system)
     public func changePassword(userId: Text, otp: Text, newPassword: Text) : async Result.Result<Text, Error> {
@@ -1444,6 +1518,141 @@ persistent actor Main {
                     }
                 } catch (_error) {
                     #err(#StorageError("Bounties storage canister error"))
+                }
+            };
+        }
+    };
+
+    // FREELANCER DASHBOARD FUNCTIONS
+
+    // Create freelancer dashboard profile
+    public func createFreelancerDashboardProfile(sessionId: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                if (session.userType != "freelancer") {
+                    return #err(#InvalidUserType);
+                };
+
+                try {
+                    let result = await getFreelancerDashboardStorage().createProfile(session.email, profile);
+                    switch (result) {
+                        case (#ok(createdProfile)) { #ok(createdProfile) };
+                        case (#err(dashboardError)) { 
+                            switch (dashboardError) {
+                                case (#InvalidData) { #err(#StorageError("Invalid profile data")) };
+                                case (#TooManyImages) { #err(#StorageError("Too many portfolio images (max 5)")) };
+                                case (#InvalidPlanData) { #err(#StorageError("Invalid plan data")) };
+                                case _ { #err(#StorageError("Failed to create freelancer profile")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Freelancer dashboard storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Update freelancer dashboard profile
+    public func updateFreelancerDashboardProfile(sessionId: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                if (session.userType != "freelancer") {
+                    return #err(#InvalidUserType);
+                };
+
+                try {
+                    let result = await getFreelancerDashboardStorage().updateProfile(session.email, profile);
+                    switch (result) {
+                        case (#ok(updatedProfile)) { #ok(updatedProfile) };
+                        case (#err(dashboardError)) { 
+                            switch (dashboardError) {
+                                case (#NotFound) { #err(#StorageError("Profile not found")) };
+                                case (#InvalidData) { #err(#StorageError("Invalid profile data")) };
+                                case (#TooManyImages) { #err(#StorageError("Too many portfolio images (max 5)")) };
+                                case (#InvalidPlanData) { #err(#StorageError("Invalid plan data")) };
+                                case _ { #err(#StorageError("Failed to update freelancer profile")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Freelancer dashboard storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get freelancer dashboard profile
+    public func getFreelancerDashboardProfile(sessionId: Text) : async Result.Result<FreelancerProfile, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                if (session.userType != "freelancer") {
+                    return #err(#InvalidUserType);
+                };
+
+                try {
+                    let result = await getFreelancerDashboardStorage().getProfile(session.email);
+                    switch (result) {
+                        case (#ok(profile)) { #ok(profile) };
+                        case (#err(dashboardError)) { 
+                            switch (dashboardError) {
+                                case (#NotFound) { #err(#StorageError("Profile not found")) };
+                                case _ { #err(#StorageError("Failed to get freelancer profile")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Freelancer dashboard storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Get all active freelancer profiles (for clients to browse)
+    public func getAllActiveFreelancerProfiles(sessionId: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
+        switch (validateSessionAndGetUser(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getFreelancerDashboardStorage().getActiveProfiles();
+                    switch (result) {
+                        case (#ok(profiles)) { #ok(profiles) };
+                        case (#err(_dashboardError)) { 
+                            #err(#StorageError("Failed to get active freelancer profiles"))
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Freelancer dashboard storage canister error"))
+                }
+            };
+        }
+    };
+
+    // Delete freelancer dashboard profile
+    public func deleteFreelancerDashboardProfile(sessionId: Text) : async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                if (session.userType != "freelancer") {
+                    return #err(#InvalidUserType);
+                };
+
+                try {
+                    let result = await getFreelancerDashboardStorage().deleteProfile(session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(dashboardError)) { 
+                            switch (dashboardError) {
+                                case (#NotFound) { #err(#StorageError("Profile not found")) };
+                                case _ { #err(#StorageError("Failed to delete freelancer profile")) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Freelancer dashboard storage canister error"))
                 }
             };
         }
