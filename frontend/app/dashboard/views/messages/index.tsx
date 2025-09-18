@@ -40,14 +40,20 @@ const MessagesView: React.FC = () => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch('/api/messages');
+        const res = await fetch('/api/messages', { credentials: 'same-origin' });
+        if (!mounted) return;
+        if (!res.ok) {
+          console.error('Failed to load contacts', res.status);
+          return;
+        }
         const json = await res.json();
-        if (!mounted || !json?.ok) return;
-        setContacts(json.contacts || []);
+        console.debug('contacts response:', json);
+        const contactsList = json?.contacts || json?.data || (Array.isArray(json) ? json : []);
+        setContacts(contactsList || []);
         // auto-select first contact if none
-        if (!selected && json.contacts && json.contacts.length) setSelected(json.contacts[0].id);
+        if (!selected && contactsList && contactsList.length) setSelected(contactsList[0].id);
       } catch (e) {
-        // ignore
+        console.error('Failed to fetch contacts', e);
       }
     })();
     return () => { mounted = false; };
@@ -59,10 +65,17 @@ const MessagesView: React.FC = () => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch('/api/messages?contactId=' + encodeURIComponent(selected));
+        const res = await fetch('/api/messages?contactId=' + encodeURIComponent(selected), { credentials: 'same-origin' });
+        if (!mounted) return;
+        if (!res.ok) {
+          console.error('Failed to fetch messages for', selected, res.status);
+          setMessages([]);
+          return;
+        }
         const json = await res.json();
-        if (!mounted || !json?.ok) return;
-        setMessages(json.messages || []);
+        console.debug('messages response for', selected, json);
+        const msgs = json?.messages || json?.data || (Array.isArray(json) ? json : []);
+        setMessages(msgs || []);
         // scroll to bottom
         setTimeout(() => scrollRef.current?.scrollTo({ top: 99999, behavior: 'smooth' }), 50);
       } catch (e) {}
@@ -82,16 +95,26 @@ const MessagesView: React.FC = () => {
       setLoading(true);
       const res = await fetch('/api/messages', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contactId: selected, from: 'me', text })
       });
+      if (!res.ok) {
+        console.error('Failed to send message', res.status);
+        // mark temp message as failed by appending '(failed)'
+        setMessages(prev => prev.map(m => (m.id === temp.id ? { ...m, text: m.text + ' (failed)' } : m)));
+        return;
+      }
       const json = await res.json();
-      if (json?.ok && json.item) {
-        // replace temp with actual
-        setMessages(prev => prev.map(m => (m.id === temp.id ? json.item as Message : m)));
+      console.debug('send response:', json);
+      // expected shapes: { ok, item } or { ok, message } or direct message
+      const actual = json?.item || json?.message || json?.data || (json?.ok && json?.item) || json;
+      if (actual) {
+        setMessages(prev => prev.map(m => (m.id === temp.id ? (actual as Message) : m)));
       }
     } catch (e) {
-      // on error, mark message or remove
+      console.error('Send failed', e);
+      setMessages(prev => prev.map(m => (m.id === temp.id ? { ...m, text: m.text + ' (failed)' } : m)));
     } finally {
       setLoading(false);
     }

@@ -196,13 +196,22 @@ export function UsersTable({ filter, search }: { filter?: string; search?: strin
                       try {
                         const res = await fetch('/api/admin/delete-user', {
                           method: 'POST',
+                          credentials: 'same-origin',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ id: user.id, name: user.name }),
+                          body: JSON.stringify({ id: String(user.id), name: user.name }),
                         })
+                        if (!res.ok) {
+                          console.error('Delete user failed status:', res.status)
+                          alert('Failed to delete user (network)')
+                          return
+                        }
                         const data = await res.json()
-                        if (data?.ok) {
+                        // backend may return { ok }, { success }, or { deleted: true }
+                        const okFlag = data?.ok || data?.success || data?.deleted || false
+                        if (okFlag) {
                           setUsers((prev) => prev.filter((p) => p.id !== user.id))
                         } else {
+                          console.error('Delete user response:', data)
                           alert('Failed to delete user')
                         }
                       } catch (err) {
