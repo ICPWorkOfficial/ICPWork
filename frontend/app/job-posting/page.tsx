@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, FolderOpen, MapPin, DollarSign, Send } from 'lucide-react';
 
 interface TabData {
@@ -31,16 +31,36 @@ export default function JobPostingPage() {
 
   const publishJob = async () => {
     try {
-      const payload = { ...formData };
-      const res = await fetch('/api/job-posting/publish', {
+      // Map local form data to API payload shape
+      const payload = {
+        clientEmail: formData.clientEmail || 'client@example.com',
+        category: formData.category || formData.jobType || 'General',
+        subCategory: formData.subCategory || '',
+        jobTitle: formData.jobTitle || '',
+        rolesAndResponsibilities: Array.isArray(formData.rolesAndResponsibilities) ? formData.rolesAndResponsibilities : (formData.roles ? [formData.roles] : []),
+        skillsRequired: (typeof formData.skills === 'string' && formData.skills.length) ? formData.skills.split(',').map((s: string) => s.trim()) : (Array.isArray(formData.skills) ? formData.skills : (formData.skills ? [formData.skills] : [])),
+        benefits: Array.isArray(formData.benefits) ? formData.benefits : (formData.benefits ? [formData.benefits] : []),
+        jobRoles: formData.jobRoles || [],
+        duration: formData.duration || '',
+        isContractToHire: !!formData.contractToHire || !!formData.isContractToHire,
+        workplaceType: formData.workplaceType || '',
+        location: formData.location || '',
+        budget: formData.amount || formData.budget || '',
+        budgetType: formData.budgetType || formData.paymentPeriod || '',
+        applicationType: formData.applicationType || '',
+        applicationDetails: formData.applicationInstructions || formData.applicationDetails || ''
+      };
+
+      const res = await fetch('/api/job-postings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data?.success) {
-        alert('Job published — ID: ' + data.id);
+        alert('Job published — ID: ' + (data.id || data.jobId || 'unknown'));
       } else {
+        console.error('Publish failed', data);
         alert('Failed to publish job');
       }
     } catch (err) {
@@ -48,6 +68,47 @@ export default function JobPostingPage() {
       alert('Failed to publish job');
     }
   };
+
+  // Prefill form if any existing job postings are returned by the API
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/job-postings', { method: 'GET' });
+        if (!mounted) return;
+        if (!res.ok) return;
+        const json = await res.json();
+        // Support either { success, postings: [...] } or an array response
+        const postings = json?.postings || (Array.isArray(json) ? json : null);
+        if (postings && postings.length) {
+          const first = postings[0];
+          // Map API response back to local formData keys
+          setFormData({
+            clientEmail: first.clientEmail || '',
+            category: first.category || '',
+            subCategory: first.subCategory || '',
+            jobTitle: first.jobTitle || '',
+            roles: Array.isArray(first.rolesAndResponsibilities) ? first.rolesAndResponsibilities.join('\n') : (first.rolesAndResponsibilities || ''),
+            skills: Array.isArray(first.skillsRequired) ? first.skillsRequired.join(', ') : (first.skillsRequired || ''),
+            benefits: Array.isArray(first.benefits) ? first.benefits : (first.benefits || []),
+            jobRoles: first.jobRoles || [],
+            duration: first.duration || '',
+            contractToHire: !!first.isContractToHire,
+            workplaceType: first.workplaceType || '',
+            location: first.location || '',
+            amount: first.budget || '',
+            budgetType: first.budgetType || '',
+            applicationMethod: first.applicationType || '',
+            applicationInstructions: first.applicationDetails || ''
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
 
   const renderTabContent = () => {
     switch (activeTab) {

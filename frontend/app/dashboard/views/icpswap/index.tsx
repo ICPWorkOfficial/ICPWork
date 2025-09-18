@@ -68,9 +68,13 @@ export function SwapInterface() {
 
 	const fetchTransactions = async () => {
 		try {
-			const res = await fetch('/api/icpswap/transactions')
+			const res = await fetch('/api/icpswap/transactions', { credentials: 'same-origin' })
+			if (!res.ok) {
+				setTransactions([])
+				return
+			}
 			const data = await res.json()
-			setTransactions(data.transactions || [])
+			setTransactions(data.transactions || (Array.isArray(data) ? data : []))
 		} catch (e) {
 			console.error('fetch transactions', e)
 		}
@@ -86,10 +90,16 @@ export function SwapInterface() {
 			const res = await fetch('/api/icpswap/convert', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'same-origin',
 				body: JSON.stringify(payload),
 			})
+			if (!res.ok) {
+				const text = await res.text().catch(() => '');
+				console.error('convertApi failed', res.status, text)
+				return null
+			}
 			const data = await res.json()
-			setConversion({ rate: data.rate, converted: data.converted })
+			setConversion({ rate: data.rate ?? data.exchangeRate ?? null, converted: data.converted ?? data.amountConverted ?? null })
 			return data
 		} finally {
 			setLoading(false)
@@ -101,8 +111,14 @@ export function SwapInterface() {
 			const res = await fetch('/api/icpswap/transactions', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'same-origin',
 				body: JSON.stringify(payload),
 			})
+			if (!res.ok) {
+				const text = await res.text().catch(() => '')
+				console.error('createTransaction failed', res.status, text)
+				return null
+			}
 			const data = await res.json()
 			await fetchTransactions()
 			return data

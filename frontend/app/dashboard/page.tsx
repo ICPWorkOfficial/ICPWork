@@ -226,7 +226,7 @@ const FreelancerDashboard: React.FC = () => {
   const sidebarItems: SidebarItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <Grid3x3 size={20} className="text-[#041D37]" /> },
     { id: 'browse-projects', label: 'Browse Projects', icon: <Briefcase size={20} className="text-[#555555]" /> },
-    { id: 'bounties', label: 'Bounties', icon: <Megaphone size={20} className="text-[#555555]" /> },
+    { id: 'bounties', label: 'Jobs', icon: <Megaphone size={20} className="text-[#555555]" /> },
     { id: 'my-projects', label: 'My Projects', icon: <User size={20} className="text-[#525252]" /> },
     { id: 'messages', label: 'Messages', icon: <Mail size={20} className="text-[#555555]" /> },
     { id: 'hackathons', label: 'Hackathons', icon: <Code size={20} className="text-[#525252]" /> },

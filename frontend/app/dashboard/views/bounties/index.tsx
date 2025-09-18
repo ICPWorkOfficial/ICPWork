@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -118,6 +118,9 @@ export default function BountiesDashboard() {
   const [selectedCategory, setSelectedCategory] = useState('Smart Contracts')
   const [searchQuery, setSearchQuery] = useState('')
   const [remoteOnly, setRemoteOnly] = useState(false)
+  const [activeOnly, setActiveOnly] = useState(false)
+  const [postings, setPostings] = useState<BountyCard[] | null>(null)
+  const [loading, setLoading] = useState(false)
   const [selectedJobTypes, setSelectedJobTypes] = useState<string[]>([])
   const [selectedJobRoles, setSelectedJobRoles] = useState<string[]>(['Programming'])
   const [selectedSalaryRanges, setSelectedSalaryRanges] = useState<string[]>([])
@@ -146,8 +149,49 @@ export default function BountiesDashboard() {
     }
   }
 
+  // Load job postings from API and update when filters change
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams()
+        if (selectedCategory && selectedCategory !== 'All Categories') params.set('category', selectedCategory)
+        if (activeOnly) params.set('active', 'true')
+        const url = '/api/job-postings' + (params.toString() ? `?${params.toString()}` : '')
+        const res = await fetch(url)
+        if (!mounted) return
+        if (!res.ok) {
+          setPostings(null)
+          return
+        }
+        const json = await res.json()
+        const items = json?.postings || (Array.isArray(json) ? json : [])
+        // Map API items to BountyCard shape where possible
+        const mapped: BountyCard[] = items.map((it: any, idx: number) => ({
+          id: String(it.id || it._id || idx + 1),
+          title: it.jobTitle || it.title || 'Untitled',
+          organizer: it.clientEmail || it.organizer || it.company || 'Unknown',
+          mode: it.mode || (it.workplaceType ? it.workplaceType : 'Virtual'),
+          prizePool: it.budget || it.prizePool || '$0',
+          timeline: it.timeline || it.duration || '',
+          tags: Array.isArray(it.tags) ? it.tags : (Array.isArray(it.skillsRequired) ? it.skillsRequired : (Array.isArray(it.jobRoles) ? it.jobRoles : [])),
+          status: it.active === false ? 'Closed' : (it.status || (it.active ? 'Open' : 'Open')),
+          featured: !!it.featured
+        }))
+        setPostings(mapped)
+      } catch (e) {
+        setPostings(null)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [selectedCategory, activeOnly])
+
   return (
-    <div className="min-h-screen bg-[#f6f8f9]">
+    <div className="min-h-screen ">
       {/* Header */}
       <div className="max-w-7xl mx-auto p-6">
         {/* Main Content */}
@@ -157,8 +201,8 @@ export default function BountiesDashboard() {
             <div className="flex-1">
               {/* Header */}
               <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-800 mb-1">Bounties</h1>
-                <p className="text-gray-600">Discover Bounties and earn rewards</p>
+                <h1 className="text-2xl font-semibold text-gray-800 mb-1">Jobs & Bounties</h1>
+                <p className="text-gray-600">Discover Jobs & Bounties</p>
               </div>
 
               {/* Category Tabs */}
@@ -235,7 +279,7 @@ export default function BountiesDashboard() {
                         </div>
                       </div>
 
-                      <Button className="w-full bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-full py-3">
+                      <Button className="w-full bg-blue-300 text-gray-600 hover:bg-gray-200 rounded-full py-3">
                         Register Now
                       </Button>
                     </CardContent>
@@ -300,6 +344,21 @@ export default function BountiesDashboard() {
                   />
                   <label htmlFor="remote-only" className="text-sm text-gray-400">
                     {remoteOnly ? 'On' : 'Off'}
+                  </label>
+                </div>
+              </div>
+
+              {/* Active Only Toggle (controls API ?active=true) */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Active Only</h3>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="active-only"
+                    checked={activeOnly}
+                    onCheckedChange={setActiveOnly}
+                  />
+                  <label htmlFor="active-only" className="text-sm text-gray-400">
+                    {activeOnly ? 'On' : 'Off'}
                   </label>
                 </div>
               </div>

@@ -25,7 +25,7 @@ const CaffineAI: React.FC = () => {
       {/* Centered landing like ChatGPT */}
       <div className="w-full max-w-3xl px-6 py-12 text-center">
         <div className="mb-8">
-          <img></img>
+          <img src="/caffine.png" alt="Caffine AI" className="mx-auto" />
           <h1 className="mt-4 text-3xl font-semibold">Caffine AI</h1>
         </div>
 
@@ -47,7 +47,7 @@ const CaffineAI: React.FC = () => {
               <X size={18} />
             </button>
             <div className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600">COMING SOON</div>
-            <div className="mt-4 text-center text-gray-600">Caffine AI will be available shortly. Join the waitlist for early access.</div>
+            <div className="mt-4 text-center text-gray-600">Caffine AI will be available shortly. Stay tuned!</div>
           </div>
         </div>
       )}
