@@ -35,6 +35,10 @@
     "job_posting": {
       "main": "src/job_posting/src/main.mo",
       "type": "motoko"
+    },
+    "freelancer_dashboard": {
+      "main": "src/freelancer_dashboard/src/main.mo",
+      "type": "motoko"
     }
   },
   "defaults": {

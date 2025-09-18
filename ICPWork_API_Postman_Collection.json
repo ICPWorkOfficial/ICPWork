@@ -798,6 +798,303 @@
       ]
     },
     {
+      "name": "Freelancer Dashboard",
+      "item": [
+        {
+          "name": "Create Freelancer Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"profile\": {\n    \"email\": \"freelancer@example.com\",\n    \"serviceTitle\": \"Professional Web Development Services\",\n    \"mainCategory\": \"Web Development\",\n    \"subCategory\": \"Full Stack Development\",\n    \"description\": \"I provide comprehensive web development services including frontend, backend, and database design. With 5+ years of experience in modern web technologies.\",\n    \"requirementPlans\": {\n      \"basic\": {\n        \"price\": \"$500\",\n        \"description\": \"Basic website with up to 5 pages\",\n        \"features\": [\"Responsive design\", \"Contact form\", \"Basic SEO\", \"1 revision\"],\n        \"deliveryTime\": \"1 week\"\n      },\n      \"advanced\": {\n        \"price\": \"$1200\",\n        \"description\": \"Advanced website with custom features\",\n        \"features\": [\"All basic features\", \"Custom functionality\", \"Admin panel\", \"3 revisions\", \"1 month support\"],\n        \"deliveryTime\": \"2 weeks\"\n      },\n      \"premium\": {\n        \"price\": \"$2500\",\n        \"description\": \"Premium website with full-stack development\",\n        \"features\": [\"All advanced features\", \"Database integration\", \"User authentication\", \"API development\", \"5 revisions\", \"3 months support\"],\n        \"deliveryTime\": \"3 weeks\"\n      }\n    },\n    \"additionalCharges\": {\n      \"fastDelivery\": {\n        \"price\": \"$200\",\n        \"description\": \"Rush delivery (50% faster)\",\n        \"isEnabled\": true\n      },\n      \"additionalChanges\": {\n        \"price\": \"$50\",\n        \"description\": \"Per additional revision beyond plan\",\n        \"isEnabled\": true\n      },\n      \"perExtraChange\": {\n        \"price\": \"$25\",\n        \"description\": \"Minor changes and tweaks\",\n        \"isEnabled\": true\n      }\n    },\n    \"portfolioImages\": [\n      \"https://example.com/portfolio1.jpg\",\n      \"https://example.com/portfolio2.jpg\",\n      \"https://example.com/portfolio3.jpg\"\n    ],\n    \"additionalQuestions\": [\n      \"What is your preferred technology stack?\",\n      \"Do you have existing designs or need design services?\",\n      \"What is your target launch date?\",\n      \"Do you need ongoing maintenance and support?\"\n    ],\n    \"createdAt\": 0,\n    \"updatedAt\": 0,\n    \"isActive\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard"]
+            },
+            "description": "Create a new freelancer profile with service details, pricing plans, and portfolio"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Freelancer Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard?sessionId={{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                }
+              ]
+            },
+            "description": "Get current user's freelancer profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Freelancer Profile by Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard?sessionId={{sessionId}}&email=freelancer@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                },
+                {
+                  "key": "email",
+                  "value": "freelancer@example.com"
+                }
+              ]
+            },
+            "description": "Get freelancer profile by email (for clients to view)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Freelancer Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"profile\": {\n    \"email\": \"freelancer@example.com\",\n    \"serviceTitle\": \"Senior Web Development Services\",\n    \"mainCategory\": \"Web Development\",\n    \"subCategory\": \"Full Stack Development\",\n    \"description\": \"Updated description with more experience and skills.\",\n    \"requirementPlans\": {\n      \"basic\": {\n        \"price\": \"$600\",\n        \"description\": \"Updated basic package\",\n        \"features\": [\"Responsive design\", \"Contact form\", \"Basic SEO\", \"2 revisions\"],\n        \"deliveryTime\": \"1 week\"\n      },\n      \"advanced\": {\n        \"price\": \"$1400\",\n        \"description\": \"Updated advanced package\",\n        \"features\": [\"All basic features\", \"Custom functionality\", \"Admin panel\", \"4 revisions\", \"2 months support\"],\n        \"deliveryTime\": \"2 weeks\"\n      },\n      \"premium\": {\n        \"price\": \"$3000\",\n        \"description\": \"Updated premium package\",\n        \"features\": [\"All advanced features\", \"Database integration\", \"User authentication\", \"API development\", \"6 revisions\", \"6 months support\"],\n        \"deliveryTime\": \"3 weeks\"\n      }\n    },\n    \"additionalCharges\": {\n      \"fastDelivery\": {\n        \"price\": \"$250\",\n        \"description\": \"Rush delivery (50% faster)\",\n        \"isEnabled\": true\n      },\n      \"additionalChanges\": {\n        \"price\": \"$60\",\n        \"description\": \"Per additional revision beyond plan\",\n        \"isEnabled\": true\n      },\n      \"perExtraChange\": {\n        \"price\": \"$30\",\n        \"description\": \"Minor changes and tweaks\",\n        \"isEnabled\": true\n      }\n    },\n    \"portfolioImages\": [\n      \"https://example.com/portfolio1.jpg\",\n      \"https://example.com/portfolio2.jpg\",\n      \"https://example.com/portfolio3.jpg\",\n      \"https://example.com/portfolio4.jpg\"\n    ],\n    \"additionalQuestions\": [\n      \"What is your preferred technology stack?\",\n      \"Do you have existing designs or need design services?\",\n      \"What is your target launch date?\",\n      \"Do you need ongoing maintenance and support?\",\n      \"What is your budget range?\"\n    ],\n    \"createdAt\": 0,\n    \"updatedAt\": 0,\n    \"isActive\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard"]
+            },
+            "description": "Update freelancer profile with new information"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Freelancer Profile",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard?sessionId={{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                }
+              ]
+            },
+            "description": "Delete freelancer profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Browse All Active Profiles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/browse?sessionId={{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "browse"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                }
+              ]
+            },
+            "description": "Browse all active freelancer profiles"
+          },
+          "response": []
+        },
+        {
+          "name": "Browse Profiles by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/browse?sessionId={{sessionId}}&mainCategory=Web Development",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "browse"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                },
+                {
+                  "key": "mainCategory",
+                  "value": "Web Development"
+                }
+              ]
+            },
+            "description": "Browse freelancer profiles by main category"
+          },
+          "response": []
+        },
+        {
+          "name": "Browse Profiles by Subcategory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/browse?sessionId={{sessionId}}&mainCategory=Web Development&subCategory=Frontend Development",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "browse"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                },
+                {
+                  "key": "mainCategory",
+                  "value": "Web Development"
+                },
+                {
+                  "key": "subCategory",
+                  "value": "Frontend Development"
+                }
+              ]
+            },
+            "description": "Browse freelancer profiles by subcategory"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Profiles by Title",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/browse?sessionId={{sessionId}}&search=web development",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "browse"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                },
+                {
+                  "key": "search",
+                  "value": "web development"
+                }
+              ]
+            },
+            "description": "Search freelancer profiles by service title"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "activate"]
+            },
+            "description": "Activate freelancer profile to make it visible to clients"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "deactivate"]
+            },
+            "description": "Deactivate freelancer profile to hide it from clients"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Profile Exists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/exists?sessionId={{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "exists"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                }
+              ]
+            },
+            "description": "Check if freelancer profile exists for current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/freelancer-dashboard/stats?sessionId={{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "freelancer-dashboard", "stats"],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionId}}"
+                }
+              ]
+            },
+            "description": "Get freelancer dashboard statistics (total profiles, active profiles)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Utility",
       "item": [
         {
