@@ -1,0 +1,805 @@
+{
+  "info": {
+    "name": "ICPWork API Collection",
+    "description": "Complete API collection for ICPWork platform testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "login"]
+            },
+            "description": "Login user and get session"
+          },
+          "response": []
+        },
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"NewPass123!\",\n  \"confirmPassword\": \"NewPass123!\",\n  \"userType\": \"freelancer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "signup"]
+            },
+            "description": "Register new user"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logout"]
+            },
+            "description": "Logout user and clear session"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/validate-session",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "validate-session"]
+            },
+            "description": "Check if session is valid"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Job Postings",
+      "item": [
+        {
+          "name": "Get All Job Postings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings"]
+            },
+            "description": "Get all job postings"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Job Postings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings?active=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings"],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get only active job postings"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Postings by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings?category=Technology",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Technology"
+                }
+              ]
+            },
+            "description": "Get job postings by category"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Postings by Client",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings?clientEmail=client@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings"],
+              "query": [
+                {
+                  "key": "clientEmail",
+                  "value": "client@example.com"
+                }
+              ]
+            },
+            "description": "Get job postings by client email"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Job Postings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings?search=developer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "developer"
+                }
+              ]
+            },
+            "description": "Search job postings by title"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Posting Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings?stats=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings"],
+              "query": [
+                {
+                  "key": "stats",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get job posting statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Job Posting",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientEmail\": \"client@example.com\",\n  \"category\": \"Technology\",\n  \"subCategory\": \"Frontend\",\n  \"jobTitle\": \"React Developer\",\n  \"rolesAndResponsibilities\": [\n    \"Develop user-facing features using React\",\n    \"Build reusable components and libraries\",\n    \"Optimize applications for maximum speed and scalability\"\n  ],\n  \"skillsRequired\": [\n    \"React\",\n    \"JavaScript\",\n    \"TypeScript\",\n    \"HTML/CSS\"\n  ],\n  \"benefits\": [\n    \"Competitive salary\",\n    \"Health insurance\",\n    \"Remote work options\"\n  ],\n  \"jobRoles\": [\n    \"Frontend Developer\",\n    \"UI Developer\"\n  ],\n  \"duration\": \"6 months\",\n  \"isContractToHire\": true,\n  \"workplaceType\": \"Remote\",\n  \"location\": \"Remote\",\n  \"budget\": \"$5000-8000\",\n  \"budgetType\": \"PerHour\",\n  \"applicationType\": \"Paid\",\n  \"applicationDetails\": \"Please include your portfolio and GitHub profile\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings"]
+            },
+            "description": "Create a new job posting"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Posting by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings/{{jobPostingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings", "{{jobPostingId}}"]
+            },
+            "description": "Get specific job posting by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Job Posting",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobTitle\": \"Senior React Developer\",\n  \"budget\": \"$6000-9000\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings/{{jobPostingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings", "{{jobPostingId}}"]
+            },
+            "description": "Update job posting"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Job Posting",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings/{{jobPostingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings", "{{jobPostingId}}"]
+            },
+            "description": "Delete job posting"
+          },
+          "response": []
+        },
+        {
+          "name": "Apply to Job Posting",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicantEmail\": \"freelancer@example.com\",\n  \"applicantName\": \"John Doe\",\n  \"coverLetter\": \"I am very interested in this position...\",\n  \"resume\": \"https://example.com/resume.pdf\",\n  \"portfolio\": \"https://example.com/portfolio\",\n  \"expectedSalary\": \"$6000\",\n  \"availability\": \"Immediately\",\n  \"additionalNotes\": \"Available for full-time work\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/job-postings/{{jobPostingId}}/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-postings", "{{jobPostingId}}", "apply"]
+            },
+            "description": "Apply to a job posting"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "all"]
+            },
+            "description": "Get all users (admin function)"
+          },
+          "response": []
+        },
+        {
+          "name": "Register User (Legacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"legacy@example.com\",\n  \"password\": \"LegacyPass123!\",\n  \"userType\": \"client\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "Register user using legacy endpoint"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/email/test@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "email", "test@example.com"]
+            },
+            "description": "Get user by email address"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Users by Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/by-type/freelancer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "by-type", "freelancer"]
+            },
+            "description": "Get users by type (freelancer or client)"
+          },
+          "response": []
+        },
+        {
+          "name": "User Login (Legacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "login"]
+            },
+            "description": "User login using legacy endpoint"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profiles",
+      "item": [
+        {
+          "name": "Get All Profiles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            },
+            "description": "Get all profiles"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile?id={{profileId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{profileId}}"
+                }
+              ]
+            },
+            "description": "Get specific profile by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"skills\": [\"React\", \"Node.js\", \"TypeScript\"],\n  \"experience\": \"5 years\",\n  \"bio\": \"Experienced full-stack developer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile", "complete"]
+            },
+            "description": "Complete user profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Get All Contacts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "messages"]
+            },
+            "description": "Get all contacts"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Messages by Contact",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages?contactId={{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "messages"],
+              "query": [
+                {
+                  "key": "contactId",
+                  "value": "{{contactId}}"
+                }
+              ]
+            },
+            "description": "Get messages for specific contact"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactId\": \"{{contactId}}\",\n  \"from\": \"me\",\n  \"text\": \"Hello, I'm interested in your project!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "messages"]
+            },
+            "description": "Send a message to a contact"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Get All Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            },
+            "description": "Get all projects"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Project by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects?id={{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "Get specific project by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{projectId}}\",\n  \"status\": \"completed\",\n  \"files\": [\"file1.pdf\", \"file2.docx\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            },
+            "description": "Update project status and files"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Project Files",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"files\": [\"document1.pdf\", \"image1.jpg\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "upload"]
+            },
+            "description": "Upload files to a project"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "Get Service by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/service/{{serviceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "service", "{{serviceId}}"]
+            },
+            "description": "Get service by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Web Development Service\",\n  \"description\": \"Professional web development services\",\n  \"price\": \"$50/hour\",\n  \"category\": \"Technology\",\n  \"skills\": [\"React\", \"Node.js\", \"MongoDB\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/service/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "service", "publish"]
+            },
+            "description": "Publish a new service"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ICP Swap",
+      "item": [
+        {
+          "name": "Convert Currency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"USD\",\n  \"to\": \"ICP\",\n  \"amount\": \"100\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/icpswap/convert",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "icpswap", "convert"]
+            },
+            "description": "Convert currency using ICP swap"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/icpswap/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "icpswap", "transactions"]
+            },
+            "description": "Get ICP swap transactions"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{userId}}\",\n  \"name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/delete-user",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "delete-user"]
+            },
+            "description": "Delete user (admin function)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Utility",
+      "item": [
+        {
+          "name": "Get Principal Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/principal",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "principal"]
+            },
+            "description": "Get ICP principal and canister information"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Invite",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invite@example.com\",\n  \"message\": \"Join our platform!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/invite",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invite"]
+            },
+            "description": "Send invitation email"
+          },
+          "response": []
+        },
+        {
+          "name": "Demo Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "demo"]
+            },
+            "description": "Get demo data"
+          },
+          "response": []
+        },
+        {
+          "name": "Demo Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demo/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "demo", "profile"]
+            },
+            "description": "Get demo profile data"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
