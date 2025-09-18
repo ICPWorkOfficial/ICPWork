@@ -64,6 +64,7 @@ export default function AuthForm() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [showPasswordValidation, setShowPasswordValidation] = useState<boolean>(false);
   const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
     minLength: false,
@@ -189,7 +190,12 @@ export default function AuthForm() {
   setIsLoading(true);
   try {
     const url = authMode === 'login' ? '/api/login' : '/api/signup';
-    const payload = authMode === 'login' ? loginData : signupData;
+    const payload = authMode === 'login'
+      ? { email: loginData.email, password: loginData.password }
+      : { email: signupData.email, password: signupData.password, confirmPassword: signupData.confirmPassword, userType: signupData.userType };
+
+    // clear previous API error
+    setApiError(null);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -201,19 +207,27 @@ export default function AuthForm() {
 
     if (!response.ok) {
       // Handle API errors
-      if (result.errors) {
+      if (result?.errors) {
         setErrors(result.errors);
-      } else {
-        alert(result.message || 'Something went wrong');
+      }
+      if (result?.message) {
+        setApiError(result.message);
+      } else if (!result) {
+        setApiError('Something went wrong');
       }
       return;
     }
 
     console.log(`${authMode} successful:`, result);
-    if (authMode === 'login') {
-      window.location.href = '/dashboard';
+    setApiError(null);
+    // Determine userType from API response if available, otherwise fall back to submitted payload
+    const returnedUserType = result?.user?.userType || (authMode === 'login' ? loginData.userType : signupData.userType);
+
+    if (returnedUserType === 'client') {
+      router.push('/client-dashboard');
     } else {
-      window.location.href = '/onboarding';
+      // default to freelancer dashboard
+      router.push('/dashboard');
     }
   } catch (error) {
     console.error(`${authMode} failed:`, error);
@@ -277,6 +291,11 @@ export default function AuthForm() {
             </div>
 
             {/* Auth Form */}
+            {apiError && (
+              <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-700">
+                {apiError}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Input */}
               <div className="space-y-1">
