@@ -50,6 +50,12 @@ const idlFactory = ({ IDL }: any) => {
     
     // Legacy functions for backward compatibility
     'registerUser': IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Variant({ 'ok': IDL.Null, 'err': Error })], []),
+    
+    // Onboarding functions
+    'createOnboardingRecord': IDL.Func([IDL.Text, IDL.Text], [IDL.Variant({ 'ok': IDL.Null, 'err': Error })], []),
+    'updateOnboardingStep': IDL.Func([IDL.Text, IDL.Opt(IDL.Variant({'resume': IDL.Null, 'manual': IDL.Null})), IDL.Opt(IDL.Record({'firstName': IDL.Opt(IDL.Text), 'lastName': IDL.Opt(IDL.Text)})), IDL.Opt(IDL.Vec(IDL.Text)), IDL.Opt(IDL.Record({'country': IDL.Text, 'state': IDL.Text, 'city': IDL.Text, 'zipCode': IDL.Text, 'streetAddress': IDL.Text, 'isPublic': IDL.Bool})), IDL.Opt(IDL.Record({'profilePhoto': IDL.Opt(IDL.Text), 'phoneNumber': IDL.Opt(IDL.Text), 'phoneVerified': IDL.Bool})), IDL.Opt(IDL.Record({'resume': IDL.Opt(IDL.Text), 'linkedinProfile': IDL.Opt(IDL.Text)})), IDL.Opt(IDL.Record({'companyName': IDL.Opt(IDL.Text), 'companyWebsite': IDL.Opt(IDL.Text), 'industry': IDL.Opt(IDL.Text), 'businessType': IDL.Opt(IDL.Text), 'employeeCount': IDL.Opt(IDL.Text)}))], [IDL.Variant({ 'ok': IDL.Null, 'err': Error })], []),
+    'completeOnboarding': IDL.Func([IDL.Text], [IDL.Variant({ 'ok': IDL.Null, 'err': Error })], []),
+    'getOnboardingRecord': IDL.Func([IDL.Text], [IDL.Variant({ 'ok': IDL.Record({'email': IDL.Text, 'userType': IDL.Text, 'profileMethod': IDL.Opt(IDL.Variant({'resume': IDL.Null, 'manual': IDL.Null})), 'personalInfo': IDL.Opt(IDL.Record({'firstName': IDL.Opt(IDL.Text), 'lastName': IDL.Opt(IDL.Text)})), 'skills': IDL.Vec(IDL.Text), 'address': IDL.Opt(IDL.Record({'country': IDL.Text, 'state': IDL.Text, 'city': IDL.Text, 'zipCode': IDL.Text, 'streetAddress': IDL.Text, 'isPublic': IDL.Bool})), 'profile': IDL.Opt(IDL.Record({'profilePhoto': IDL.Opt(IDL.Text), 'phoneNumber': IDL.Opt(IDL.Text), 'phoneVerified': IDL.Bool})), 'final': IDL.Opt(IDL.Record({'resume': IDL.Opt(IDL.Text), 'linkedinProfile': IDL.Opt(IDL.Text)})), 'companyData': IDL.Opt(IDL.Record({'companyName': IDL.Opt(IDL.Text), 'companyWebsite': IDL.Opt(IDL.Text), 'industry': IDL.Opt(IDL.Text), 'businessType': IDL.Opt(IDL.Text), 'employeeCount': IDL.Opt(IDL.Text)})), 'isComplete': IDL.Bool, 'createdAt': IDL.Int, 'updatedAt': IDL.Int, 'completedAt': IDL.Opt(IDL.Int)}), 'err': Error })], []),
   });
 };
 
@@ -388,6 +394,140 @@ class ICPAgent {
   async changePassword(userId: string, otp: string, newPassword: string) {
     // This would need to be implemented in the backend
     throw new Error('Password change not implemented yet');
+  }
+
+  // ONBOARDING METHODS
+
+  async createOnboardingRecord(sessionId: string, userType: string) {
+    try {
+      if (this.useMock) {
+        return { success: true, message: 'Mock onboarding record created' };
+      }
+
+      if (!this.actor) {
+        await this.initializeActor();
+        if (!this.actor) {
+          throw new Error('Failed to initialize actor');
+        }
+      }
+
+      const result = await this.actor.createOnboardingRecord(sessionId, userType);
+      if ('ok' in result) {
+        return { success: true, message: 'Onboarding record created successfully' };
+      } else {
+        const errorType = Object.keys(result.err)[0];
+        throw new Error(errorType);
+      }
+    } catch (error: any) {
+      console.error('Create onboarding record error:', error);
+      throw error;
+    }
+  }
+
+  async updateOnboardingStep(
+    sessionId: string,
+    profileMethod?: any,
+    personalInfo?: any,
+    skills?: string[],
+    address?: any,
+    profile?: any,
+    final?: any,
+    companyData?: any
+  ) {
+    try {
+      if (this.useMock) {
+        return { success: true, message: 'Mock onboarding step updated' };
+      }
+
+      if (!this.actor) {
+        await this.initializeActor();
+        if (!this.actor) {
+          throw new Error('Failed to initialize actor');
+        }
+      }
+
+      const result = await this.actor.updateOnboardingStep(
+        sessionId,
+        profileMethod,
+        personalInfo,
+        skills,
+        address,
+        profile,
+        final,
+        companyData
+      );
+      
+      if ('ok' in result) {
+        return { success: true, message: 'Onboarding step updated successfully' };
+      } else {
+        const errorType = Object.keys(result.err)[0];
+        throw new Error(errorType);
+      }
+    } catch (error: any) {
+      console.error('Update onboarding step error:', error);
+      throw error;
+    }
+  }
+
+  async completeOnboarding(sessionId: string) {
+    try {
+      if (this.useMock) {
+        return { success: true, message: 'Mock onboarding completed' };
+      }
+
+      if (!this.actor) {
+        await this.initializeActor();
+        if (!this.actor) {
+          throw new Error('Failed to initialize actor');
+        }
+      }
+
+      const result = await this.actor.completeOnboarding(sessionId);
+      if ('ok' in result) {
+        return { success: true, message: 'Onboarding completed successfully' };
+      } else {
+        const errorType = Object.keys(result.err)[0];
+        throw new Error(errorType);
+      }
+    } catch (error: any) {
+      console.error('Complete onboarding error:', error);
+      throw error;
+    }
+  }
+
+  async getOnboardingRecord(sessionId: string) {
+    try {
+      if (this.useMock) {
+        return { 
+          success: true, 
+          record: {
+            email: 'mock@example.com',
+            userType: 'freelancer',
+            isComplete: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          }
+        };
+      }
+
+      if (!this.actor) {
+        await this.initializeActor();
+        if (!this.actor) {
+          throw new Error('Failed to initialize actor');
+        }
+      }
+
+      const result = await this.actor.getOnboardingRecord(sessionId);
+      if ('ok' in result) {
+        return { success: true, record: result.ok };
+      } else {
+        const errorType = Object.keys(result.err)[0];
+        throw new Error(errorType);
+      }
+    } catch (error: any) {
+      console.error('Get onboarding record error:', error);
+      throw error;
+    }
   }
 }
 
