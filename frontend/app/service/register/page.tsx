@@ -97,25 +97,45 @@ export default function ServiceRegisterPage() {
 
   const publishService = async () => {
     try {
-      const payload = {
-        overview: formData,
-        projectTiers,
-        additionalCharges,
-        portfolioImages: portfolioImages.map((f) => f.name),
-        questions,
+      // Map UI form state to API shape expected by /api/service/publish
+      const title = formData.serviceTitle || projectTiers?.Basic?.title || ''
+      const description = formData.description || formData.serviceDescription || projectTiers?.Basic?.description || ''
+      const rawPrice = projectTiers?.Basic?.price || projectTiers?.Advanced?.price || projectTiers?.Premium?.price || ''
+      const price = rawPrice ? (rawPrice.toString().startsWith('$') ? rawPrice.toString() : `$${rawPrice}`) : ''
+      const category = formData.mainCategory || ''
+      const skills = formData.skills || formData.tags || []
+
+      const apiPayload = {
+        title,
+        description,
+        price,
+        category,
+        skills,
+        // keep a fallback full payload so backend that expects more fields still receives them
+        meta: {
+          overview: formData,
+          projectTiers,
+          additionalCharges,
+          portfolioImages: portfolioImages.map((f) => f.name),
+          questions,
+        }
       }
 
       const res = await fetch('/api/service/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        credentials: 'same-origin',
+        body: JSON.stringify(apiPayload),
       })
+
       const data = await res.json()
       if (data?.success) {
-        // navigate to profile or show confirmation
-        alert('Service published — ID: ' + data.id)
-        // optional: redirect to profile page: window.location.href = `/profile/${data.id}`
+        // navigate to created service page if id provided
+        const newId = data.id || data.serviceId || data._id || data.id;
+        alert('Service published — ID: ' + (newId || 'unknown'))
+        if (newId) window.location.href = `/service/${newId}`
       } else {
+        console.error('Publish failed:', data)
         alert('Failed to publish')
       }
     } catch (err) {
