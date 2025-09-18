@@ -134,24 +134,38 @@ persistent actor Main {
         completedAt: ?Int;
     };
 
+<<<<<<< HEAD
     // Storage canister actors - Use proper canister names
     transient let freelancerStorage = actor("umunu-kh777-77774-qaaca-cai") : actor {
+=======
+
+    // Storage canister actors - Transient with lazy initialization
+    private transient var freelancerStorage : ?actor {
+>>>>>>> origin/main
         storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
         getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
         deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
         getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
-    };
+    } = null;
 
+<<<<<<< HEAD
     transient let clientStorage = actor("u6s2n-gx777-77774-qaaba-cai") : actor {
+=======
+    private transient var clientStorage : ?actor {
+>>>>>>> origin/main
         storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
         getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
         deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
         getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
-    };
+    } = null;
 
+<<<<<<< HEAD
     transient let messageStorage = actor("ucwa4-rx777-77774-qaada-cai") : actor {
+=======
+    private transient var messageStorage : ?actor {
+>>>>>>> origin/main
         storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
@@ -160,9 +174,13 @@ persistent actor Main {
         getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
         getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-    };
+    } = null;
 
+<<<<<<< HEAD
     transient let onboardingStorage = actor("ufxgi-4p777-77774-qaadq-cai") : actor {
+=======
+    private transient var onboardingStorage : ?actor {
+>>>>>>> origin/main
         createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
         updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
         completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
@@ -282,7 +300,11 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
+<<<<<<< HEAD
     transient let bountiesStorage = actor("uxrrr-q7777-77774-qaaaq-cai") : actor {
+=======
+    private transient var bountiesStorage : ?actor {
+>>>>>>> origin/main
         createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
         updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
         registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
@@ -296,7 +318,8 @@ persistent actor Main {
         getUserBounties: (Text) -> async [Bounty];
         getBountyStats: () -> async BountyStats;
         deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
-    };
+    } = null;
+
 
     // Initialize modules
     transient let auth = Auth.Auth();
@@ -579,12 +602,15 @@ persistent actor Main {
         #ok("OTP verified successfully")
     };
 
+<<<<<<< HEAD
+=======
     // Resend OTP (placeholder - implement based on your OTP system)
     public func resendOTP(userId: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP resending logic
         #ok("OTP sent successfully")
     };
+>>>>>>> origin/main
 
     // Change password (placeholder - implement based on your OTP system)
     public func changePassword(userId: Text, otp: Text, newPassword: Text) : async Result.Result<Text, Error> {

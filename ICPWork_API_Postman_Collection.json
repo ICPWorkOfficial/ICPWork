@@ -407,6 +407,72 @@
             "description": "User login using legacy endpoint"
           },
           "response": []
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"profileData\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"phoneNumber\": \"+1234567890\",\n    \"companyName\": \"Tech Corp\",\n    \"companyWebsite\": \"https://techcorp.com\",\n    \"industry\": \"Technology\",\n    \"businessType\": \"Corporation\",\n    \"numberOfEmployees\": 100,\n    \"description\": \"Leading technology company\",\n    \"skills\": [\"JavaScript\", \"React\", \"Node.js\", \"TypeScript\"],\n    \"country\": \"United States\",\n    \"state\": \"California\",\n    \"city\": \"San Francisco\",\n    \"zipCode\": \"94105\",\n    \"streetAddress\": \"123 Tech Street\",\n    \"photo\": \"https://example.com/photo.jpg\",\n    \"linkedinProfile\": \"https://linkedin.com/in/johndoe\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/update-profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "update-profile"]
+            },
+            "description": "Update user profile with all available fields in user_management canister"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Profile (Partial)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"profileData\": {\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"phoneNumber\": \"+1987654321\",\n    \"skills\": [\"UI/UX Design\", \"Figma\", \"Adobe Creative Suite\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/update-profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "update-profile"]
+            },
+            "description": "Update only specific user profile fields"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/update-profile?email=test@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "update-profile"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "test@example.com"
+                }
+              ]
+            },
+            "description": "Get current user profile for reference"
+          },
+          "response": []
         }
       ]
     },
