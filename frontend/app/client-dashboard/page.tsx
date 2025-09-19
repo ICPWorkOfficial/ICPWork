@@ -5,14 +5,13 @@ import { Sidebar } from './components/Sidebar'
 import { CategoryTabs } from './components/CategoryTabs'
 import { Filters } from './components/Filters'
 import { TalentGrid } from './components/TalentGrid'
-import ServiceDetail from './components/ServiceDetail'
 export function App() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [filters, setFilters] = useState({
     topRated: false,
     bestSeller: false,
   })
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
+  console.log(activeCategory,"testing");
 
   const talents = [
     {
@@ -49,8 +48,6 @@ export function App() {
     },
   ]
 
-  const selectedService = talents.find((t) => t.id === selectedServiceId) || null
-
   return (
     <div className="flex h-screen bg-[#f6f8f9]">
       {/* Sidebar */}
@@ -59,22 +56,15 @@ export function App() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {!selectedService ? (
-            <>
-              <CategoryTabs
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
-              />
-              <Filters filters={filters} setFilters={setFilters} />
-              <TalentGrid
-                category={activeCategory}
-                filters={filters}
-                onSelect={(id) => setSelectedServiceId(id)}
-              />
-            </>
-          ) : (
-            <ServiceDetail service={selectedService as any} onBack={() => setSelectedServiceId(null)} />
-          )}
+          <CategoryTabs
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+          />
+          <Filters filters={filters} setFilters={setFilters} />
+          <TalentGrid
+            category={activeCategory}
+            filters={filters}
+          />
         </main>
       </div>
     </div>

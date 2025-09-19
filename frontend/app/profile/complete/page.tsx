@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { User, Globe, GraduationCap, Briefcase, MoreHorizontal, Eye, X } from 'lucide-react';
 
 interface ProfileData {
@@ -34,6 +36,8 @@ const tabs: TabData[] = [
 ];
 
 export default function CompleteProfilePage() {
+  const router = useRouter();
+  const auth = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [activeTab, setActiveTab] = useState('about');
   const [showMobilePreview, setShowMobilePreview] = useState(false);
@@ -138,6 +142,55 @@ export default function CompleteProfilePage() {
       console.error('Failed to save profile data:', error);
     }
   };
+
+  const handlePublish = async () => {
+    // Build profile payload according to API spec
+    try {
+      const sessionId = auth?.user?.sessionId || auth?.user?.id || null;
+      const profilePayload: any = {
+        email: auth?.user?.email || formData.email || '',
+        serviceTitle: formData.title || '',
+        mainCategory: formData.mainCategory || formData.category || '',
+        subCategory: formData.subCategory || '',
+        description: formData.about || '',
+        requirementPlans: formData.requirementPlans || {
+          basic: formData.basicPlan || {},
+          advanced: formData.advancedPlan || {},
+          premium: formData.premiumPlan || {}
+        },
+        additionalCharges: formData.additionalCharges || {},
+        portfolioImages: formData.portfolioImages || (formData.portfolioLink ? [formData.portfolioLink] : []),
+        additionalQuestions: formData.additionalQuestions || [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        isActive: true
+      };
+
+      const payload = { sessionId, profile: profilePayload };
+
+      const res = await fetch('/api/freelancer-dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        console.error('Failed to create freelancer profile', res.status, txt);
+        alert('Failed to create freelancer profile');
+        return;
+      }
+
+      const json = await res.json();
+      console.log('Freelancer profile created', json);
+      // redirect to freelancer dashboard
+      router.push('/dashboard');
+    } catch (e) {
+      console.error('Publish error', e);
+      alert('Failed to publish profile');
+    }
+  }
 
   const addEducationEntry = () => {
     setEducationEntries([...educationEntries, { institution: '', degree: '', startYear: '', endYear: '' }]);

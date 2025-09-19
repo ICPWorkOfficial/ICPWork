@@ -88,5 +88,17 @@
     "userType": "freelancer",
     "createdAt": 1758250955124,
     "expiresAt": 1758855755124
+  },
+  "session_1758259399125_dd7bmgdm5": {
+    "email": "gursagar1107@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758259399126,
+    "expiresAt": 1758864199126
+  },
+  "session_1758261967964_8x5gbrqmn": {
+    "email": "t3chnobromo@gmail.com",
+    "userType": "client",
+    "createdAt": 1758261967964,
+    "expiresAt": 1758866767964
   }
 }

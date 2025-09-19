@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { ChevronLeft, ChevronRight, Star, Github, Linkedin, Twitter, Globe } from 'lucide-react';
 
 // Types
@@ -159,6 +160,8 @@ export default function ProfilePage() {
   const [currentWork, setCurrentWork] = useState(0);
   const [currentService, setCurrentService] = useState(0);
   const [currentExperience, setCurrentExperience] = useState(0);
+  const auth = useAuth();
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     // Fetch profile data (support ?id= query param)
@@ -212,6 +215,43 @@ export default function ProfilePage() {
       return () => clearInterval(interval);
     }
   }, [profileData]);
+
+  useEffect(() => {
+    if (!auth || !auth.user) return;
+    (async () => {
+      try {
+        const user = auth.user as any;
+        const sid = user?.sessionId || user?.id || user?.userId || user?.email;
+        if (!sid) return;
+        const res = await fetch(`/api/freelancer-dashboard?sessionId=${encodeURIComponent(sid)}`, { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const data = await res.json();
+        // backend may return { ok, profile } or { ok, profiles } or array
+        let profileObj = null as any;
+        if (data.profile) profileObj = data.profile;
+        else if (data.profiles && Array.isArray(data.profiles)) profileObj = data.profiles[0] || null;
+        else if (Array.isArray(data) && data.length > 0) profileObj = data[0];
+        else if (data.data) profileObj = data.data;
+
+        if (!profileObj) {
+          setIsOwner(false);
+          return;
+        }
+
+        const ownerMatch = Boolean(
+          (profileObj.sessionId && user?.sessionId && profileObj.sessionId === user.sessionId) ||
+          (profileObj.userId && (profileObj.userId === user.id || profileObj.userId === user.userId)) ||
+          (profileObj.email && user?.email && profileObj.email === user.email) ||
+          (profileObj.id && (profileObj.id === user.id || profileObj.id === user.userId))
+        );
+
+        setIsOwner(ownerMatch);
+      } catch (err) {
+        console.error('Failed to check freelancer ownership:', err);
+        setIsOwner(false);
+      }
+    })();
+  }, [auth?.user]);
 
   // compute opened id on client only
   useEffect(() => {
@@ -323,7 +363,7 @@ export default function ProfilePage() {
           <div className="flex flex-col lg:flex-row items-start gap-8">
             {/* Left Content */}
             <div className="flex-1">
-              {editable && !editing ? (
+              {editable && isOwner && !editing ? (
                 <div className="flex items-center gap-4 mb-4">
                   <div>
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">{personal.name}</h1>

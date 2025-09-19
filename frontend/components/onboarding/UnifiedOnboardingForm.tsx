@@ -5,6 +5,7 @@ import { X, MapPin, FileText, User, Phone, Upload, ArrowRight, Info } from 'luci
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useSafeAuth } from '@/hooks/useSafeAuth';
+import { ImageUploader } from '@/components/ImageUploader';
 
 // Design tokens from Figma
 const designTokens = {
@@ -613,15 +614,15 @@ const UnifiedOnboardingForm: React.FC = () => {
                           )}
                         </div>
                         <div className="flex flex-col gap-2">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.onload = () => setFormData(prev => ({ ...prev, profilePhoto: String(reader.result || '') }));
-                              reader.readAsDataURL(file);
+                          <ImageUploader
+                            userId={user?.email || 'anonymous'}
+                            folder="profile-photos"
+                            maxFiles={1}
+                            onUploadSuccess={(result) => {
+                              setFormData(prev => ({ ...prev, profilePhoto: result.url }));
+                            }}
+                            onUploadError={(error) => {
+                              console.error('Profile photo upload failed:', error);
                             }}
                             className="w-60"
                           />

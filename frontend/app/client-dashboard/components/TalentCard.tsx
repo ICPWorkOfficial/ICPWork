@@ -1,4 +1,5 @@
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { Star, ChevronRight, ChevronLeft, Tag } from 'lucide-react'
 
 interface TalentCardProps {
@@ -28,11 +29,21 @@ export function TalentCard({
   images,
   onSelect,
 }: TalentCardProps) {
+  const router = useRouter();
   const displayTitle = title || name;
   const displayDescription = description.length > 120 ? description.substring(0, 120) + '...' : description;
 
+  const handleCardClick = () => {
+    if (onSelect) {
+      onSelect(id);
+    } else {
+      // Navigate to service detail page
+      router.push(`/client-dashboard/service/${id}`);
+    }
+  };
+
   return (
-    <div onClick={() => onSelect && onSelect(id)} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+    <div onClick={handleCardClick} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer">
       <div className="relative h-48 bg-gray-100">
         <img
           src={images[0] || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}
@@ -62,7 +73,7 @@ export function TalentCard({
             <div className="flex items-center mb-1">
               <div className="w-8 h-8 rounded-full bg-gray-300 mr-2 overflow-hidden">
                 <img
-                  src={`https://i.pravatar.cc/32?u=${id}`}
+                  src={`https://i.pravatar.cc/32?u=${name}`}
                   alt={`${name} avatar`}
                   className="w-full h-full object-cover"
                 />
@@ -76,12 +87,15 @@ export function TalentCard({
               <p className="text-xs text-gray-500 mb-2">{subCategory}</p>
             )}
           </div>
-          <a
-            href="#"
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/client-dashboard/service/${id}`);
+            }}
             className="text-sm text-[#437ef7] flex items-center hover:underline ml-2"
           >
             View <ChevronRight size={16} />
-          </a>
+          </button>
         </div>
         <p className="text-[#525252] text-sm mb-3 line-clamp-3">{displayDescription}</p>
         <div className="flex items-center justify-between">

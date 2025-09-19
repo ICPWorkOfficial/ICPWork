@@ -89,6 +89,7 @@ import PaymentView from './views/payments';
 // import MessageView from './views/messages';
 import MessageView from './views/messages';
 import MyProjectsView from './views/my-projects';
+import MyServicesView from './views/my-services';
 import ProjectFlowView from './views/project-flow';
 import SwapInterface from './views/icpswap';
 import Analytics from './views/analytics';
@@ -159,6 +160,7 @@ const FreelancerDashboard: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [activeProject, setActiveProject] = useState<any | null>(null);
   const [userData,setUserData] = useState<any | null>(null);
+  console.log(userData,"userData");
   
   // Use localStorage user as primary, fallback to server user
   const currentUser = user || serverUser;
@@ -248,6 +250,7 @@ const FreelancerDashboard: React.FC = () => {
     { id: 'browse-projects', label: 'Browse Projects', icon: <Briefcase size={20} className="text-[#555555]" /> },
     { id: 'bounties', label: 'Jobs', icon: <Megaphone size={20} className="text-[#555555]" /> },
     { id: 'my-projects', label: 'My Projects', icon: <User size={20} className="text-[#525252]" /> },
+    { id: 'my-services', label: 'My Services', icon: <Briefcase size={20} className="text-[#555555]" /> },
     { id: 'messages', label: 'Messages', icon: <Mail size={20} className="text-[#555555]" /> },
     { id: 'hackathons', label: 'Hackathons', icon: <Code size={20} className="text-[#525252]" /> },
     { id: 'payments', label: 'Payments', icon: <DollarSign size={20} className="text-[#525252]" /> },
@@ -291,6 +294,7 @@ const FreelancerDashboard: React.FC = () => {
       case 'browse-projects': return <ProjectsView />;
       case 'bounties': return <BountiesDashboard />;
   case 'my-projects': return <MyProjectsView onOpenProject={(p) => setActiveProject(p as any)} onProjectUpdated={(p) => { /* keep activeProject in sync if needed */ setActiveProject(p as any); }} />;
+      case 'my-services': return <MyServicesView />;
       case 'messages': return <MessageView />;
       case 'hackathons': return <HackathonsView />;
       case 'payments': return <PaymentView />;

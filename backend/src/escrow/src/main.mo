@@ -27,12 +27,17 @@ persistent actor EscrowBank {
         seller: Principal;
         arbitrator: ?Principal;
         amount: Balance;
+        platformFee: Balance; // 10% of the amount
+        netAmount: Balance; // Amount after platform fee deduction
         description: Text;
         status: EscrowStatus;
         createdAt: Timestamp;
+        deadline: Timestamp; // Project deadline
         completedAt: ?Timestamp;
         buyerApproved: Bool;
         sellerApproved: Bool;
+        serviceId: Text; // Reference to the service
+        projectTitle: Text;
     };
     
     public type CreateEscrowArgs = {
@@ -40,6 +45,9 @@ persistent actor EscrowBank {
         arbitrator: ?Principal;
         amount: Balance;
         description: Text;
+        deadline: Timestamp; // Project deadline in nanoseconds
+        serviceId: Text;
+        projectTitle: Text;
     };
     
     // State
@@ -58,6 +66,20 @@ persistent actor EscrowBank {
     // Helper function to update balance
     private func updateBalance(principal: Principal, newBalance: Balance) {
         balances.put(principal, newBalance);
+    };
+    
+    // Calculate platform fee (10% of the amount)
+    private func calculatePlatformFee(amount: Balance) : Balance {
+        if (amount == 0) {
+            0
+        } else {
+            amount / 10; // 10% fee
+        }
+    };
+    
+    // Calculate net amount after platform fee
+    private func calculateNetAmount(amount: Balance) : Balance {
+        amount - calculatePlatformFee(amount);
     };
     
     // Deposit funds to user's account
@@ -112,7 +134,15 @@ persistent actor EscrowBank {
             return #err("Buyer and seller cannot be the same");
         };
         
-        // Deduct amount from buyer's balance
+        if (args.deadline <= Time.now()) {
+            return #err("Deadline must be in the future");
+        };
+        
+        // Calculate platform fee and net amount
+        let platformFee = calculatePlatformFee(args.amount);
+        let netAmount = calculateNetAmount(args.amount);
+        
+        // Deduct full amount from buyer's balance (platform fee is held separately)
         updateBalance(caller, currentBalance - args.amount);
         
         let escrowId = nextEscrowId;
@@ -124,12 +154,17 @@ persistent actor EscrowBank {
             seller = args.seller;
             arbitrator = args.arbitrator;
             amount = args.amount;
+            platformFee = platformFee;
+            netAmount = netAmount;
             description = args.description;
             status = #Pending;
             createdAt = Time.now();
+            deadline = args.deadline;
             completedAt = null;
             buyerApproved = false;
             sellerApproved = false;
+            serviceId = args.serviceId;
+            projectTitle = args.projectTitle;
         };
         
         escrows.put(escrowId, newEscrow);
@@ -165,11 +200,11 @@ persistent actor EscrowBank {
                     };
                     escrows.put(escrowId, completedEscrow);
                     
-                    // Transfer funds to seller
+                    // Transfer net amount to seller (after platform fee deduction)
                     let sellerBalance = getBalance(escrow.seller);
-                    updateBalance(escrow.seller, sellerBalance + escrow.amount);
+                    updateBalance(escrow.seller, sellerBalance + escrow.netAmount);
                     
-                    #ok("Escrow completed successfully")
+                    #ok("Escrow completed successfully. Platform fee deducted.")
                 } else {
                     escrows.put(escrowId, updatedEscrow);
                     #ok("Buyer approval recorded, waiting for seller approval")
@@ -207,11 +242,11 @@ persistent actor EscrowBank {
                     };
                     escrows.put(escrowId, completedEscrow);
                     
-                    // Transfer funds to seller
+                    // Transfer net amount to seller (after platform fee deduction)
                     let sellerBalance = getBalance(escrow.seller);
-                    updateBalance(escrow.seller, sellerBalance + escrow.amount);
+                    updateBalance(escrow.seller, sellerBalance + escrow.netAmount);
                     
-                    #ok("Escrow completed successfully")
+                    #ok("Escrow completed successfully. Platform fee deducted.")
                 } else {
                     escrows.put(escrowId, updatedEscrow);
                     #ok("Seller approval recorded, waiting for buyer approval")
@@ -220,7 +255,7 @@ persistent actor EscrowBank {
         };
     };
     
-    // Cancel escrow (only buyer can cancel, refunds the amount)
+    // Cancel escrow (only buyer can cancel, refunds the full amount including platform fee)
     public shared(msg) func cancelEscrow(escrowId: EscrowId) : async Result.Result<Text, Text> {
         let caller = msg.caller;
         
@@ -235,7 +270,7 @@ persistent actor EscrowBank {
                     return #err("Can only cancel pending escrows");
                 };
                 
-                // Refund amount to buyer
+                // Refund full amount to buyer (including platform fee)
                 let buyerBalance = getBalance(escrow.buyer);
                 updateBalance(escrow.buyer, buyerBalance + escrow.amount);
                 
@@ -246,7 +281,7 @@ persistent actor EscrowBank {
                 };
                 
                 escrows.put(escrowId, cancelledEscrow);
-                #ok("Escrow cancelled and refunded")
+                #ok("Escrow cancelled and full amount refunded (including platform fee)")
             };
         };
     };
@@ -301,7 +336,7 @@ persistent actor EscrowBank {
                         };
                         
                         if (favorBuyer) {
-                            // Refund to buyer
+                            // Refund full amount to buyer (including platform fee)
                             let buyerBalance = getBalance(escrow.buyer);
                             updateBalance(escrow.buyer, buyerBalance + escrow.amount);
                             
@@ -311,11 +346,11 @@ persistent actor EscrowBank {
                                 completedAt = ?Time.now();
                             };
                             escrows.put(escrowId, resolvedEscrow);
-                            #ok("Dispute resolved in favor of buyer, funds refunded")
+                            #ok("Dispute resolved in favor of buyer, full amount refunded (including platform fee)")
                         } else {
-                            // Pay to seller
+                            // Pay net amount to seller (after platform fee deduction)
                             let sellerBalance = getBalance(escrow.seller);
-                            updateBalance(escrow.seller, sellerBalance + escrow.amount);
+                            updateBalance(escrow.seller, sellerBalance + escrow.netAmount);
                             
                             let resolvedEscrow = {
                                 escrow with
@@ -323,10 +358,89 @@ persistent actor EscrowBank {
                                 completedAt = ?Time.now();
                             };
                             escrows.put(escrowId, resolvedEscrow);
-                            #ok("Dispute resolved in favor of seller, funds transferred")
+                            #ok("Dispute resolved in favor of seller, net amount transferred (platform fee deducted)")
                         }
                     };
                 };
+            };
+        };
+    };
+    
+    // Check for overdue projects and automatically raise disputes
+    public shared(_) func checkOverdueProjects() : async Result.Result<[EscrowId], Text> {
+        let currentTime = Time.now();
+        var overdueEscrows: [EscrowId] = [];
+        
+        for ((escrowId, escrow) in escrows.entries()) {
+            if (escrow.status == #Pending and currentTime > escrow.deadline) {
+                // Automatically raise dispute for overdue projects
+                let disputedEscrow = {
+                    escrow with
+                    status = #Disputed;
+                };
+                escrows.put(escrowId, disputedEscrow);
+                // Add to overdue list
+                overdueEscrows := Array.append(overdueEscrows, [escrowId]);
+            };
+        };
+        
+        #ok(overdueEscrows)
+    };
+    
+    // Client can raise dispute for incomplete work or missed deadline
+    public shared(msg) func raiseClientDispute(escrowId: EscrowId, reason: Text) : async Result.Result<Text, Text> {
+        let caller = msg.caller;
+        
+        switch (escrows.get(escrowId)) {
+            case null { #err("Escrow not found") };
+            case (?escrow) {
+                if (escrow.buyer != caller) {
+                    return #err("Only buyer can raise client dispute");
+                };
+                
+                if (escrow.status != #Pending) {
+                    return #err("Can only dispute pending escrows");
+                };
+                
+                // Check if project is overdue or buyer has valid reason
+                let currentTime = Time.now();
+                if (currentTime <= escrow.deadline and reason == "") {
+                    return #err("Cannot dispute before deadline without valid reason");
+                };
+                
+                let disputedEscrow = {
+                    escrow with
+                    status = #Disputed;
+                };
+                
+                escrows.put(escrowId, disputedEscrow);
+                #ok("Client dispute raised successfully")
+            };
+        };
+    };
+    
+    // Freelancer can dispute client cancellation
+    public shared(msg) func raiseFreelancerDispute(escrowId: EscrowId, _reason: Text) : async Result.Result<Text, Text> {
+        let caller = msg.caller;
+        
+        switch (escrows.get(escrowId)) {
+            case null { #err("Escrow not found") };
+            case (?escrow) {
+                if (escrow.seller != caller) {
+                    return #err("Only seller can raise freelancer dispute");
+                };
+                
+                if (escrow.status != #Pending) {
+                    return #err("Can only dispute pending escrows");
+                };
+                
+                let disputedEscrow = {
+                    escrow with
+                    status = #Disputed;
+                };
+                
+                escrows.put(escrowId, disputedEscrow);
+                #ok("Freelancer dispute raised successfully")
             };
         };
     };
@@ -356,6 +470,31 @@ persistent actor EscrowBank {
                 case null false;
                 case (?arbitrator) arbitrator == caller and escrow.status == #Disputed;
             }
+        })
+    };
+    
+    // Get platform fee statistics (admin function)
+    public query func getPlatformFeeStats() : async { totalFees: Balance; totalTransactions: Nat; } {
+        let allEscrows = Iter.toArray(escrows.vals());
+        var totalFees: Balance = 0;
+        var totalTransactions: Nat = 0;
+        
+        for (escrow in allEscrows.vals()) {
+            if (escrow.status == #Completed) {
+                totalFees += escrow.platformFee;
+                totalTransactions += 1;
+            };
+        };
+        
+        { totalFees = totalFees; totalTransactions = totalTransactions; }
+    };
+    
+    // Get escrows by service ID
+    public query func getEscrowsByService(serviceId: Text) : async [EscrowAgreement] {
+        let allEscrows = Iter.toArray(escrows.vals());
+        
+        Array.filter<EscrowAgreement>(allEscrows, func(escrow: EscrowAgreement) : Bool {
+            escrow.serviceId == serviceId
         })
     };
     

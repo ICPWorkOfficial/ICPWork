@@ -10,6 +10,7 @@ persistent actor FreelancerDashboard {
     // Define the FreelancerProfile type
     public type FreelancerProfile = {
         email: Text;
+        slug: Text; // Unique slug for SEO-friendly URLs
         serviceTitle: Text;
         mainCategory: Text;
         subCategory: Text;
@@ -60,6 +61,8 @@ persistent actor FreelancerDashboard {
         #InvalidEmail;
         #TooManyImages;
         #InvalidPlanData;
+        #SlugAlreadyExists;
+        #InvalidSlug;
     };
 
     // Main canister principal - will be set during initialization
@@ -68,10 +71,15 @@ persistent actor FreelancerDashboard {
     // Stable storage for upgrades
     private var profilesEntries : [(Text, FreelancerProfile)] = [];
     private transient var profiles = HashMap.HashMap<Text, FreelancerProfile>(10, Text.equal, Text.hash);
+    
+    // Slug storage for reverse lookup
+    private var slugEntries : [(Text, Text)] = []; // (slug, email)
+    private transient var slugToEmail = HashMap.HashMap<Text, Text>(10, Text.equal, Text.hash);
 
     // System functions for upgrades
     system func preupgrade() {
         profilesEntries := Iter.toArray(profiles.entries());
+        slugEntries := Iter.toArray(slugToEmail.entries());
     };
 
     system func postupgrade() {
@@ -81,7 +89,14 @@ persistent actor FreelancerDashboard {
             Text.equal, 
             Text.hash
         );
+        slugToEmail := HashMap.fromIter<Text, Text>(
+            slugEntries.vals(),
+            slugEntries.size(),
+            Text.equal,
+            Text.hash
+        );
         profilesEntries := [];
+        slugEntries := [];
     };
 
     // Set main canister principal (called during initialization)
@@ -112,6 +127,71 @@ persistent actor FreelancerDashboard {
         plans.premium.description.size() > 0
     };
 
+    // Validate slug format
+    private func validateSlug(slug: Text) : Bool {
+        slug.size() > 0 and slug.size() <= 100 and
+        Text.contains(slug, #char ' ') == false and
+        Text.contains(slug, #char '/') == false and
+        Text.contains(slug, #char '\\') == false and
+        Text.contains(slug, #char '?') == false and
+        Text.contains(slug, #char '#') == false and
+        Text.contains(slug, #char '[') == false and
+        Text.contains(slug, #char ']') == false and
+        Text.contains(slug, #char '@') == false and
+        Text.contains(slug, #char '!') == false and
+        Text.contains(slug, #char '$') == false and
+        Text.contains(slug, #char '&') == false and
+        Text.contains(slug, #char 39) == false and // Single quote
+        Text.contains(slug, #char 40) == false and // Left parenthesis
+        Text.contains(slug, #char 41) == false and // Right parenthesis
+        Text.contains(slug, #char "*") == false and
+        Text.contains(slug, #char "+") == false and
+        Text.contains(slug, #char ',') == false and
+        Text.contains(slug, #char ';') == false and
+        Text.contains(slug, #char '=') == false and
+        Text.contains(slug, #char '%') == false
+    };
+
+    // Generate slug from service title
+    private func generateSlug(serviceTitle: Text, email: Text) : Text {
+        // Convert to lowercase and replace spaces with hyphens
+        let baseSlug = Text.replace(Text.toLowercase(serviceTitle), #text " ", "-");
+        
+        // Remove special characters and keep only alphanumeric and hyphens
+        let cleanSlug = Text.replace(
+            Text.replace(
+                Text.replace(
+                    Text.replace(
+                        Text.replace(baseSlug, #text ".", ""),
+                        #text ",", ""
+                    ),
+                    #text "!", ""
+                ),
+                #text "?", ""
+            ),
+            #text "&", "and"
+        );
+        
+        // Add email hash to ensure uniqueness
+        let emailHash = Text.hash(email);
+        let emailHashStr = debug_show(emailHash);
+        // Take first 8 characters of the hash string
+        let shortHash = if (emailHashStr.size() > 8) {
+            Text.substring(emailHashStr, 0, 8)
+        } else {
+            emailHashStr
+        };
+        cleanSlug # "-" # shortHash
+    };
+
+    // Check if slug is unique
+    private func isSlugUnique(slug: Text) : Bool {
+        switch (slugToEmail.get(slug)) {
+            case null { true };
+            case (?_) { false };
+        }
+    };
+
     // Create freelancer profile - Public access
     public shared(msg) func createProfile(email: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
         // Authorization removed - allow direct API calls
@@ -135,9 +215,25 @@ persistent actor FreelancerDashboard {
                     return #err(#InvalidPlanData);
                 };
 
+                // Generate or validate slug
+                let finalSlug = if (profile.slug.size() > 0) {
+                    // Validate provided slug
+                    if (not validateSlug(profile.slug)) {
+                        return #err(#InvalidSlug);
+                    };
+                    if (not isSlugUnique(profile.slug)) {
+                        return #err(#SlugAlreadyExists);
+                    };
+                    profile.slug
+                } else {
+                    // Generate slug from service title
+                    generateSlug(profile.serviceTitle, email)
+                };
+
                 // Create new profile with timestamps
                 let newProfile = {
                     email = email;
+                    slug = finalSlug;
                     serviceTitle = profile.serviceTitle;
                     mainCategory = profile.mainCategory;
                     subCategory = profile.subCategory;
@@ -151,8 +247,9 @@ persistent actor FreelancerDashboard {
                     isActive = true;
                 };
 
-                // Store the profile
+                // Store the profile and slug mapping
                 profiles.put(email, newProfile);
+                slugToEmail.put(finalSlug, email);
                 #ok(newProfile)
             };
         }
@@ -176,9 +273,29 @@ persistent actor FreelancerDashboard {
                     return #err(#InvalidPlanData);
                 };
 
+                // Handle slug changes
+                let finalSlug = if (profile.slug != existingProfile.slug) {
+                    // Slug is being changed
+                    if (not validateSlug(profile.slug)) {
+                        return #err(#InvalidSlug);
+                    };
+                    if (not isSlugUnique(profile.slug)) {
+                        return #err(#SlugAlreadyExists);
+                    };
+                    // Remove old slug mapping
+                    slugToEmail.delete(existingProfile.slug);
+                    // Add new slug mapping
+                    slugToEmail.put(profile.slug, email);
+                    profile.slug
+                } else {
+                    // Slug remains the same
+                    existingProfile.slug
+                };
+
                 // Update profile with new data but preserve original timestamps
                 let updatedProfile = {
                     email = email;
+                    slug = finalSlug;
                     serviceTitle = profile.serviceTitle;
                     mainCategory = profile.mainCategory;
                     subCategory = profile.subCategory;
@@ -206,6 +323,21 @@ persistent actor FreelancerDashboard {
         switch (profiles.get(email)) {
             case null { #err(#NotFound) };
             case (?profile) { #ok(profile) };
+        }
+    };
+
+    // Get freelancer profile by slug - Public access
+    public shared(msg) func getProfileBySlug(slug: Text) : async Result.Result<FreelancerProfile, Error> {
+        // Authorization removed - allow direct API calls
+
+        switch (slugToEmail.get(slug)) {
+            case null { #err(#NotFound) };
+            case (?email) {
+                switch (profiles.get(email)) {
+                    case null { #err(#NotFound) };
+                    case (?profile) { #ok(profile) };
+                }
+            };
         }
     };
 
@@ -259,9 +391,15 @@ persistent actor FreelancerDashboard {
     public shared(msg) func deleteProfile(email: Text) : async Result.Result<(), Error> {
         // Authorization removed - allow direct API calls
 
-        switch (profiles.remove(email)) {
+        switch (profiles.get(email)) {
             case null { #err(#NotFound) };
-            case (?_removed) { #ok(()) };
+            case (?profile) {
+                // Remove slug mapping
+                slugToEmail.delete(profile.slug);
+                // Remove profile
+                profiles.delete(email);
+                #ok(())
+            };
         }
     };
 
@@ -274,6 +412,7 @@ persistent actor FreelancerDashboard {
             case (?profile) {
                 let deactivatedProfile = {
                     email = profile.email;
+                    slug = profile.slug;
                     serviceTitle = profile.serviceTitle;
                     mainCategory = profile.mainCategory;
                     subCategory = profile.subCategory;
@@ -302,6 +441,7 @@ persistent actor FreelancerDashboard {
             case (?profile) {
                 let activatedProfile = {
                     email = profile.email;
+                    slug = profile.slug;
                     serviceTitle = profile.serviceTitle;
                     mainCategory = profile.mainCategory;
                     subCategory = profile.subCategory;

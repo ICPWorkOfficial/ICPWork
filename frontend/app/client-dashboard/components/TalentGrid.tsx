@@ -43,6 +43,7 @@ interface TalentGridProps {
 
 export function TalentGrid({ category, filters, onSelect }: TalentGridProps) {
   const [services, setServices] = useState<Service[]>([]);
+  console.log(services,"testing");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,7 +71,7 @@ export function TalentGrid({ category, filters, onSelect }: TalentGridProps) {
         if (result.success && result.profiles) {
           // Transform freelancer profiles to services
           const transformedServices: Service[] = result.profiles.map(([email, profile]: [string, any]) => ({
-            id: email,
+            id: profile.createdAt || new Date().toISOString(), // Use createdAt as ID
             overview: {
               serviceTitle: profile.serviceTitle || 'Untitled Service',
               mainCategory: profile.mainCategory || 'General',
@@ -164,7 +165,7 @@ export function TalentGrid({ category, filters, onSelect }: TalentGridProps) {
       {filteredServices.map((service) => (
         <TalentCard
           key={service.id}
-          id={service.id}
+          id={service.createdAt}
           name={service.overview.email || 'Anonymous'}
           title={service.overview.serviceTitle}
           description={service.overview.description}

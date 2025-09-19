@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { FileText, FolderOpen, DollarSign, Image, MoreHorizontal } from 'lucide-react';
 import { serviceAPI, ServiceData } from '@/lib/service-api';
 import { useLocalStorageAuth } from '@/hooks/useLocalStorageAuth';
+import { ImageUploader } from '@/components/ImageUploader';
 interface TabData {
   id: string;
   name: string;
@@ -31,35 +32,54 @@ const previewImages = [
   'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/40d474c8-8c9f-4f67-a0cd-268006eaeab0/figma-preview.jpg',
 ];
 
-export function PreviewSection() {
+export function PreviewSection({ portfolioImages }: { portfolioImages: string[] }) {
   const [currentImage, setCurrentImage] = useState(0);
-  const nextImage = () => setCurrentImage((prev) => (prev + 1) % previewImages.length);
-  const prevImage = () => setCurrentImage((prev) => (prev - 1 + previewImages.length) % previewImages.length);
+  const images = portfolioImages.length > 0 ? portfolioImages : previewImages;
+  
+  const nextImage = () => setCurrentImage((prev) => (prev + 1) % images.length);
+  const prevImage = () => setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+
+  if (images.length === 0) {
+    return (
+      <section className="bg-gray-100 rounded-lg p-4">
+        <div className="text-center py-8 text-gray-500">
+          <Image className="mx-auto mb-2" size={48} />
+          <p>No images uploaded yet</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-gray-100 rounded-lg p-4">
       <div className="relative">
         <div className="overflow-hidden rounded-lg">
-          <img src={previewImages[currentImage]} alt="Preview" className="w-full h-auto" />
+          <img src={images[currentImage]} alt="Preview" className="w-full h-auto" />
         </div>
-        <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md" aria-label="Previous image">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-        <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md" aria-label="Next image">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
+        {images.length > 1 && (
+          <>
+            <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md" aria-label="Previous image">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md" aria-label="Next image">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+          </>
+        )}
       </div>
-      <div className="mt-4 flex justify-center gap-2">
-        {previewImages.map((_, index) => (
-          <button key={index} onClick={() => setCurrentImage(index)} className={`w-16 h-12 rounded-md overflow-hidden border-2 ${currentImage === index ? 'border-[#29aae1]' : 'border-transparent'}`}>
-            <img src={previewImages[index]} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
-          </button>
-        ))}
-      </div>
+      {images.length > 1 && (
+        <div className="mt-4 flex justify-center gap-2">
+          {images.map((_, index) => (
+            <button key={index} onClick={() => setCurrentImage(index)} className={`w-16 h-12 rounded-md overflow-hidden border-2 ${currentImage === index ? 'border-[#29aae1]' : 'border-transparent'}`}>
+              <img src={images[index]} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -79,7 +99,7 @@ export default function ServiceRegisterPage() {
   const [additionalCharges, setAdditionalCharges] = useState([
     { name: '', price: '' }
   ]);
-  const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
+  const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
   const [questions, setQuestions] = useState([
     { question: '', type: 'text', options: [''] }
   ]);
@@ -101,37 +121,49 @@ export default function ServiceRegisterPage() {
 
   const publishService = async () => {
     try {
-      const serviceData: ServiceData = {
-        overview: {
-          serviceTitle: formData.serviceTitle || '',
-          mainCategory: formData.mainCategory || '',
-          subCategory: formData.subCategory || '',
-          description: formData.description || formData.serviceTitle || '',
-          email: user?.email || '' // This should come from auth context
-        },
-        projectTiers,
-        additionalCharges,
-        portfolioImages: portfolioImages.map((f) => f.name),
-        questions,
+      // Map UI form state to API shape expected by /api/service/publish
+      const title = formData.serviceTitle || projectTiers?.Basic?.title || ''
+      const description = formData.description || formData.serviceDescription || projectTiers?.Basic?.description || ''
+      const rawPrice = projectTiers?.Basic?.price || projectTiers?.Advanced?.price || projectTiers?.Premium?.price || ''
+      const price = rawPrice ? (rawPrice.toString().startsWith('$') ? rawPrice.toString() : `$${rawPrice}`) : ''
+      const category = formData.mainCategory || ''
+      const skills = formData.skills || formData.tags || []
+
+      const apiPayload = {
+        title,
+        description,
+        price,
+        category,
+        skills,
+        // keep a fallback full payload so backend that expects more fields still receives them
+        meta: {
+          overview: formData,
+          projectTiers,
+          additionalCharges,
+          portfolioImages: portfolioImages,
+          questions,
+        }
       }
 
-      const result = await serviceAPI.publishService(serviceData)
-      
-      if (result.success) {
-        alert('Service published successfully!')
-        // Reset form or redirect
-        setFormData({})
-        setProjectTiers({
-          Basic: { title: '', description: '', price: '' },
-          Advanced: { title: '', description: '', price: '' },
-          Premium: { title: '', description: '', price: '' }
-        })
-        setAdditionalCharges([{ name: '', price: '' }])
-        setPortfolioImages([])
-        setQuestions([{ question: '', type: 'text', options: [''] }])
-        setActiveTab('overview')
+      const res = await fetch('/api/service/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(apiPayload),
+      })
+
+      const data = await res.json()
+      if (data?.success) {
+        // navigate to created service page using slug
+        const serviceSlug = data.slug || data.id || data.serviceId || data._id;
+        alert('Service published — Slug: ' + (serviceSlug || 'unknown'))
+        if (serviceSlug) {
+          // Redirect to client dashboard service page with slug
+          window.location.href = `/client-dashboard/service/${serviceSlug}`
+        }
       } else {
-        alert('Failed to publish service: ' + (result.error || 'Unknown error'))
+        console.error('Publish failed:', data)
+        alert('Failed to publish')
       }
     } catch (err) {
       console.error('Publish service error:', err)
@@ -165,10 +197,9 @@ export default function ServiceRegisterPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (portfolioImages.length + files.length <= 3) {
-      setPortfolioImages([...portfolioImages, ...files]);
+  const handleImageUploadSuccess = (result: any) => {
+    if (portfolioImages.length < 3) {
+      setPortfolioImages([...portfolioImages, result.url]);
     }
   };
 
@@ -260,6 +291,33 @@ export default function ServiceRegisterPage() {
                       <option value="UI/UX Design">UI/UX Design</option>
                       <option value="Logo Design">Logo Design</option>
                     </select>
+                  </div>
+                </div>
+                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
+                  <div>
+                    <label className="text-[14px] font-medium text-[#6F6F6F] block">SERVICE DESCRIPTION</label>
+                    <textarea
+                      value={formData.description || ''}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      placeholder="Describe your service in detail"
+                      rows={4}
+                      className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]"
+                    />
+                  </div>
+                </div>
+                <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
+                  <div>
+                    <label className="text-[14px] font-medium text-[#6F6F6F] block">SKILLS (comma separated)</label>
+                    <input
+                      type="text"
+                      value={formData.skillsInput || ''}
+                      onChange={(e) => {
+                        const skills = e.target.value.split(',').map(s => s.trim()).filter(s => s);
+                        setFormData({...formData, skillsInput: e.target.value, skills: skills});
+                      }}
+                      placeholder="e.g., React, Node.js, MongoDB, TypeScript"
+                      className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]"
+                    />
                   </div>
                 </div>
               </div>
@@ -466,13 +524,15 @@ export default function ServiceRegisterPage() {
                 <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
                   <div>
                     <label className="text-[14px] font-medium text-[#6F6F6F] block mb-2">UPLOAD IMAGES (2-3 images max)</label>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={portfolioImages.length >= 3}
-                      className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]"
+                    <ImageUploader
+                      userId={user?.email || 'anonymous'}
+                      folder="portfolio-images"
+                      maxFiles={3 - portfolioImages.length}
+                      onUploadSuccess={handleImageUploadSuccess}
+                      onUploadError={(error) => {
+                        console.error('Portfolio image upload failed:', error);
+                      }}
+                      className="w-full"
                     />
                     <p className="text-sm text-gray-500 mt-2">
                       {portfolioImages.length}/3 images uploaded
@@ -486,7 +546,7 @@ export default function ServiceRegisterPage() {
                     {portfolioImages.map((image, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={URL.createObjectURL(image)}
+                          src={image}
                           alt={`Portfolio ${index + 1}`}
                           className="w-full h-40 object-cover rounded-lg border"
                         />
@@ -660,78 +720,126 @@ export default function ServiceRegisterPage() {
             {/* Main preview content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
-                {/* Description Section (static sample description) */}
+                {/* Description Section */}
                 <section className="mt-0 bg-white rounded-xl p-6 border">
                   <h2 className="text-xl font-medium text-[#33363a] mb-4">Description</h2>
-                         <PreviewSection />
+                  <PreviewSection portfolioImages={portfolioImages} />
 
-                  <p className="text-[#33363a] mb-4">
-                    {formData.serviceTitle || '3000+ Projects completed on upwork with client satisfaction/ui-ux/ux designer-ui web design-ux web design-website ui ux design -ui ux web designer-mobile ui ux designer-mobile app ui ux designer-user experience-figma -adobe xd-psd design-graphic designer.'}
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 text-[#33363a] mb-6">
-                    <li>Modern</li>
-                    <li>Eye-Catching & elegant designs</li>
-                    <li>Premium & responsive designs</li>
-                    <li>user friendly interface</li>
-                    <li>Custom Designs, Professional Fonts-Mockup in Figma, Adobe XD, PSD Designs</li>
-                    <li>Layered PSD or AI File-Editable Source file with all the Assets</li>
-                    <li>Guaranteed satisfaction & lifetime support</li>
-                  </ul>
-                  <p className="text-[#33363a] mb-4">
-                    I have expertise in designing User Interfaces for websites, web apps, and mobile devices. I've worked on designs for both iOS and Android.
-                  </p>
-                  <p className="text-[#33363a]">
-                    Designing creative Custom, Modern, and Responsive websites, Blog & Magazine, Education, Non-profit, Real Estate, Wedding.
-                  </p>
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium text-[#33363a] mb-3">Service Title</h3>
+                    <p className="text-[#33363a] mb-4">
+                      {formData.serviceTitle || 'No service title provided'}
+                    </p>
+                    
+                    <h3 className="text-lg font-medium text-[#33363a] mb-3">Service Description</h3>
+                    <p className="text-[#33363a] mb-4">
+                      {formData.description || formData.serviceDescription || 'No description provided'}
+                    </p>
+
+                    <h3 className="text-lg font-medium text-[#33363a] mb-3">Category</h3>
+                    <p className="text-[#33363a] mb-4">
+                      {formData.mainCategory && formData.subCategory 
+                        ? `${formData.mainCategory} / ${formData.subCategory}`
+                        : formData.mainCategory || 'No category selected'
+                      }
+                    </p>
+
+                    {formData.skills && formData.skills.length > 0 && (
+                      <>
+                        <h3 className="text-lg font-medium text-[#33363a] mb-3">Skills</h3>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {formData.skills.map((skill: string, index: number) => (
+                            <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {formData.tags && formData.tags.length > 0 && (
+                      <>
+                        <h3 className="text-lg font-medium text-[#33363a] mb-3">Tags</h3>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {formData.tags.map((tag: string, index: number) => (
+                            <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
 
                   {/* Pricing cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                    {tiers.map((t, idx) => {
-                      const pkg = projectTiers[t as keyof typeof projectTiers];
-                      const price = pkg?.price || (idx === 0 ? '49' : idx === 1 ? '79' : '129');
-                      const title = pkg?.title || t;
-                      const desc = pkg?.description || 'Better insights for growing businesses that want more customers.';
-                      return (
-                        <div key={t} className="border border-gray-200 rounded-lg p-6 bg-white">
-                          <h3 className="text-lg font-medium mb-2">{title}</h3>
-                          <div className="text-3xl font-bold text-[#33363a] mb-4">
-                            ${price}
-                            <span className="text-lg font-normal">/mo</span>
+                  <div className="mt-12">
+                    <h3 className="text-xl font-medium text-[#33363a] mb-6">Pricing Packages</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {tiers.map((t, idx) => {
+                        const pkg = projectTiers[t as keyof typeof projectTiers];
+                        const hasContent = pkg?.title || pkg?.description || pkg?.price;
+                        
+                        if (!hasContent) {
+                          return (
+                            <div key={t} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                              <h3 className="text-lg font-medium mb-2 text-gray-500">{t} Package</h3>
+                              <div className="text-3xl font-bold text-gray-400 mb-4">
+                                Not configured
+                              </div>
+                              <p className="text-sm text-gray-500 mb-6">No details provided for this package</p>
+                              <button className="w-full bg-gray-300 text-gray-500 py-3 rounded-md font-medium cursor-not-allowed" disabled>
+                                Not Available
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        const price = pkg?.price || '0';
+                        const title = pkg?.title || `${t} Package`;
+                        const desc = pkg?.description || 'Package details not provided';
+                        
+                        return (
+                          <div key={t} className="border border-gray-200 rounded-lg p-6 bg-white">
+                            <h3 className="text-lg font-medium mb-2">{title}</h3>
+                            <div className="text-3xl font-bold text-[#33363a] mb-4">
+                              ${price}
+                              <span className="text-lg font-normal">/project</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-6">{desc}</p>
+                            <div className="mb-6">
+                              <h4 className="font-medium mb-3">Package includes:</h4>
+                              <ul className="space-y-2">
+                                <li className="flex items-start">
+                                  <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  <span>Custom {t.toLowerCase()} solution</span>
+                                </li>
+                                <li className="flex items-start">
+                                  <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  <span>Professional quality delivery</span>
+                                </li>
+                                <li className="flex items-start">
+                                  <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  <span>Timely delivery</span>
+                                </li>
+                                <li className="flex items-start">
+                                  <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  <span>Support & revisions</span>
+                                </li>
+                              </ul>
+                            </div>
+                            <button className="w-full bg-[#041d37] text-white py-3 rounded-md font-medium">Select Plan</button>
                           </div>
-                          <p className="text-sm text-gray-600 mb-6">{desc}</p>
-                          <div className="mb-6">
-                            <h4 className="font-medium mb-3">Features include:</h4>
-                            <ul className="space-y-2">
-                              <li className="flex items-start">
-                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <span>50 Placeholder text commonly</span>
-                              </li>
-                              <li className="flex items-start">
-                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <span>Consectetur adipiscing elit</span>
-                              </li>
-                              <li className="flex items-start">
-                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <span>Excepteur sint occaecat cupidatat</span>
-                              </li>
-                              <li className="flex items-start">
-                                <svg className="h-5 w-5 text-[#10b981] mr-2 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <span>Officia deserunt mollit anim</span>
-                              </li>
-                            </ul>
-                          </div>
-                          <button className="w-full bg-[#041d37] text-white py-3 rounded-md font-medium">Buy Plan</button>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </div>
                 </section>
 
@@ -741,33 +849,105 @@ export default function ServiceRegisterPage() {
               {/* Right column */}
               <aside className="space-y-6">
                 <div className="bg-white rounded-xl p-4 border">
-                  <h4 className="font-medium">Overview</h4>
-                  <p className="text-sm text-gray-700">Title: {formData.serviceTitle}</p>
-                  <p className="text-sm text-gray-700">Category: {formData.mainCategory} / {formData.subCategory}</p>
+                  <h4 className="font-medium mb-3">Service Overview</h4>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Title:</span>
+                      <p className="text-sm text-gray-800">{formData.serviceTitle || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Category:</span>
+                      <p className="text-sm text-gray-800">
+                        {formData.mainCategory && formData.subCategory 
+                          ? `${formData.mainCategory} / ${formData.subCategory}`
+                          : formData.mainCategory || 'Not selected'
+                        }
+                      </p>
+                    </div>
+                    {formData.skills && formData.skills.length > 0 && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Skills:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {formData.skills.slice(0, 3).map((skill: string, index: number) => (
+                            <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                          {formData.skills.length > 3 && (
+                            <span className="text-xs text-gray-500">+{formData.skills.length - 3} more</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="bg-white rounded-xl p-4 border">
-                  <h4 className="font-medium">Additional Charges</h4>
-                  {additionalCharges.length > 0 ? (
-                    additionalCharges.map((c, i) => (
-                      <div key={i} className="flex justify-between py-2">
-                        <div>{c.name}</div>
-                        <div>${c.price}</div>
-                      </div>
-                    ))
+                  <h4 className="font-medium mb-3">Pricing Summary</h4>
+                  <div className="space-y-2">
+                    {tiers.map((tier) => {
+                      const pkg = projectTiers[tier as keyof typeof projectTiers];
+                      if (pkg?.price) {
+                        return (
+                          <div key={tier} className="flex justify-between items-center py-1">
+                            <span className="text-sm text-gray-600">{tier}:</span>
+                            <span className="text-sm font-medium">${pkg.price}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border">
+                  <h4 className="font-medium mb-3">Additional Charges</h4>
+                  {additionalCharges.filter(c => c.name && c.price).length > 0 ? (
+                    <div className="space-y-2">
+                      {additionalCharges.filter(c => c.name && c.price).map((c, i) => (
+                        <div key={i} className="flex justify-between items-center py-1">
+                          <span className="text-sm text-gray-600">{c.name}</span>
+                          <span className="text-sm font-medium">${c.price}</span>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <div className="text-gray-500">No additional charges</div>
+                    <div className="text-sm text-gray-500">No additional charges</div>
                   )}
                 </div>
 
                 <div className="bg-white rounded-xl p-4 border">
-                  <h4 className="font-medium">Questions</h4>
-                  {questions.map((q, i) => (
-                    <div key={i} className="py-2">
-                      <div className="font-medium">Q{i + 1}: {q.question}</div>
-                      <div className="text-sm text-gray-600">Type: {q.type}</div>
+                  <h4 className="font-medium mb-3">Client Questions</h4>
+                  {questions.filter(q => q.question).length > 0 ? (
+                    <div className="space-y-2">
+                      {questions.filter(q => q.question).map((q, i) => (
+                        <div key={i} className="py-1">
+                          <div className="text-sm font-medium text-gray-800">Q{i + 1}: {q.question}</div>
+                          <div className="text-xs text-gray-500">Type: {q.type}</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <div className="text-sm text-gray-500">No questions added</div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border">
+                  <h4 className="font-medium mb-3">Portfolio</h4>
+                  <div className="text-sm text-gray-600">
+                    {portfolioImages.length > 0 ? (
+                      <div>
+                        <p>{portfolioImages.length} image{portfolioImages.length !== 1 ? 's' : ''} uploaded</p>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {portfolioImages.slice(0, 4).map((img, index) => (
+                            <img key={index} src={img} alt={`Portfolio ${index + 1}`} className="w-full h-16 object-cover rounded" />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No images uploaded</p>
+                    )}
+                  </div>
                 </div>
               </aside>
             </div>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { User } from 'lucide-react';
+import { ImageUploader } from '@/components/ImageUploader';
 
 // Design tokens from Figma
 const designTokens = {
@@ -43,6 +44,7 @@ interface Step1PersonalInfoProps {
   errors: Record<string, string>;
   setErrors: (errors: Record<string, string>) => void;
   onNext: () => void;
+  userId?: string;
 }
 
 const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
@@ -50,7 +52,8 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
   setFormData,
   errors,
   setErrors,
-  onNext
+  onNext,
+  userId
 }) => {
   const validateStep = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -113,15 +116,15 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
               )}
             </div>
             <div className="flex flex-col gap-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = () => setFormData({ ...formData, profilePhoto: String(reader.result || '') });
-                  reader.readAsDataURL(file);
+              <ImageUploader
+                userId={userId || 'anonymous'}
+                folder="profile-photos"
+                maxFiles={1}
+                onUploadSuccess={(result) => {
+                  setFormData({ ...formData, profilePhoto: result.url });
+                }}
+                onUploadError={(error) => {
+                  console.error('Profile photo upload failed:', error);
                 }}
                 className="w-60"
               />

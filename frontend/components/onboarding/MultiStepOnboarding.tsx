@@ -249,6 +249,7 @@ const MultiStepOnboarding: React.FC = () => {
             errors={errors}
             setErrors={setErrors}
             onNext={nextStep}
+            userId={user?.email}
           />
         );
       case 2:

@@ -113,25 +113,33 @@ export default function ServiceViewPage() {
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    setError(null)
-    
-    const fetchService = async () => {
+    ;(async () => {
       try {
-        const result = await serviceAPI.getService(id)
-        if (result.success && result.service) {
-          setService(result.service)
-        } else {
-          setError(result.error || 'Service not found')
+        const res = await fetch(`/api/service/${id}`, { credentials: 'same-origin' })
+        if (!res.ok) {
+          console.error('Failed to fetch service', res.status)
+          setService(null)
+          return
         }
+        const data = await res.json()
+        console.debug('service api response:', data)
+
+        let svc: any = null
+        // common shapes: { success, service }, { service }, { data: { service } }, direct service object, or array
+        if (data?.service) svc = data.service
+        else if (data?.data?.service) svc = data.data.service
+        else if (data?.data) svc = data.data
+        else if (Array.isArray(data) && data.length > 0) svc = data[0]
+        else svc = data
+
+        setService(svc)
       } catch (err) {
-        console.error('Error fetching service:', err)
-        setError('Failed to load service')
+        console.error('Failed to fetch service by id:', err)
+        setService(null)
       } finally {
         setLoading(false)
       }
-    }
-
-    fetchService()
+    })()
   }, [id])
 
   if (loading) return <div className="p-6">Loading...</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useImageUpload } from '@/lib/image-upload-utils';
 
 type Props = {
   projectId?: string;
@@ -15,6 +16,8 @@ export default function FilesUploader({ projectId, initialFiles = [], showRevisi
   const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<File[]>([]);
   const [comment, setComment] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+  const { uploadImage } = useImageUpload();
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files) setSelected(Array.from(e.target.files));
@@ -25,28 +28,35 @@ export default function FilesUploader({ projectId, initialFiles = [], showRevisi
   }
 
   async function handleSubmit() {
-  let uploadedPaths: string[] = [];
+    let uploadedPaths: string[] = [];
 
     // If there are selected File objects, upload them first
     if (selected && selected.length > 0) {
+      setUploading(true);
       try {
-        const fd = new FormData();
-        selected.forEach((f) => fd.append('files', f));
-
-        const upRes = await fetch('/api/projects/upload', {
-          method: 'POST',
-          body: fd,
+        // Upload files to S3
+        const uploadPromises = selected.map(async (file) => {
+          try {
+            const result = await uploadImage(file, {
+              userId: 'project-user', // You might want to get this from context
+              folder: `project-files/${projectId || 'temp'}`,
+            });
+            return result.url;
+          } catch (error) {
+            console.error('Failed to upload file:', file.name, error);
+            return null;
+          }
         });
-        const upJson = await upRes.json();
-        if (upJson?.ok && Array.isArray(upJson.files)) {
-          uploadedPaths = upJson.files;
-          // add to local recent files list (use paths, not just names)
-          setFiles((s) => [...uploadedPaths, ...s]);
-        } else {
-          console.error('upload failed', upJson);
-        }
+
+        const results = await Promise.all(uploadPromises);
+        uploadedPaths = results.filter((url): url is string => url !== null);
+        
+        // add to local recent files list
+        setFiles((s) => [...uploadedPaths, ...s]);
       } catch (e) {
         console.error('file upload error', e);
+      } finally {
+        setUploading(false);
       }
     }
 
@@ -159,7 +169,14 @@ export default function FilesUploader({ projectId, initialFiles = [], showRevisi
             </div>
             <div className="flex justify-center gap-2">
               <button onClick={() => setModalOpen(false)} className="px-3 py-1 border border-gray-600 text-gray-600 rounded-full">Cancel</button>
-              <button onClick={handleSubmit} className="px-5 py-1 bg-green-600 text-white rounded-full" style={{ background: 'linear-gradient(90deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>Submit</button>
+              <button 
+                onClick={handleSubmit} 
+                disabled={uploading}
+                className="px-5 py-1 bg-green-600 text-white rounded-full disabled:opacity-50" 
+                style={{ background: 'linear-gradient(90deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}
+              >
+                {uploading ? 'Uploading...' : 'Submit'}
+              </button>
             </div>
           </div>
         </div>
