@@ -5,7 +5,7 @@ import { ArrowLeft, CreditCard, Shield, CheckCircle, Wallet, Clock, FileText, Za
 import { MultiWalletConnection } from '@/components/MultiWalletConnection';
 import { WalletFunding } from '@/components/WalletFunding';
 import { PriceConverter } from '@/components/PriceConverter';
-import { walletService } from '@/lib/wallet-service';
+import { walletManager } from '@/lib/wallet-connector';
 import { conversionService } from '@/lib/conversion-service';
 
 interface BookingData {
@@ -36,12 +36,21 @@ export default function CheckoutPage() {
   const [walletBalance, setWalletBalance] = useState<any>(null);
   const [fundingComplete, setFundingComplete] = useState(false);
   const [icpPrice, setIcpPrice] = useState<number>(0);
+  const [conversionRate, setConversionRate] = useState<{icpToUsd: number, usdToIcp: number} | null>(null);
 
   useEffect(() => {
     // Get booking data from localStorage
     const storedData = localStorage.getItem('bookingData');
     if (storedData) {
-      setBookingData(JSON.parse(storedData));
+      const data = JSON.parse(storedData);
+      setBookingData(data);
+      
+      // Set default form values based on booking data
+      setFormData({
+        projectName: `${data.serviceTitle} Project`,
+        projectDescription: `I need help with ${data.serviceTitle} service. Please provide details about the project requirements.`,
+        timeline: '3 days'
+      });
     } else {
       // Redirect to services if no booking data
       router.push('/client-dashboard');
@@ -49,16 +58,22 @@ export default function CheckoutPage() {
     setLoading(false);
     
     // Check wallet connection
-    setWalletConnected(walletService.isConnected());
+    setWalletConnected(walletManager.isConnected());
     
     // Load ICP price for conversion
     loadIcpPrice();
+    
+    // Set up automatic refresh every 5 minutes
+    const refreshInterval = setInterval(loadIcpPrice, 5 * 60 * 1000);
+    
+    return () => clearInterval(refreshInterval);
   }, [router]);
 
   const loadIcpPrice = async () => {
     try {
       const rate = await conversionService.getConversionRate();
       setIcpPrice(rate.icpToUsd);
+      setConversionRate(rate);
     } catch (error) {
       console.error('Failed to load ICP price:', error);
     }
@@ -68,16 +83,60 @@ export default function CheckoutPage() {
   const calculatePricing = () => {
     if (!bookingData) return { basePrice: 0, additionalCost: 0, tax: 0, total: 0 };
     
-    const basePrice = parseFloat(bookingData.price.replace('$', ''));
+    // Parse price safely - handle different price formats
+    let basePrice = 0;
+    if (bookingData.price) {
+      const priceStr = bookingData.price.toString();
+      basePrice = parseFloat(priceStr.replace(/[$,]/g, '')) || 0;
+    }
+    
+    // If no price found, use default pricing based on tier
+    if (basePrice === 0) {
+      switch (bookingData.selectedTier) {
+        case 'Basic':
+          basePrice = 50;
+          break;
+        case 'Advanced':
+          basePrice = 100;
+          break;
+        case 'Premium':
+          basePrice = 200;
+          break;
+        default:
+          basePrice = 50;
+      }
+    }
+    
     const additionalCost = Object.values(additionalServices).filter(Boolean).length * 10; // $10 per additional service
     const subtotal = basePrice + additionalCost;
     const tax = subtotal * 0.1; // 10% tax
     const total = subtotal + tax;
     
+    console.log('Pricing calculation:', { basePrice, additionalCost, tax, total, bookingData });
+    
     return { basePrice, additionalCost, tax, total };
   };
 
   const { basePrice, additionalCost, tax, total } = calculatePricing();
+
+  // Calculate ICP amounts
+  const calculateIcpAmounts = () => {
+    // Use default conversion rate if not available (1 USD = 0.1 ICP as fallback)
+    const defaultRate = 0.1;
+    const rate = conversionRate?.usdToIcp || defaultRate;
+    
+    return {
+      basePriceIcp: basePrice * rate,
+      additionalCostIcp: additionalCost * rate,
+      taxIcp: tax * rate,
+      totalIcp: total * rate
+    };
+  };
+
+  const { basePriceIcp, additionalCostIcp, taxIcp, totalIcp } = calculateIcpAmounts();
+
+  // Check if ICP pricing should be shown
+  const shouldShowIcpPricing = walletConnected || paymentMethod === 'wallet';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -118,10 +177,51 @@ export default function CheckoutPage() {
         throw new Error('No booking data available');
       }
 
-      if (paymentMethod === 'wallet' && !fundingComplete) {
-        throw new Error('Please complete wallet funding first');
+      console.log('Booking data:', bookingData);
+      console.log('Form data:', formData);
+      console.log('Payment method:', paymentMethod);
+      console.log('Total amounts:', { total, totalIcp });
+      console.log('Pricing breakdown:', { basePrice, additionalCost, tax, total });
+      console.log('ICP amounts:', { basePriceIcp, additionalCostIcp, taxIcp, totalIcp });
+      console.log('Conversion rate:', conversionRate);
+
+      if (paymentMethod === 'wallet' && !walletConnected) {
+        throw new Error('Please connect your wallet first');
       }
 
+      // Validate form data
+      if (!formData.projectName.trim()) {
+        throw new Error('Project name is required');
+      }
+      if (!formData.projectDescription.trim()) {
+        throw new Error('Project description is required');
+      }
+
+      // Handle wallet payment
+      let transactionId = null;
+      if (paymentMethod === 'wallet') {
+        console.log('Processing wallet payment...');
+        
+        // Get the ICP amount to transfer
+        const icpAmount = totalIcp;
+        console.log(`Transferring ${icpAmount} ICP to escrow...`);
+        
+        // Get wallet connection details
+        const walletConnection = walletManager.getCurrentConnection();
+        if (!walletConnection) {
+          throw new Error('Wallet connection not found');
+        }
+        
+        // Transfer ICP to escrow canister
+        transactionId = await walletManager.transfer(
+          'yeeiw-3qaaa-aaaah-qcvmq-cai', // Escrow canister ID
+          icpAmount
+        );
+        
+        console.log('Wallet transfer completed:', transactionId);
+      }
+      
+      // Handle card payment
       if (paymentMethod === 'card') {
         const depositResponse = await fetch('/api/escrow/balance', {
           method: 'POST',
@@ -141,33 +241,119 @@ export default function CheckoutPage() {
       const timelineDays = parseInt(formData.timeline) || 7;
       const deadline = Date.now() + (timelineDays * 24 * 60 * 60 * 1000);
 
+      // Ensure amount is valid
+      const finalAmount = paymentMethod === 'wallet' ? totalIcp : total;
+      if (!finalAmount || finalAmount <= 0 || isNaN(finalAmount)) {
+        throw new Error(`Invalid amount calculated: ${finalAmount}. Please check pricing configuration.`);
+      }
+
+      // Validate required fields before creating escrow
+      const requiredFields = {
+        seller: bookingData.provider || 'default-provider',
+        amount: finalAmount,
+        description: formData.projectDescription,
+        deadline: deadline,
+        serviceId: bookingData.serviceId || 'default-service',
+        projectTitle: bookingData.serviceTitle || 'Default Service'
+      };
+
+      console.log('Required fields validation:', requiredFields);
+
+      // Check for missing required fields
+      const missingFields = Object.entries(requiredFields)
+        .filter(([key, value]) => {
+          if (key === 'amount') {
+            const numValue = typeof value === 'string' ? parseFloat(value) : value;
+            return !numValue || numValue <= 0 || isNaN(numValue);
+          }
+          return !value || (typeof value === 'string' && value.trim() === '');
+        })
+        .map(([key]) => key);
+
+      if (missingFields.length > 0) {
+        console.error('Missing required fields:', missingFields);
+        console.error('Field values:', requiredFields);
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      console.log('Creating escrow with data:', requiredFields);
+
       const escrowResponse = await fetch('/api/escrow/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           seller: bookingData.provider,
           arbitrator: null,
-          amount: total,
+          amount: paymentMethod === 'wallet' ? totalIcp : total,
+          amountUSD: total,
           description: formData.projectDescription,
           deadline: deadline,
           serviceId: bookingData.serviceId,
-          projectTitle: bookingData.serviceTitle
+          projectTitle: bookingData.serviceTitle,
+          paymentMethod: paymentMethod
         })
       });
 
+      console.log('Escrow API response status:', escrowResponse.status);
       const escrowResult = await escrowResponse.json();
+      console.log('Escrow API response:', escrowResult);
+      
       if (!escrowResult.success) {
         throw new Error(escrowResult.error || 'Failed to create escrow agreement');
       }
 
-      console.log('Escrow created successfully:', {
+      // Create order record with all details
+      console.log('Creating order record...');
+      const orderResponse = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientEmail: 'client@example.com', // TODO: Get from session/auth
+          clientName: 'Client Name', // TODO: Get from user profile
+          serviceProvider: bookingData.provider,
+          serviceProviderEmail: 'provider@example.com', // TODO: Get from service data
+          serviceId: bookingData.serviceId,
+          serviceTitle: bookingData.serviceTitle,
+          serviceCategory: 'General', // TODO: Get from service data
+          selectedTier: bookingData.selectedTier,
+          projectName: formData.projectName,
+          projectDescription: formData.projectDescription,
+          timeline: formData.timeline,
+          deadline: deadline,
+          basePrice: basePrice,
+          additionalServices: additionalServices,
+          additionalCost: additionalCost,
+          tax: tax,
+          totalAmount: total,
+          paymentMethod: paymentMethod,
+          escrowId: escrowResult.escrowId.toString(),
+          notes: `Order created via ${paymentMethod} payment method`
+        })
+      });
+
+      console.log('Order API response status:', orderResponse.status);
+      const orderResult = await orderResponse.json();
+      console.log('Order API response:', orderResult);
+      
+      if (!orderResult.success) {
+        console.warn('Failed to create order record:', orderResult.error);
+        // Don't fail the checkout process if order creation fails
+      }
+
+      console.log('Checkout completed successfully:', {
         escrowId: escrowResult.escrowId,
+        orderId: orderResult.order?.id,
+        orderNumber: orderResult.order?.orderNumber,
         ...bookingData,
         ...formData,
-        paymentMethod
+        paymentMethod,
+        totalAmount: total,
+        deadline: new Date(deadline).toISOString()
       });
 
       localStorage.setItem('escrowId', escrowResult.escrowId.toString());
+      localStorage.setItem('orderId', orderResult.order?.id || '');
+      localStorage.setItem('orderNumber', orderResult.order?.orderNumber || '');
       localStorage.removeItem('bookingData');
       router.push('/client-dashboard/checkout/success');
     } catch (error: any) {
@@ -250,7 +436,15 @@ export default function CheckoutPage() {
         </button>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Check Out Page</h1>
+        
+        {loading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-600">Loading checkout details...</p>
+          </div>
+        )}
 
+        {!loading && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Project Details */}
           <div className="lg:col-span-2 space-y-6">
@@ -258,16 +452,60 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ans:
+                  Project Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="projectName"
                   value={formData.projectName}
                   onChange={handleInputChange}
-                  placeholder="ENTER A PROJECT NAME."
+                  placeholder="Enter a project name"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                  required
                 />
+              </div>
+            </div>
+
+            {/* Project Description */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="projectDescription"
+                  value={formData.projectDescription}
+                  onChange={handleInputChange}
+                  placeholder="Describe your project requirements in detail..."
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg resize-vertical"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Please provide detailed information about what you need for this project.
+                </p>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Timeline
+                </label>
+                <select
+                  name="timeline"
+                  value={formData.timeline}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                >
+                  <option value="1 day">1 day</option>
+                  <option value="3 days">3 days</option>
+                  <option value="1 week">1 week</option>
+                  <option value="2 weeks">2 weeks</option>
+                  <option value="1 month">1 month</option>
+                  <option value="2 months">2 months</option>
+                </select>
               </div>
             </div>
 
@@ -317,7 +555,14 @@ export default function CheckoutPage() {
                     />
                     <span className="text-lg font-medium">FAST DELIVERY</span>
                   </div>
-                  <span className="text-lg font-semibold text-gray-900">$10</span>
+                  <div className="text-right">
+                    <span className="text-lg font-semibold text-gray-900">$10</span>
+                    {shouldShowIcpPricing && conversionRate && (
+                      <div className="text-sm text-blue-600">
+                        {(10 * conversionRate.usdToIcp).toFixed(4)} ICP
+                      </div>
+                    )}
+                  </div>
                 </label>
                 
                 <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -330,7 +575,14 @@ export default function CheckoutPage() {
                     />
                     <span className="text-lg font-medium">ADDITIONAL REVISION</span>
                   </div>
-                  <span className="text-lg font-semibold text-gray-900">$10</span>
+                  <div className="text-right">
+                    <span className="text-lg font-semibold text-gray-900">$10</span>
+                    {shouldShowIcpPricing && conversionRate && (
+                      <div className="text-sm text-blue-600">
+                        {(10 * conversionRate.usdToIcp).toFixed(4)} ICP
+                      </div>
+                    )}
+                  </div>
                 </label>
                 
                 <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -343,20 +595,19 @@ export default function CheckoutPage() {
                     />
                     <span className="text-lg font-medium">EXTRA CHANGES</span>
                   </div>
-                  <span className="text-lg font-semibold text-gray-900">$10</span>
+                  <div className="text-right">
+                    <span className="text-lg font-semibold text-gray-900">$10</span>
+                    {shouldShowIcpPricing && conversionRate && (
+                      <div className="text-sm text-blue-600">
+                        {(10 * conversionRate.usdToIcp).toFixed(4)} ICP
+                      </div>
+                    )}
+                  </div>
                 </label>
               </div>
             </div>
 
-            {/* Wallet Funding Section */}
-            {paymentMethod === 'wallet' && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <WalletFunding
-                  requiredAmount={total}
-                  onFundingComplete={handleFundingComplete}
-                />
-              </div>
-            )}
+            
           </div>
 
           {/* Right Column - Order Summary */}
@@ -371,6 +622,29 @@ export default function CheckoutPage() {
             
             {/* Order Summary Card */}
             <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+              {/* ICP Pricing Indicator */}
+              {shouldShowIcpPricing && conversionRate && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="w-6 h-6 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-2">
+                      <span className="text-white font-bold text-xs">ICP</span>
+                    </div>
+                    <div className="text-sm flex-1">
+                      <span className="font-medium text-blue-800">ICP Pricing Active</span>
+                      <div className="text-blue-600 text-xs">
+                        1 ICP = ${conversionRate.icpToUsd.toFixed(2)} USD
+                      </div>
+                    </div>
+                    <button
+                      onClick={loadIcpPrice}
+                      className="p-1 hover:bg-blue-100 rounded transition-colors"
+                      title="Refresh ICP price"
+                    >
+                      <RefreshCw size={14} className="text-blue-600" />
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* Service Preview */}
               <div className="flex items-start space-x-4 mb-6">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
@@ -387,7 +661,14 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Basic Tier</span>
-                  <span className="font-semibold">${basePrice}</span>
+                  <div className="text-right">
+                    <span className="font-semibold">${basePrice}</span>
+                    {shouldShowIcpPricing && conversionRate && (
+                      <div className="text-sm text-blue-600">
+                        {basePriceIcp.toFixed(4)} ICP
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Delivery Time</span>
@@ -418,16 +699,37 @@ export default function CheckoutPage() {
               <div className="border-t border-gray-200 pt-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total</span>
-                  <span className="font-semibold">${basePrice + additionalCost}</span>
+                  <div className="text-right">
+                    <span className="font-semibold">${basePrice + additionalCost}</span>
+                    {shouldShowIcpPricing && conversionRate && (
+                      <div className="text-sm text-blue-600">
+                        {(basePriceIcp + additionalCostIcp).toFixed(4)} ICP
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Taxes</span>
-                  <span className="font-semibold">${tax.toFixed(2)}</span>
+                  <div className="text-right">
+                    <span className="font-semibold">${tax.toFixed(2)}</span>
+                    {shouldShowIcpPricing && conversionRate && (
+                      <div className="text-sm text-blue-600">
+                        {taxIcp.toFixed(4)} ICP
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold">Final Payable Amount</span>
-                    <span className="text-lg font-bold text-gray-900">${total.toFixed(2)}</span>
+                    <div className="text-right">
+                      <span className="text-lg font-bold text-gray-900">${total.toFixed(2)}</span>
+                      {shouldShowIcpPricing && conversionRate && (
+                        <div className="text-lg font-bold text-blue-600">
+                          {totalIcp.toFixed(4)} ICP
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -435,7 +737,7 @@ export default function CheckoutPage() {
               {/* Checkout Button */}
               <button
                 onClick={handleSubmit}
-                disabled={isProcessing || (paymentMethod === 'wallet' && !fundingComplete)}
+                disabled={isProcessing || (paymentMethod === 'wallet' && !walletConnected)}
                 className="w-full mt-6 bg-green-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isProcessing ? (
@@ -444,7 +746,14 @@ export default function CheckoutPage() {
                     Processing...
                   </div>
                 ) : (
-                  `Check Out ($${total.toFixed(2)})`
+                  <div className="text-center">
+                    <div>Check Out (${total.toFixed(2)})</div>
+                    {shouldShowIcpPricing && conversionRate && (
+                      <div className="text-sm opacity-90">
+                        {totalIcp.toFixed(4)} ICP
+                      </div>
+                    )}
+                  </div>
                 )}
               </button>
             </div>
@@ -464,17 +773,10 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Price Converter */}
-            <div className="mt-6">
-              <PriceConverter
-                onConversionChange={(icp, usd) => {
-                  console.log('Price conversion:', { icp, usd });
-                }}
-                showPriceTicker={true}
-              />
-            </div>
+            
           </div>
         </div>
+        )}
       </div>
     </div>
   );

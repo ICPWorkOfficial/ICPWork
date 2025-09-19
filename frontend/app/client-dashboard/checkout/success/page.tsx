@@ -1,20 +1,34 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, ArrowRight, Home, MessageCircle, Shield, Clock } from 'lucide-react';
+import { CheckCircle, ArrowRight, Home, MessageCircle, Shield, Clock, Package } from 'lucide-react';
 
 export default function CheckoutSuccessPage() {
   const router = useRouter();
   const [escrowId, setEscrowId] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get escrow ID from localStorage
+    // Get order details from localStorage
     const storedEscrowId = localStorage.getItem('escrowId');
+    const storedOrderId = localStorage.getItem('orderId');
+    const storedOrderNumber = localStorage.getItem('orderNumber');
+    
     if (storedEscrowId) {
       setEscrowId(storedEscrowId);
-      // Clear the escrow ID from localStorage after displaying
-      localStorage.removeItem('escrowId');
     }
+    if (storedOrderId) {
+      setOrderId(storedOrderId);
+    }
+    if (storedOrderNumber) {
+      setOrderNumber(storedOrderNumber);
+    }
+    
+    // Clear the data from localStorage after displaying
+    localStorage.removeItem('escrowId');
+    localStorage.removeItem('orderId');
+    localStorage.removeItem('orderNumber');
   }, []);
 
   return (
@@ -28,15 +42,22 @@ export default function CheckoutSuccessPage() {
           </p>
         </div>
 
-        {escrowId && (
+        {(escrowId || orderNumber) && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
             <div className="flex items-center justify-center mb-2">
               <Shield size={20} className="text-green-600 mr-2" />
-              <h3 className="font-semibold text-green-900">Escrow Protected</h3>
+              <h3 className="font-semibold text-green-900">Order Confirmed</h3>
             </div>
-            <p className="text-sm text-green-800">
-              Your payment is secured in escrow (ID: {escrowId}). Funds will be released to the freelancer only after project completion and your approval.
-            </p>
+            {orderNumber && (
+              <p className="text-sm text-green-800 mb-2">
+                <strong>Order Number:</strong> {orderNumber}
+              </p>
+            )}
+            {escrowId && (
+              <p className="text-sm text-green-800">
+                Your payment is secured in escrow (ID: {escrowId}). Funds will be released to the freelancer only after project completion and your approval.
+              </p>
+            )}
           </div>
         )}
 
@@ -63,19 +84,19 @@ export default function CheckoutSuccessPage() {
 
         <div className="space-y-3">
           <button
-            onClick={() => router.push('/client-dashboard')}
+            onClick={() => router.push('/orders')}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center"
           >
-            <Home size={16} className="mr-2" />
-            Back to Dashboard
+            <Package size={16} className="mr-2" />
+            View My Orders
           </button>
           
           <button
-            onClick={() => router.push('/client-dashboard/messages')}
+            onClick={() => router.push('/client-dashboard')}
             className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 flex items-center justify-center"
           >
-            <MessageCircle size={16} className="mr-2" />
-            View Messages
+            <Home size={16} className="mr-2" />
+            Back to Dashboard
           </button>
         </div>
 

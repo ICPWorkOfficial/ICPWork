@@ -8,8 +8,7 @@ import { generateSlug } from '@/lib/slug-utils'
 async function getFreelancerDashboardActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
-    verifyQuerySignatures: false,
-    fetchRootKey: true
+    verifyQuerySignatures: false
   });
   
   await agent.fetchRootKey();
@@ -31,16 +30,30 @@ export async function POST(req: NextRequest) {
 
     // Try to publish to freelancer dashboard canister first
     try {
+      console.log('Attempting to publish to canister with userEmail:', userEmail);
       const actor = await getFreelancerDashboardActor();
       
       // Transform the service data to match the canister's expected format
       const profileData = {
-        email: userEmail,
-        slug: slug,
-        serviceTitle: body.title || 'Untitled Service',
-        mainCategory: body.category || 'General',
         subCategory: body.meta?.overview?.subCategory || 'General',
+        additionalQuestions: body.meta?.questions?.map((q: any) => q.question) || [],
+        additionalCharges: {
+          fastDelivery: body.meta?.additionalCharges?.find((c: any) => c.name === 'fastDelivery') ? [{
+            price: body.meta.additionalCharges.find((c: any) => c.name === 'fastDelivery').price,
+            description: 'Fast delivery option',
+            isEnabled: true
+          }] : [],
+          additionalChanges: body.meta?.additionalCharges?.find((c: any) => c.name === 'additionalChanges') ? [{
+            price: body.meta.additionalCharges.find((c: any) => c.name === 'additionalChanges').price,
+            description: 'Additional changes',
+            isEnabled: true
+          }] : [],
+          perExtraChange: []
+        },
+        createdAt: BigInt(Date.now()),
         description: body.description || 'No description available',
+        isActive: true,
+        email: userEmail,
         requirementPlans: {
           basic: {
             price: body.meta?.projectTiers?.Basic?.price || '50',
@@ -61,42 +74,40 @@ export async function POST(req: NextRequest) {
             deliveryTime: '2 weeks'
           }
         },
-        additionalCharges: {
-          fastDelivery: body.meta?.additionalCharges?.fastDelivery ? {
-            price: body.meta.additionalCharges.fastDelivery.price,
-            description: 'Fast delivery option',
-            isEnabled: true
-          } : null,
-          additionalChanges: body.meta?.additionalCharges?.additionalChanges ? {
-            price: body.meta.additionalCharges.additionalChanges.price,
-            description: 'Additional changes',
-            isEnabled: true
-          } : null,
-          perExtraChange: null
-        },
-        portfolioImages: body.meta?.portfolioImages || [],
-        additionalQuestions: body.meta?.questions || [],
-        createdAt: BigInt(Date.now()),
         updatedAt: BigInt(Date.now()),
-        isActive: true
+        serviceTitle: body.title || 'Untitled Service',
+        portfolioImages: body.meta?.portfolioImages || [],
+        mainCategory: body.category || 'General'
       };
 
+      console.log('Profile data to be sent to canister:', JSON.stringify(profileData, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      , 2));
       const result = await actor.createProfile(userEmail, profileData);
+      console.log('Canister result:', JSON.stringify(result, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      , 2));
       
       if ('ok' in result) {
         console.log('Service published to canister successfully');
+        // Serialize BigInt values in the result
+        const serializedResult = JSON.parse(JSON.stringify(result, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        ));
+        
         return NextResponse.json({ 
           success: true, 
           id: slug, // Return slug as the service ID
           slug: slug,
-          canisterResult: result.ok 
+          canisterResult: serializedResult.ok 
         });
       } else {
-        console.error('Failed to publish to canister:', result.err);
+        console.error('Failed to publish to canister:', (result as any).err);
         // Continue with local storage fallback
       }
     } catch (canisterError) {
       console.error('Canister publish error:', canisterError);
+      console.error('Error details:', JSON.stringify(canisterError, null, 2));
       // Continue with local storage fallback
     }
 
@@ -108,7 +119,14 @@ export async function POST(req: NextRequest) {
     const newService = { 
       id, 
       slug: slug,
-      ...body, 
+      ...body,
+      meta: {
+        ...body.meta,
+        overview: {
+          ...body.meta?.overview,
+          email: userEmail
+        }
+      },
       createdAt: new Date().toISOString() 
     }
     servicesData.services.push(newService)

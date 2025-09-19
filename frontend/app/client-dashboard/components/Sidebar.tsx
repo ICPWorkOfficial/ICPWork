@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutGrid, Briefcase, Settings, User } from 'lucide-react'
+import { LayoutGrid, Briefcase, Settings, User, Package } from 'lucide-react'
 export function Sidebar() {
   return (
     <aside className="w-[240px] bg-white border-r border-gray-200 flex-shrink-0 hidden md:block">
@@ -67,6 +67,15 @@ export function Sidebar() {
                 />
               </svg>
               <span>Explore Talent</span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/orders"
+              className="flex items-center text-gray-600 p-2 rounded-md hover:bg-gray-100"
+            >
+              <Package className="mr-3" size={20} />
+              <span>My Orders</span>
             </a>
           </li>
         </ul>

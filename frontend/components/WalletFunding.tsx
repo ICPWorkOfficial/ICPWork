@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Wallet, ArrowRight, RefreshCw, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
-import { walletService, WalletBalance } from '@/lib/wallet-service';
+import { walletManager } from '@/lib/wallet-connector';
 import { conversionService } from '@/lib/conversion-service';
 import { PriceConverter } from './PriceConverter';
 
@@ -12,7 +12,7 @@ interface WalletFundingProps {
 }
 
 export function WalletFunding({ onFundingComplete, requiredAmount, escrowCanisterId }: WalletFundingProps) {
-  const [balance, setBalance] = useState<WalletBalance | null>(null);
+  const [balance, setBalance] = useState<{ balance: string; currency: string; principal: string } | null>(null);
   const [amount, setAmount] = useState<string>('');
   const [usdAmount, setUsdAmount] = useState<string>('0.00');
   const [loading, setLoading] = useState(false);
@@ -39,13 +39,18 @@ export function WalletFunding({ onFundingComplete, requiredAmount, escrowCaniste
   };
 
   const checkConnection = async () => {
-    const connected = walletService.isConnected();
+    const connected = walletManager.isConnected();
     setIsConnected(connected);
     
     if (connected) {
       try {
-        const walletBalance = await walletService.getBalance();
-        setBalance(walletBalance);
+        const walletBalance = await walletManager.getBalance();
+        const connection = walletManager.getCurrentConnection();
+        setBalance({ 
+          balance: walletBalance.toString(), 
+          currency: 'ICP', 
+          principal: connection?.principal.toText() || '' 
+        });
       } catch (error) {
         console.error('Failed to load balance:', error);
       }
@@ -86,9 +91,9 @@ export function WalletFunding({ onFundingComplete, requiredAmount, escrowCaniste
     setSuccess(null);
 
     try {
-      const transactionId = await walletService.transferToEscrow(
-        fundingAmount,
-        escrowCanisterId || 'rrkah-fqaaa-aaaah-qcujq-cai'
+      const transactionId = await walletManager.transfer(
+        escrowCanisterId || 'rrkah-fqaaa-aaaah-qcujq-cai',
+        fundingAmount
       );
       
       setSuccess(`Successfully funded ${fundingAmount} ICP to escrow account`);

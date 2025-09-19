@@ -52,6 +52,86 @@ function transformProfileToService(email: string, profile: any) {
   };
 }
 
+// Transform service data to match expected format
+function transformServiceData(service: any) {
+  // If service already has the expected format (older services), return as is
+  if (service.overview && service.projectTiers) {
+    return service;
+  }
+  
+  // If service has meta object (newer services), transform it
+  if (service.meta && service.meta.overview) {
+    return {
+      id: service.id,
+      slug: service.slug,
+      overview: {
+        serviceTitle: service.meta.overview.serviceTitle || service.title || 'Untitled Service',
+        mainCategory: service.meta.overview.mainCategory || service.category || 'General',
+        subCategory: service.meta.overview.subCategory || 'General',
+        description: service.meta.overview.description || service.description || 'No description available',
+        email: service.meta.overview.email || 'anonymous@example.com'
+      },
+      projectTiers: {
+        Basic: {
+          title: service.meta.projectTiers?.Basic?.title || 'Basic',
+          description: service.meta.projectTiers?.Basic?.description || 'Basic service',
+          price: service.meta.projectTiers?.Basic?.price || '50'
+        },
+        Advanced: {
+          title: service.meta.projectTiers?.Advanced?.title || 'Advanced',
+          description: service.meta.projectTiers?.Advanced?.description || 'Advanced service',
+          price: service.meta.projectTiers?.Advanced?.price || '100'
+        },
+        Premium: {
+          title: service.meta.projectTiers?.Premium?.title || 'Premium',
+          description: service.meta.projectTiers?.Premium?.description || 'Premium service',
+          price: service.meta.projectTiers?.Premium?.price || '200'
+        }
+      },
+      additionalCharges: service.meta.additionalCharges || [],
+      portfolioImages: service.meta.portfolioImages || [],
+      questions: service.meta.questions || [],
+      isActive: true,
+      createdAt: service.createdAt || new Date().toISOString()
+    };
+  }
+  
+  // Fallback: create minimal service structure
+  return {
+    id: service.id || `svc_${Date.now()}`,
+    slug: service.slug,
+    overview: {
+      serviceTitle: service.title || 'Untitled Service',
+      mainCategory: service.category || 'General',
+      subCategory: 'General',
+      description: service.description || 'No description available',
+      email: 'anonymous@example.com'
+    },
+    projectTiers: {
+      Basic: {
+        title: 'Basic',
+        description: 'Basic service',
+        price: service.price ? service.price.replace('$', '') : '50'
+      },
+      Advanced: {
+        title: 'Advanced',
+        description: 'Advanced service',
+        price: '100'
+      },
+      Premium: {
+        title: 'Premium',
+        description: 'Premium service',
+        price: '200'
+      }
+    },
+    additionalCharges: [],
+    portfolioImages: [],
+    questions: [],
+    isActive: true,
+    createdAt: service.createdAt || new Date().toISOString()
+  };
+}
+
 // GET - Get all services
 export async function GET(request: NextRequest) {
   try {
@@ -65,11 +145,14 @@ export async function GET(request: NextRequest) {
     if (fs.existsSync(servicesPath)) {
       const servicesData = JSON.parse(fs.readFileSync(servicesPath, 'utf8'));
       
+      // Transform all services to ensure consistent format
+      const transformedServices = servicesData.services.map(transformServiceData);
+      
       return NextResponse.json({
         success: true,
-        services: servicesData.services,
-        count: servicesData.services.length,
-        note: 'Services loaded from local data file'
+        services: transformedServices,
+        count: transformedServices.length,
+        note: 'Services loaded from local data file and transformed'
       });
     } else {
       // Fallback: return empty services array

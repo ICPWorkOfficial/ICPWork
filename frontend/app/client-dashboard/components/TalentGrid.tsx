@@ -43,7 +43,7 @@ interface TalentGridProps {
 
 export function TalentGrid({ category, filters, onSelect }: TalentGridProps) {
   const [services, setServices] = useState<Service[]>([]);
-  console.log(services,"testing");
+  console.log('Current services state:', services, 'Count:', services.length);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,42 +65,26 @@ export function TalentGrid({ category, filters, onSelect }: TalentGridProps) {
         }
         params.append('limit', '50'); // Get more services
         
-        response = await fetch(`/api/freelancer-dashboard/browse?${params.toString()}`);
+        response = await fetch(`/api/services`);
         const result = await response.json();
+        console.log('Services API result:', result);
         
-        if (result.success && result.profiles) {
-          // Transform freelancer profiles to services
-          const transformedServices: Service[] = result.profiles.map(([email, profile]: [string, any]) => ({
-            id: profile.createdAt || new Date().toISOString(), // Use createdAt as ID
-            overview: {
-              serviceTitle: profile.serviceTitle || 'Untitled Service',
-              mainCategory: profile.mainCategory || 'General',
-              subCategory: profile.subCategory || 'General',
-              description: profile.description || 'No description available',
-              email: email
-            },
-            projectTiers: {
-              Basic: {
-                title: 'Basic',
-                description: profile.requirementPlans?.basic?.description || 'Basic service',
-                price: profile.requirementPlans?.basic?.price?.toString() || '50'
-              },
-              Advanced: {
-                title: 'Advanced',
-                description: profile.requirementPlans?.advanced?.description || 'Advanced service',
-                price: profile.requirementPlans?.advanced?.price?.toString() || '100'
-              },
-              Premium: {
-                title: 'Premium',
-                description: profile.requirementPlans?.premium?.description || 'Premium service',
-                price: profile.requirementPlans?.premium?.price?.toString() || '200'
-              }
-            },
-            portfolioImages: profile.portfolioImages || [],
-            isActive: profile.isActive !== false,
-            createdAt: profile.createdAt || new Date().toISOString()
+        if (result.success && result.services) {
+          console.log('Services API result:', result);
+          console.log('Services count:', result.services.length);
+          
+          // The services are already in the correct format from the API
+          const transformedServices: Service[] = result.services.map((service: any) => ({
+            id: service.id,
+            overview: service.overview,
+            projectTiers: service.projectTiers,
+            portfolioImages: service.portfolioImages || [],
+            isActive: service.isActive !== false,
+            createdAt: service.createdAt || new Date().toISOString(),
+            additionalCharges: service.additionalCharges || []
           }));
           
+          console.log('Transformed services:', transformedServices);
           setServices(transformedServices);
           return;
         }
@@ -127,7 +111,10 @@ export function TalentGrid({ category, filters, onSelect }: TalentGridProps) {
 
   // Filter services based on active category
   const filteredServices = services.filter(
-    (service) => service.overview.mainCategory === category || category === 'All' || category === 'Business'
+    (service) => {
+      if (category === 'All') return true;
+      return service.overview.mainCategory === category;
+    }
   );
 
   if (loading) {

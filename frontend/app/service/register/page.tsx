@@ -101,7 +101,7 @@ export default function ServiceRegisterPage() {
   ]);
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
   const [questions, setQuestions] = useState([
-    { question: '', type: 'text', options: [''] }
+    { question: '', answer: '', questionType: 'text', options: [''], isRequired: false }
   ]);
 
   const handleSave = async (tabId: string) => {
@@ -130,6 +130,7 @@ export default function ServiceRegisterPage() {
       const skills = formData.skills || formData.tags || []
 
       const apiPayload = {
+        email:user?.email,
         title,
         description,
         price,
@@ -157,10 +158,7 @@ export default function ServiceRegisterPage() {
         // navigate to created service page using slug
         const serviceSlug = data.slug || data.id || data.serviceId || data._id;
         alert('Service published — Slug: ' + (serviceSlug || 'unknown'))
-        if (serviceSlug) {
-          // Redirect to client dashboard service page with slug
-          window.location.href = `/client-dashboard/service/${serviceSlug}`
-        }
+        
       } else {
         console.error('Publish failed:', data)
         alert('Failed to publish')
@@ -208,10 +206,10 @@ export default function ServiceRegisterPage() {
   };
 
   const addQuestion = () => {
-    setQuestions([...questions, { question: '', type: 'text', options: [''] }]);
+    setQuestions([...questions, { question: '', answer: '', questionType: 'text', options: [''], isRequired: false }]);
   };
 
-  const updateQuestion = (index: number, field: string, value: string) => {
+  const updateQuestion = (index: number, field: string, value: string | boolean) => {
     const updated = [...questions];
     updated[index] = { ...updated[index], [field]: value };
     setQuestions(updated);
@@ -576,7 +574,7 @@ export default function ServiceRegisterPage() {
           <div className="space-y-6">
             <div className="rounded-lg p-6">
               <h3 className="text-xl  text-black font-bold ">Client Requirements & Questions</h3>
-              <p className="text-gray-600 mb-6">Please provide any specific requirements or questions you have for this project.</p>
+              <p className="text-gray-600 mb-6">Please provide any specific requirements, questions, and their expected answers for this project.</p>
               <div className="space-y-4">
                 {questions.map((question, index) => (
                   <div key={index} className="rounded-xl border-[0.6px] border-[#8D8D8D] p-4 bg-white max-w-[700px] w-full mb-4">
@@ -603,10 +601,20 @@ export default function ServiceRegisterPage() {
                         />
                       </div>
                       <div>
+                        <label className="text-[14px] font-medium text-[#6F6F6F] block">ANSWER</label>
+                        <textarea
+                          value={question.answer}
+                          onChange={(e) => updateQuestion(index, 'answer', e.target.value)}
+                          placeholder="Enter the answer or expected response"
+                          rows={3}
+                          className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF]"
+                        />
+                      </div>
+                      <div>
                         <label className="text-[14px] font-medium text-[#6F6F6F] block">ANSWER TYPE</label>
                         <select
-                          value={question.type}
-                          onChange={(e) => updateQuestion(index, 'type', e.target.value)}
+                          value={question.questionType}
+                          onChange={(e) => updateQuestion(index, 'questionType', e.target.value)}
                           className="w-full p-3 rounded border border-transparent focus:border-[#44B0FF] bg-white"
                         >
                           <option value="text">Text Answer</option>
@@ -614,8 +622,20 @@ export default function ServiceRegisterPage() {
                           <option value="dropdown">Dropdown</option>
                         </select>
                       </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`required-${index}`}
+                          checked={question.isRequired}
+                          onChange={(e) => updateQuestion(index, 'isRequired', e.target.checked)}
+                          className="mr-2 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor={`required-${index}`} className="text-[14px] font-medium text-[#6F6F6F]">
+                          Required Question
+                        </label>
+                      </div>
                       
-                      {(question.type === 'checkbox' || question.type === 'dropdown') && (
+                      {(question.questionType === 'checkbox' || question.questionType === 'dropdown') && (
                         <div>
                           <label className="text-[14px] font-medium text-[#6F6F6F] block mb-2">OPTIONS</label>
                           {question.options.map((option, optionIndex) => (
@@ -917,13 +937,26 @@ export default function ServiceRegisterPage() {
                 </div>
 
                 <div className="bg-white rounded-xl p-4 border">
-                  <h4 className="font-medium mb-3">Client Questions</h4>
+                  <h4 className="font-medium mb-3">Client Questions & Answers</h4>
                   {questions.filter(q => q.question).length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {questions.filter(q => q.question).map((q, i) => (
-                        <div key={i} className="py-1">
-                          <div className="text-sm font-medium text-gray-800">Q{i + 1}: {q.question}</div>
-                          <div className="text-xs text-gray-500">Type: {q.type}</div>
+                        <div key={i} className="py-2 border-b border-gray-100 last:border-b-0">
+                          <div className="text-sm font-medium text-gray-800 mb-1">
+                            Q{i + 1}: {q.question}
+                            {q.isRequired && <span className="text-red-500 ml-1">*</span>}
+                          </div>
+                          {q.answer && (
+                            <div className="text-xs text-gray-600 mb-1">
+                              <span className="font-medium">Answer:</span> {q.answer}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500">
+                            Type: {q.questionType}
+                            {q.options && q.options.length > 0 && q.options[0] && (
+                              <span className="ml-2">({q.options.length} options)</span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

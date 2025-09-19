@@ -1,0 +1,36 @@
+{
+  "orders": [
+    {
+      "id": "ord_1758282231019_ngstao71a",
+      "orderNumber": "ORD-82231019",
+      "clientEmail": "client@example.com",
+      "clientName": "Client Name",
+      "serviceProvider": "t3chnobromo@gmail.com",
+      "serviceProviderEmail": "provider@example.com",
+      "serviceId": "t3chnobromo@gmail.com",
+      "serviceTitle": "dasdasd",
+      "serviceCategory": "General",
+      "selectedTier": "Basic",
+      "projectName": "asdasdas",
+      "projectDescription": "The project is a project",
+      "timeline": "3 days",
+      "deadline": 1758541430546,
+      "basePrice": 50,
+      "additionalServices": {
+        "fastDelivery": false,
+        "additionalRevision": false,
+        "extraChanges": false
+      },
+      "additionalCost": 0,
+      "tax": 5,
+      "totalAmount": 55,
+      "paymentMethod": "wallet",
+      "escrowId": "escrow_1758282230836_3tyks9n2f",
+      "status": "pending",
+      "createdAt": 1758282231019,
+      "updatedAt": 1758282231019,
+      "notes": "Order created via wallet payment method",
+      "attachments": []
+    }
+  ]
+}

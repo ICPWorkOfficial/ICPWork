@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Wallet, LogOut, RefreshCw, AlertCircle } from 'lucide-react';
-import { walletService, WalletConnection, WalletBalance } from '@/lib/wallet-service';
+import { walletManager, WalletConnection, WalletBalance } from '@/lib/wallet-connector';
 import { Principal } from '@dfinity/principal';
 
 interface WalletConnectionProps {
@@ -17,7 +17,7 @@ export function WalletConnection({ onConnectionChange, onBalanceChange }: Wallet
 
   useEffect(() => {
     // Check if wallet is already connected
-    const existingConnection = walletService.getConnection();
+    const existingConnection = walletManager.getCurrentConnection();
     if (existingConnection) {
       setConnection(existingConnection);
       loadBalance();
@@ -26,9 +26,9 @@ export function WalletConnection({ onConnectionChange, onBalanceChange }: Wallet
 
   const loadBalance = async () => {
     try {
-      const walletBalance = await walletService.getBalance();
-      setBalance(walletBalance);
-      onBalanceChange?.(walletBalance);
+      const walletBalance = await walletManager.getBalance();
+      setBalance({ balance: walletBalance.toString(), currency: 'ICP', principal: connection?.principal.toText() || '' });
+      onBalanceChange?.({ balance: walletBalance.toString(), currency: 'ICP', principal: connection?.principal.toText() || '' });
     } catch (error) {
       console.error('Failed to load balance:', error);
     }
@@ -39,7 +39,8 @@ export function WalletConnection({ onConnectionChange, onBalanceChange }: Wallet
     setError(null);
     
     try {
-      const newConnection = await walletService.connectWallet();
+      // Connect to Plug wallet by default (you can make this configurable)
+      const newConnection = await walletManager.connectWallet('plug');
       setConnection(newConnection);
       await loadBalance();
       onConnectionChange?.(true);
@@ -52,7 +53,7 @@ export function WalletConnection({ onConnectionChange, onBalanceChange }: Wallet
   };
 
   const disconnectWallet = () => {
-    walletService.disconnectWallet();
+    walletManager.disconnectWallet();
     setConnection(null);
     setBalance(null);
     onConnectionChange?.(false);

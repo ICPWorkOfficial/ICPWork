@@ -119,7 +119,7 @@ export class WalletService {
         body: JSON.stringify({
           amount: amount,
           transactionId: transactionId,
-          principal: this.connection.principal.toText()
+          fromPrincipal: this.connection.principal.toText()
         })
       });
 

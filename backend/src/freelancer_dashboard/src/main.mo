@@ -18,7 +18,7 @@ persistent actor FreelancerDashboard {
         requirementPlans: RequirementPlans;
         additionalCharges: AdditionalCharges;
         portfolioImages: [Text]; // Array of up to 5 image URLs
-        additionalQuestions: [Text];
+        additionalQuestions: [QuestionAnswer];
         createdAt: Int;
         updatedAt: Int;
         isActive: Bool;
@@ -51,6 +51,15 @@ persistent actor FreelancerDashboard {
         price: Text;
         description: Text;
         isEnabled: Bool;
+    };
+
+    // Question and Answer structure
+    public type QuestionAnswer = {
+        question: Text;
+        answer: Text;
+        questionType: Text; // "text", "checkbox", "dropdown"
+        options: [Text]; // For checkbox and dropdown types
+        isRequired: Bool;
     };
 
     // Error types
@@ -141,11 +150,11 @@ persistent actor FreelancerDashboard {
         Text.contains(slug, #char '!') == false and
         Text.contains(slug, #char '$') == false and
         Text.contains(slug, #char '&') == false and
-        Text.contains(slug, #char 39) == false and // Single quote
-        Text.contains(slug, #char 40) == false and // Left parenthesis
-        Text.contains(slug, #char 41) == false and // Right parenthesis
-        Text.contains(slug, #char "*") == false and
-        Text.contains(slug, #char "+") == false and
+        Text.contains(slug, #char '\'') == false and // Single quote
+        Text.contains(slug, #char '(') == false and // Left parenthesis
+        Text.contains(slug, #char ')') == false and // Right parenthesis
+        Text.contains(slug, #char '*') == false and
+        Text.contains(slug, #char '+') == false and
         Text.contains(slug, #char ',') == false and
         Text.contains(slug, #char ';') == false and
         Text.contains(slug, #char '=') == false and
@@ -175,12 +184,8 @@ persistent actor FreelancerDashboard {
         // Add email hash to ensure uniqueness
         let emailHash = Text.hash(email);
         let emailHashStr = debug_show(emailHash);
-        // Take first 8 characters of the hash string
-        let shortHash = if (emailHashStr.size() > 8) {
-            Text.substring(emailHashStr, 0, 8)
-        } else {
-            emailHashStr
-        };
+        // Use the full hash string for uniqueness
+        let shortHash = emailHashStr;
         cleanSlug # "-" # shortHash
     };
 
