@@ -100,5 +100,23 @@
     "userType": "client",
     "createdAt": 1758261967964,
     "expiresAt": 1758866767964
+  },
+  "session_1758289618844_5sdw6ukzu": {
+    "email": "gursagar99@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758289618844,
+    "expiresAt": 1758894418844
+  },
+  "session_1758292687698_gdojg5b27": {
+    "email": "gursagar99@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758292687698,
+    "expiresAt": 1758897487698
+  },
+  "session_1758293377457_90zgx5xnf": {
+    "email": "gursagar99@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758293377457,
+    "expiresAt": 1758898177457
   }
 }

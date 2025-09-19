@@ -9,6 +9,26 @@
       "type": "message",
       "createdAt": 1758287523092,
       "attachments": []
+    },
+    {
+      "id": "resp_1758293416473_43fu690c0",
+      "orderId": "ord_1758290431900_oi2h56tc2",
+      "senderEmail": "current-user@example.com",
+      "senderName": "Current User",
+      "message": "Hey the order is complete",
+      "type": "message",
+      "createdAt": 1758293416473,
+      "attachments": []
+    },
+    {
+      "id": "resp_1758293468802_961ftf3ux",
+      "orderId": "ord_1758290431900_oi2h56tc2",
+      "senderEmail": "current-user@example.com",
+      "senderName": "Current User",
+      "message": "complete",
+      "type": "message",
+      "createdAt": 1758293468802,
+      "attachments": []
     }
   ]
 }

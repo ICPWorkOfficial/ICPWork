@@ -64,6 +64,38 @@
       "updatedAt": 1758284996308,
       "notes": "Order created via wallet payment method",
       "attachments": []
+    },
+    {
+      "id": "ord_1758290431900_oi2h56tc2",
+      "orderNumber": "ORD-90431900",
+      "clientEmail": "client@example.com",
+      "clientName": "Client Name",
+      "serviceProvider": "gursagar99@gmail.com",
+      "serviceProviderEmail": "provider@example.com",
+      "serviceId": "svc_1758290218831",
+      "serviceTitle": "Building a web3 DApp",
+      "serviceCategory": "General",
+      "selectedTier": "Basic",
+      "projectName": "Building a web3 DApp Project",
+      "projectDescription": "I need help with Building a web3 DApp service. Please provide details about the project requirements.",
+      "timeline": "3 days",
+      "deadline": 1758549631505,
+      "basePrice": 20,
+      "additionalServices": {
+        "fastDelivery": true,
+        "additionalRevision": false,
+        "extraChanges": false
+      },
+      "additionalCost": 10,
+      "tax": 3,
+      "totalAmount": 33,
+      "paymentMethod": "wallet",
+      "escrowId": "escrow_1758290431721_9dzuvr0zk",
+      "status": "pending",
+      "createdAt": 1758290431900,
+      "updatedAt": 1758290431900,
+      "notes": "Order created via wallet payment method",
+      "attachments": []
     }
   ]
 }

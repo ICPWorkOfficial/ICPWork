@@ -981,6 +981,69 @@
         ]
       },
       "createdAt": "2025-09-19T10:11:23.979Z"
+    },
+    {
+      "id": "svc_1758290218831",
+      "slug": "building-a-web3-dapp--21a8oo9",
+      "email": "gursagar99@gmail.com",
+      "title": "Building a web3 DApp",
+      "description": "Building a web3 DApp",
+      "price": "$20",
+      "category": "",
+      "skills": [
+        "NextJs",
+        "Web3JS"
+      ],
+      "meta": {
+        "overview": {
+          "serviceTitle": "Building a web3 DApp",
+          "description": "Building a web3 DApp",
+          "skillsInput": "NextJs,Web3JS",
+          "skills": [
+            "NextJs",
+            "Web3JS"
+          ],
+          "email": "gursagar99@gmail.com"
+        },
+        "projectTiers": {
+          "Basic": {
+            "title": "Basic",
+            "description": "Building a Advanced web3 DApp 5-10 motoko canisters",
+            "price": "20"
+          },
+          "Advanced": {
+            "title": "Enhanced",
+            "description": "Building a Advanced web3 DApp 10-15 motoko canisters",
+            "price": "50"
+          },
+          "Premium": {
+            "title": "Platinum",
+            "description": "Building a Advanced web3 DApp with 20-25 motoko canisters",
+            "price": "100"
+          }
+        },
+        "additionalCharges": [
+          {
+            "name": "",
+            "price": ""
+          }
+        ],
+        "portfolioImages": [
+          "https://icp-work.s3.tebi.io/portfolio-images/user-gursagar99@gmail.com/1758290212481-e2b676fsyvb.png"
+        ],
+        "questions": [
+          {
+            "question": "",
+            "answer": "",
+            "questionType": "text",
+            "options": [
+              ""
+            ],
+            "isRequired": false
+          }
+        ]
+      },
+      "createdAt": "2025-09-19T13:56:59.984Z"
     }
   ]
 }

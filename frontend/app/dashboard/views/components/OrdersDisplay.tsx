@@ -59,7 +59,7 @@ const OrdersDisplay: React.FC<OrdersDisplayProps> = ({ userEmail, userType = 'cl
         setLoading(true);
         setError(null);
         
-        const response = await fetch(`/api/orders?userEmail=${userEmail}&limit=5`);
+        const response = await fetch(`/api/orders/provider?providerEmail=${userEmail}`);
         const result = await response.json();
         
         if (result.success) {
@@ -126,7 +126,18 @@ const OrdersDisplay: React.FC<OrdersDisplayProps> = ({ userEmail, userType = 'cl
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/orders?userEmail=${encodeURIComponent(userEmail)}&userType=${userType}&limit=5`);
+      // Use the new dedicated API endpoints
+      let apiUrl = '';
+      if (userType === 'provider') {
+        apiUrl = `/api/orders/provider?providerEmail=${encodeURIComponent(userEmail)}&limit=5`;
+      } else if (userType === 'client') {
+        apiUrl = `/api/orders/client?clientEmail=${encodeURIComponent(userEmail)}&limit=5`;
+      } else {
+        // Fallback to original API
+        apiUrl = `/api/orders?userEmail=${encodeURIComponent(userEmail)}&userType=${userType}&limit=5`;
+      }
+      
+      const response = await fetch(apiUrl);
       const result = await response.json();
       
       if (result.success) {
