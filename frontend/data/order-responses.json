@@ -1,0 +1,14 @@
+{
+  "responses": [
+    {
+      "id": "resp_1758287523092_i6f77kq4l",
+      "orderId": "ord_1758282231019_ngstao71a",
+      "senderEmail": "current-user@example.com",
+      "senderName": "Current User",
+      "message": "Your order is complete",
+      "type": "message",
+      "createdAt": 1758287523092,
+      "attachments": []
+    }
+  ]
+}

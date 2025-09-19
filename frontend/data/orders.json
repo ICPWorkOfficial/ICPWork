@@ -26,11 +26,12 @@
       "totalAmount": 55,
       "paymentMethod": "wallet",
       "escrowId": "escrow_1758282230836_3tyks9n2f",
-      "status": "pending",
+      "status": "completed",
       "createdAt": 1758282231019,
-      "updatedAt": 1758282231019,
-      "notes": "Order created via wallet payment method",
-      "attachments": []
+      "updatedAt": 1758287649151,
+      "notes": "Testing completion API",
+      "attachments": [],
+      "completedAt": 1758287649151
     },
     {
       "id": "ord_1758284996308_9hi3x5e1n",

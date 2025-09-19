@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Eye, Clock, CheckCircle, XCircle, AlertCircle, Package } from 'lucide-react';
+import { Eye, Clock, CheckCircle, XCircle, AlertCircle, Package, Zap } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { walletManager } from '@/lib/wallet-connector';
 
 // Order data interface
 interface OrderData {
@@ -48,6 +50,8 @@ const OrdersDisplay: React.FC<OrdersDisplayProps> = ({ userEmail, userType = 'cl
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [completingOrder, setCompletingOrder] = useState<string | null>(null);
+  const router = useRouter();
   console.log(userEmail,"shhsdahdhas")
   useEffect(() => {
     const fetchOrders = async () => {
@@ -75,6 +79,68 @@ const OrdersDisplay: React.FC<OrdersDisplayProps> = ({ userEmail, userType = 'cl
       fetchOrders();
     }
   }, [userEmail, userType]);
+
+  const handleQuickComplete = async (orderId: string, orderAmount: number) => {
+    if (!walletManager.isConnected()) {
+      alert('Please connect your wallet first to complete orders');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to mark this order as complete? This will release the payment of ${formatAmount(orderAmount)} to the service provider.`)) {
+      return;
+    }
+
+    try {
+      setCompletingOrder(orderId);
+      
+      // Mark order as complete (simple status change)
+      const response = await fetch(`/api/orders/${orderId}/mark-complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          completedBy: 'Current User', // TODO: Get from auth
+          completionNotes: 'Order completed via quick action'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Refresh orders list
+        fetchOrders();
+        alert('Order marked as complete successfully!');
+      } else {
+        alert(result.error || 'Failed to complete order');
+      }
+      
+    } catch (err: any) {
+      console.error('Error completing order:', err);
+      alert(`Failed to complete order: ${err.message}`);
+    } finally {
+      setCompletingOrder(null);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`/api/orders?userEmail=${encodeURIComponent(userEmail)}&userType=${userType}&limit=5`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setOrders(result.orders || []);
+      } else {
+        setError(result.error || 'Failed to fetch orders');
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError('Failed to fetch orders');
+    } finally {
+      setLoading(false);
+    }
+  };
   console.log(orders,userEmail,"orders");
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -190,7 +256,11 @@ const OrdersDisplay: React.FC<OrdersDisplayProps> = ({ userEmail, userType = 'cl
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <div key={order.id} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div 
+              key={order.id} 
+              className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+              onClick={() => router.push(`/orders/${order.id}`)}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -232,6 +302,30 @@ const OrdersDisplay: React.FC<OrdersDisplayProps> = ({ userEmail, userType = 'cl
                 <span>Timeline: {order.timeline}</span>
                 <span>Payment: {order.paymentMethod}</span>
               </div>
+              
+              {/* Quick Actions */}
+              {order.status === 'pending' || order.status === 'in_progress' ? (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Quick Actions</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickComplete(order.id, order.totalAmount);
+                      }}
+                      disabled={completingOrder === order.id}
+                      className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {completingOrder === order.id ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-white"></div>
+                      ) : (
+                        <Zap size={12} />
+                      )}
+                      {completingOrder === order.id ? 'Completing...' : 'Complete'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
