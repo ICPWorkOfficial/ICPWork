@@ -1,111 +1,179 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { TalentCard } from './TalentCard'
+
+interface Service {
+  id: string;
+  overview: {
+    serviceTitle: string;
+    mainCategory: string;
+    subCategory: string;
+    description: string;
+    email?: string;
+  };
+  projectTiers: {
+    Basic: {
+      title: string;
+      description: string;
+      price: string;
+    };
+    Advanced: {
+      title: string;
+      description: string;
+      price: string;
+    };
+    Premium: {
+      title: string;
+      description: string;
+      price: string;
+    };
+  };
+  portfolioImages: string[];
+  isActive: boolean;
+  createdAt: string;
+}
+
 interface TalentGridProps {
   category: string
   filters: {
     topRated: boolean
     bestSeller: boolean
   }
-  onSelect?: (id: number) => void
+  onSelect?: (id: string) => void
 }
+
 export function TalentGrid({ category, filters, onSelect }: TalentGridProps) {
-  // Mock data for talent profiles
-  const talents = [
-    {
-      id: 1,
-      name: 'Kenneth Allen',
-      description:
-        'It is a long established fact that a reader will be distracted by the readable content',
-      rating: 4.8,
-      reviews: '(1.2K+)',
-      price: 'USD $100',
-      images: [
-        'https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/78e70aff-af3a-4c7c-89a9-16e6b3bb390a/figma-preview.jpg',
-      ],
-      category: 'Business',
-    },
-    {
-      id: 2,
-      name: 'Kenneth Allen',
-      description:
-        'It is a long established fact that a reader will be distracted by the readable content',
-      rating: 4.8,
-      reviews: '(1.2K+)',
-      price: 'USD $100',
-      images: [
-        'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      ],
-      category: 'Business',
-    },
-    {
-      id: 3,
-      name: 'Kenneth Allen',
-      description:
-        'It is a long established fact that a reader will be distracted by the readable content',
-      rating: 4.8,
-      reviews: '(1.2K+)',
-      price: 'USD $100',
-      images: [
-        'https://images.unsplash.com/photo-1555421689-3f034debb7a6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      ],
-      category: 'Marketing',
-    },
-    {
-      id: 4,
-      name: 'Kenneth Allen',
-      description:
-        'It is a long established fact that a reader will be distracted by the readable content',
-      rating: 4.8,
-      reviews: '(1.2K+)',
-      price: 'USD $100',
-      images: [
-        'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      ],
-      category: 'Admin',
-    },
-    {
-      id: 5,
-      name: 'Kenneth Allen',
-      description:
-        'It is a long established fact that a reader will be distracted by the readable content',
-      rating: 4.8,
-      reviews: '(1.2K+)',
-      price: 'USD $100',
-      images: [
-        'https://images.unsplash.com/photo-1563986768609-322da13575f3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      ],
-      category: 'Technology',
-    },
-    {
-      id: 6,
-      name: 'Kenneth Allen',
-      description:
-        'It is a long established fact that a reader will be distracted by the readable content',
-      rating: 4.8,
-      reviews: '(1.2K+)',
-      price: 'USD $100',
-      images: [
-        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      ],
-      category: 'Portfolio',
-    },
-  ]
-  // Filter talents based on active category
-  const filteredTalents = talents.filter(
-    (talent) => talent.category === category || category === 'All',
-  )
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchServices();
+  }, [category]);
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Try to fetch from freelancer dashboard API first (real data from canister)
+      let response;
+      try {
+        const params = new URLSearchParams();
+        if (category && category !== 'All') {
+          params.append('category', category);
+        }
+        params.append('limit', '50'); // Get more services
+        
+        response = await fetch(`/api/freelancer-dashboard/browse?${params.toString()}`);
+        const result = await response.json();
+        
+        if (result.success && result.profiles) {
+          // Transform freelancer profiles to services
+          const transformedServices: Service[] = result.profiles.map(([email, profile]: [string, any]) => ({
+            id: email,
+            overview: {
+              serviceTitle: profile.serviceTitle || 'Untitled Service',
+              mainCategory: profile.mainCategory || 'General',
+              subCategory: profile.subCategory || 'General',
+              description: profile.description || 'No description available',
+              email: email
+            },
+            projectTiers: {
+              Basic: {
+                title: 'Basic',
+                description: profile.requirementPlans?.basic?.description || 'Basic service',
+                price: profile.requirementPlans?.basic?.price?.toString() || '50'
+              },
+              Advanced: {
+                title: 'Advanced',
+                description: profile.requirementPlans?.advanced?.description || 'Advanced service',
+                price: profile.requirementPlans?.advanced?.price?.toString() || '100'
+              },
+              Premium: {
+                title: 'Premium',
+                description: profile.requirementPlans?.premium?.description || 'Premium service',
+                price: profile.requirementPlans?.premium?.price?.toString() || '200'
+              }
+            },
+            portfolioImages: profile.portfolioImages || [],
+            isActive: profile.isActive !== false,
+            createdAt: profile.createdAt || new Date().toISOString()
+          }));
+          
+          setServices(transformedServices);
+          return;
+        }
+      } catch (apiError) {
+        console.warn('Failed to fetch from freelancer dashboard API, trying services API:', apiError);
+      }
+      
+      // Fallback to services API
+      response = await fetch('/api/services');
+      const result = await response.json();
+      
+      if (result.success && result.services) {
+        setServices(result.services);
+      } else {
+        setError('Failed to load services');
+      }
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      setError('Failed to load services');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter services based on active category
+  const filteredServices = services.filter(
+    (service) => service.overview.mainCategory === category || category === 'All' || category === 'Business'
+  );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 mb-4">{error}</p>
+        <button 
+          onClick={fetchServices}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (filteredServices.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No services found for the selected category.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredTalents.map((talent) => (
+      {filteredServices.map((service) => (
         <TalentCard
-          key={talent.id}
-          id={talent.id}
-          name={talent.name}
-          description={talent.description}
-          rating={talent.rating}
-          reviews={talent.reviews}
-          price={talent.price}
-          images={talent.images}
+          key={service.id}
+          id={service.id}
+          name={service.overview.email || 'Anonymous'}
+          title={service.overview.serviceTitle}
+          description={service.overview.description}
+          category={service.overview.mainCategory}
+          subCategory={service.overview.subCategory}
+          rating={4.5} // Default rating since we don't have this data yet
+          reviews="(0)"
+          price={`$${service.projectTiers.Basic.price}`}
+          images={service.portfolioImages.length > 0 ? service.portfolioImages : ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80']}
           onSelect={onSelect}
         />
       ))}

@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Search, ChevronDown } from 'lucide-react'
+import { freelancerService, FreelancerProfile } from '@/lib/freelancer-service'
 
 interface ProjectCard {
   id: string
   title: string
   description: string
   category: string
+  subCategory: string
   timeline: string
   level: string
   proposals: number
@@ -21,6 +23,8 @@ interface ProjectCard {
   author: string
   timePosted: string
   featured?: boolean
+  isActive: boolean
+  price: string
 }
 
 // projects are fetched from the API and stored in state
@@ -29,11 +33,13 @@ interface ProjectCard {
 
 const categoryTabs = [
   'All Categories',
-  'ICP Development',
   'Web Development',
-  'Blockchain',
+  'Mobile Development',
+  'Blockchain Development',
   'Design',
-  'AI/ML'
+  'Marketing',
+  'Writing',
+  'Other'
 ]
 
 const jobTypes = [
@@ -59,7 +65,7 @@ const salaryRanges = [
 ]
 
 export default function FreelancerDashboard() {
-  const [selectedCategory, setSelectedCategory] = useState('ICP Development')
+  const [selectedCategory, setSelectedCategory] = useState('All Categories')
   const [searchQuery, setSearchQuery] = useState('')
   const [remoteOnly, setRemoteOnly] = useState(false)
   const [selectedJobTypes, setSelectedJobTypes] = useState<string[]>([])
@@ -72,26 +78,51 @@ export default function FreelancerDashboard() {
   useEffect(() => {
     let mounted = true
     setLoading(true)
-    fetch('/api/projects')
-      .then((res) => res.json())
-      .then((json) => {
+    
+    const fetchProjects = async () => {
+      try {
+        const response = await freelancerService.browseProfiles({
+          category: selectedCategory === 'All Categories' ? undefined : selectedCategory,
+          search: searchQuery || undefined,
+          limit: 20
+        })
+        
         if (!mounted) return
-        if (json?.ok && Array.isArray(json.projects)) {
-          setProjects(json.projects)
-        } else if (Array.isArray(json)) {
-          // some APIs return array directly
-          setProjects(json)
+        
+        if (response.success) {
+          // Transform freelancer profiles to project cards
+          const transformedProjects: ProjectCard[] = response.profiles.map(([email, profile]) => ({
+            id: email,
+            title: profile.serviceTitle,
+            description: profile.description,
+            category: profile.mainCategory,
+            subCategory: profile.subCategory,
+            timeline: '3-4 weeks',
+            level: `$${profile.requirementPlans.basic.price} - $${profile.requirementPlans.premium.price}`,
+            proposals: Math.floor(Math.random() * 10) + 1,
+            tags: [profile.mainCategory, profile.subCategory],
+            author: email,
+            timePosted: new Date(Number(profile.createdAt)).toLocaleDateString(),
+            featured: Math.random() > 0.7,
+            isActive: profile.isActive,
+            price: profile.requirementPlans.basic.price
+          }))
+          
+          setProjects(transformedProjects)
         } else {
           setProjects([])
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Failed to fetch projects', err)
         setError('Failed to load projects')
-      })
-      .finally(() => { if (mounted) setLoading(false) })
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    fetchProjects()
     return () => { mounted = false }
-  }, [])
+  }, [selectedCategory, searchQuery])
 
   const handleJobTypeChange = (jobType: string, checked: boolean) => {
     if (checked) {

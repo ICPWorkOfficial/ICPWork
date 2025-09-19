@@ -8,11 +8,16 @@ export function CategoryTabs({
   setActiveCategory,
 }: CategoryTabsProps) {
   const categories = [
+    'All',
+    'Design',
+    'Web Development',
     'Marketing',
     'Business',
+    'Technology',
+    'Writing',
+    'Data Entry',
     'Admin',
     'Portfolio',
-    'Technology',
     'User Experience',
   ]
   return (

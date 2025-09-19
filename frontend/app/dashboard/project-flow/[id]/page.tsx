@@ -45,7 +45,17 @@ export default async function Page({ params }: { params: { id: string } }) {
   if (!project) return (<div className="p-8">Project not found</div>);
 
   // server content rendered inside client DashboardShell
-  const statusNorm = (project.status || '').toLowerCase();
+  const getStatusString = (status: any): string => {
+    if (typeof status === 'object' && status !== null) {
+      if (status.Open !== undefined) return 'Open';
+      if (status.InProgress !== undefined) return 'InProgress';
+      if (status.Completed !== undefined) return 'Completed';
+      if (status.Cancelled !== undefined) return 'Cancelled';
+    }
+    return String(status || '');
+  };
+  
+  const statusNorm = getStatusString(project.status).toLowerCase();
   const isInProgress = ['in-progress', 'new', 'pending', 'work-pending'].includes(statusNorm) || statusNorm.includes('pend');
 
   const ServerContent = (
@@ -100,7 +110,7 @@ export default async function Page({ params }: { params: { id: string } }) {
             </>
           )}
 
-          {project.status === 'completed' && (
+          {getStatusString(project.status) === 'completed' && (
             <div className="bg-white p-6 rounded-lg shadow-sm text-center">
               <div className="text-2xl font-semibold text-green-600 mb-3">Project Successfully Completed</div>
               <div className="mb-4">Thanks — the project workflow is finished.</div>

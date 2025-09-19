@@ -1,6 +1,9 @@
 import { HttpAgent, Actor } from '@dfinity/agent';
+import { idlFactory } from '@/declarations/user_management';
 
-// Define the canister interface based on the backend main.mo
+// Use the proper IDL factory from user_management canister
+// Custom IDL factory commented out - using imported one from declarations
+/*
 const idlFactory = ({ IDL }: any) => {
   const UserType = IDL.Variant({
     'freelancer': IDL.Null,
@@ -42,7 +45,7 @@ const idlFactory = ({ IDL }: any) => {
     // Session management
     'getUserInfo': IDL.Func([IDL.Text], [IDL.Variant({ 'ok': IDL.Record({ 'email': IDL.Text, 'userType': IDL.Text, 'expiresAt': IDL.Int }), 'err': Error })], []),
     'getSessionInfo': IDL.Func([IDL.Text], [IDL.Opt(SessionInfo)], ['query']),
-    'isSessionValid': IDL.Func([IDL.Text], [IDL.Bool], []),
+    'validateUserSession': IDL.Func([IDL.Text], [IDL.Variant({ 'ok': SessionInfo, 'err': Error })], []),
     
     // User management
     'getUserByEmail': IDL.Func([IDL.Text, IDL.Text], [IDL.Variant({ 'ok': User, 'err': Error })], []),
@@ -58,6 +61,7 @@ const idlFactory = ({ IDL }: any) => {
     'getOnboardingRecord': IDL.Func([IDL.Text], [IDL.Variant({ 'ok': IDL.Record({'email': IDL.Text, 'userType': IDL.Text, 'profileMethod': IDL.Opt(IDL.Variant({'resume': IDL.Null, 'manual': IDL.Null})), 'personalInfo': IDL.Opt(IDL.Record({'firstName': IDL.Opt(IDL.Text), 'lastName': IDL.Opt(IDL.Text)})), 'skills': IDL.Vec(IDL.Text), 'address': IDL.Opt(IDL.Record({'country': IDL.Text, 'state': IDL.Text, 'city': IDL.Text, 'zipCode': IDL.Text, 'streetAddress': IDL.Text, 'isPublic': IDL.Bool})), 'profile': IDL.Opt(IDL.Record({'profilePhoto': IDL.Opt(IDL.Text), 'phoneNumber': IDL.Opt(IDL.Text), 'phoneVerified': IDL.Bool})), 'final': IDL.Opt(IDL.Record({'resume': IDL.Opt(IDL.Text), 'linkedinProfile': IDL.Opt(IDL.Text)})), 'companyData': IDL.Opt(IDL.Record({'companyName': IDL.Opt(IDL.Text), 'companyWebsite': IDL.Opt(IDL.Text), 'industry': IDL.Opt(IDL.Text), 'businessType': IDL.Opt(IDL.Text), 'employeeCount': IDL.Opt(IDL.Text)})), 'isComplete': IDL.Bool, 'createdAt': IDL.Int, 'updatedAt': IDL.Int, 'completedAt': IDL.Opt(IDL.Int)}), 'err': Error })], []),
   });
 };
+*/
 
 // Create the agent and actor
 const createAgent = () => {
@@ -75,7 +79,7 @@ const createAgent = () => {
 
 const createActor = async () => {
   const agent = createAgent();
-  const canisterId = process.env.NEXT_PUBLIC_CANISTER_ID || 'ulvla-h7777-77774-qaacq-cai'; // Default local canister ID
+  const canisterId = process.env.NEXT_PUBLIC_CANISTER_ID || 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
   
   await agent.fetchRootKey();
   
@@ -113,16 +117,18 @@ class ICPAgent {
         return this.mockLogin(email, password);
       }
 
-      const result = await this.actor.login(email, password);
+      const result = await this.actor.loginUser(email, password);
       if ('ok' in result) {
+        // Generate a simple session ID since user_management doesn't handle sessions
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
         return {
           success: true,
-          sessionId: result.ok.sessionId,
+          sessionId: sessionId,
           user: {
-            email: result.ok.user.email,
-            userType: Object.keys(result.ok.user.userType)[0] as 'freelancer' | 'client'
-          },
-          sessionId: result.ok.sessionId
+            email: result.ok.email,
+            userType: result.ok.userType
+          }
         };
       } else {
         const errorType = Object.keys(result.err)[0];
@@ -151,15 +157,18 @@ class ICPAgent {
         }
       }
 
-      // Send userType as string (main canister expects Text)
-      const result = await this.actor.signup(email, password, userType);
+      // Send userType as string (user_management canister expects Text)
+      const result = await this.actor.registerUser(email, password, userType);
       if ('ok' in result) {
+        // Generate a simple session ID since user_management doesn't handle sessions
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
         return {
           success: true,
-          sessionId: result.ok.sessionId,
+          sessionId: sessionId,
           user: {
-            email: result.ok.user.email,
-            userType: Object.keys(result.ok.user.userType)[0] as 'freelancer' | 'client'
+            email: result.ok.email,
+            userType: result.ok.userType
           }
         };
       } else {
@@ -263,7 +272,8 @@ class ICPAgent {
         return true;
       }
 
-      return await this.actor.isSessionValid(sessionId);
+      const result = await this.actor.validateUserSession(sessionId);
+      return 'ok' in result;
     } catch (error) {
       console.error('Session validation error:', error);
       return false;

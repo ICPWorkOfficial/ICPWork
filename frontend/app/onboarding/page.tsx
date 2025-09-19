@@ -1,8 +1,9 @@
 "use client";
 
-import OnboardingStartingScreen from "@/components/onboarding/main";
+import MultiStepOnboarding from "@/components/onboarding/MultiStepOnboarding";
+
 export default function OnboardingPage() {
   return (
-    <OnboardingStartingScreen/>
+    <MultiStepOnboarding />
   );
 }

@@ -7,12 +7,12 @@ import { Filters } from './components/Filters'
 import { TalentGrid } from './components/TalentGrid'
 import ServiceDetail from './components/ServiceDetail'
 export function App() {
-  const [activeCategory, setActiveCategory] = useState('Business')
+  const [activeCategory, setActiveCategory] = useState('All')
   const [filters, setFilters] = useState({
     topRated: false,
     bestSeller: false,
   })
-  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null)
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
 
   const talents = [
     {

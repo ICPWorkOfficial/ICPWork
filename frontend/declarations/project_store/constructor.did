@@ -1,0 +1,109 @@
+type Result_5 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result_4 = 
+ variant {
+   err: Error;
+   ok: vec ProjectApplication;
+ };
+type Result_3 = 
+ variant {
+   err: Error;
+   ok:
+    record {
+      completedProjects: nat;
+      inProgressProjects: nat;
+      openProjects: nat;
+      totalApplications: nat;
+      totalProjects: nat;
+    };
+ };
+type Result_2 = 
+ variant {
+   err: Error;
+   ok: vec record {
+             text;
+             Project;
+           };
+ };
+type Result_1 = 
+ variant {
+   err: Error;
+   ok: ProjectApplication;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok: Project;
+ };
+type ProjectStatus = 
+ variant {
+   Cancelled;
+   Completed;
+   InProgress;
+   Open;
+ };
+type ProjectApplication = 
+ record {
+   bidAmount: text;
+   createdAt: int;
+   estimatedTime: text;
+   freelancerEmail: text;
+   id: text;
+   projectId: text;
+   proposal: text;
+   status: variant {
+             Accepted;
+             Pending;
+             Rejected;
+           };
+   whyFit: text;
+ };
+type Project = 
+ record {
+   applications: vec text;
+   budget: text;
+   category: text;
+   clientEmail: text;
+   createdAt: int;
+   description: text;
+   id: text;
+   requirements: text;
+   skills: vec text;
+   status: ProjectStatus;
+   timeline: text;
+   title: text;
+   updatedAt: int;
+ };
+type Error = 
+ variant {
+   ApplicationNotFound;
+   InvalidData;
+   InvalidEmail;
+   NotFound;
+   ProjectNotFound;
+   Unauthorized;
+ };
+service : {
+  applyToProject: (projectId: text, freelancerEmail: text, proposal: 
+   text, whyFit: text, estimatedTime: text, bidAmount: text) -> (Result_1);
+  createProject: (title: text, description: text, requirements: text, budget:
+   text, timeline: text, category: text, skills: vec text, clientEmail:
+   text) -> (Result);
+  deleteProject: (projectId: text) -> (Result_5);
+  getAllProjects: () -> (Result_2);
+  getFreelancerApplications: (freelancerEmail: text) -> (Result_4);
+  getOpenProjects: () -> (Result_2);
+  getProject: (projectId: text) -> (Result);
+  getProjectApplications: (projectId: text) -> (Result_4);
+  getProjectStats: () -> (Result_3);
+  getProjectsByClient: (clientEmail: text) -> (Result_2);
+  updateApplicationStatus: (applicationId: text, status:
+   variant {
+     Accepted;
+     Rejected;
+   }) -> (Result_1);
+  updateProjectStatus: (projectId: text, status: ProjectStatus) -> (Result);
+}

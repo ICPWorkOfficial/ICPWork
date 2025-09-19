@@ -1,33 +1,54 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatCard, ProjectRow } from '../components';
 import { Keyboard, BarChart3, Calendar, TrendingUp, PlusCircle, FileText, Eye } from 'lucide-react';
-
+import { freelancerService, FreelancerStats } from '@/lib/freelancer-service';
+import { useRouter } from 'next/navigation';
 type DashboardViewProps = {
   onBrowseAll?: () => void;
 };
 
 const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
-  const stats = [
+  const [stats, setStats] = useState<FreelancerStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await freelancerService.getStats();
+        if (response.success) {
+          setStats(response.stats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const statsCards = [
     {
-      title: 'Total Earnings',
-      value: '$17,500.90',
-      subtitle: 'USD EQUIVALENT',
+      title: 'Total Services',
+      value: stats?.totalProfiles?.toString() || '0',
+      subtitle: 'PUBLISHED',
       trend: '↑ +12.5%',
       icon: <Keyboard size={18} className="text-[#6F6F6F]" />
     },
     {
-      title: 'Active Projects',
-      value: '5',
-      subtitle: 'IN PROGRESS',
+      title: 'Active Services',
+      value: stats?.activeProfiles?.toString() || '0',
+      subtitle: 'LIVE',
       trend: '↑ +12.5%',
       icon: <BarChart3 size={18} className="text-[#6F6F6F]" />
     },
     {
-      title: 'Completed',
-      value: '98.5%',
-      subtitle: 'PROJECTS FINISHED',
+      title: 'Activation Rate',
+      value: `${stats?.activationRate || '0'}%`,
+      subtitle: 'SERVICES ACTIVE',
       trend: '↑ +12.5%',
       icon: <Calendar size={18} className="text-[#6F6F6F]" />
     },
@@ -86,20 +107,31 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
           <div className="bg-[rgba(104,255,102,0.14)] px-2 py-1 rounded-lg h-[28px] flex items-center justify-center">
           <span className="text-[11px] md:text-[12px] font-medium text-[#058700] capitalize">Available</span>
         </div>
-            <button className="text-sm font-semibold px-4 py-2 rounded-md cursor-pointer text-white flex items-center gap-2" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
+            <button onClick={() => router.push("/service/register")} className="text-sm font-semibold px-4 py-2 rounded-md cursor-pointer text-white flex items-center gap-2" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              New Project
+              New Service
             </button>
         </div>
       </div>
 
       {/* Stats Cards */}
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 items-stretch">
-        {stats.map((stat, index) => (
-          <StatCard key={index} stat={stat} />
-        ))}
+        {loading ? (
+          // Loading skeleton
+          Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="bg-white rounded-xl border border-[#EDEDED] p-6 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          ))
+        ) : (
+          statsCards.map((stat, index) => (
+            <StatCard key={index} stat={stat} />
+          ))
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

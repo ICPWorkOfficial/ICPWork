@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/main';
+import { idlFactory } from '@/declarations/freelancer_dashboard';
 
-async function getMainActor() {
+async function getFreelancerDashboardActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
     verifyQuerySignatures: false,
@@ -12,63 +12,81 @@ async function getMainActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // Main canister ID
+  const canisterId = 'umunu-kh777-77774-qaaca-cai'; // Freelancer dashboard canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
-// GET - Browse freelancer profiles
-export async function GET(request: Request) {
+// GET - Browse freelancer profiles with filters
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const sessionId = url.searchParams.get('sessionId');
-    const mainCategory = url.searchParams.get('mainCategory');
-    const subCategory = url.searchParams.get('subCategory');
-    const searchTerm = url.searchParams.get('search');
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const subCategory = searchParams.get('subCategory');
+    const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+    const actor = await getFreelancerDashboardActor();
     
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Missing required parameter: sessionId' },
-        { status: 400 }
-      );
-    }
-    
-    const actor = await getMainActor();
     let result;
-    
-    if (searchTerm) {
-      // Search profiles by title
-      result = await actor.searchFreelancerProfiles(sessionId, searchTerm);
-    } else if (mainCategory && subCategory) {
-      // Get profiles by subcategory
-      result = await actor.getFreelancerProfilesBySubCategory(sessionId, mainCategory, subCategory);
-    } else if (mainCategory) {
-      // Get profiles by category
-      result = await actor.getFreelancerProfilesByCategory(sessionId, mainCategory);
+    if (search) {
+      result = await actor.searchProfilesByTitle(search);
+    } else if (category && subCategory) {
+      result = await actor.getProfilesBySubCategory(category, subCategory);
+    } else if (category) {
+      result = await actor.getProfilesByCategory(category);
     } else {
-      // Get all active profiles
-      result = await actor.getAllActiveFreelancerProfiles(sessionId);
+      result = await actor.getActiveProfiles();
     }
-    
-    if (result && typeof result === 'object' && 'err' in result) {
+
+    if (result.ok) {
+      let profiles = result.ok;
+      
+      // Sort profiles
+      profiles = profiles.sort((a, b) => {
+        const aValue = a[1][sortBy as keyof typeof a[1]];
+        const bValue = b[1][sortBy as keyof typeof b[1]];
+        
+        if (sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1;
+        } else {
+          return aValue < bValue ? 1 : -1;
+        }
+      });
+      
+      // Pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedProfiles = profiles.slice(startIndex, endIndex);
+      
+      const serializedProfiles = JSON.parse(JSON.stringify(paginatedProfiles, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+      
+      return NextResponse.json({ 
+        success: true,
+        profiles: serializedProfiles,
+        pagination: {
+          page,
+          limit,
+          total: profiles.length,
+          totalPages: Math.ceil(profiles.length / limit),
+          hasNext: endIndex < profiles.length,
+          hasPrev: page > 1
+        }
+      });
+    } else {
       return NextResponse.json(
-        { error: 'Failed to get freelancer profiles', details: result.err },
+        { success: false, error: result.err },
         { status: 400 }
       );
     }
-    
-    // Convert BigInt values to strings for JSON serialization
-    const serializedProfiles = JSON.parse(JSON.stringify(result, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
-    
-    return NextResponse.json({ 
-      success: true,
-      profiles: serializedProfiles
-    });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Browse freelancer profiles error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { success: false, error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

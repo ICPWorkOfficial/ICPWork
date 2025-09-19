@@ -1,3 +1,5 @@
+"use client"
+import { useSafeAuth } from '@/hooks/useSafeAuth';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -12,6 +14,21 @@ interface OnboardingStartingScreenProps {
 const OnboardingStartingScreen: React.FC<OnboardingStartingScreenProps> = ({ 
   onGetStarted 
 }) => {
+  const { user, isLoading, isAuthenticated } = useSafeAuth();
+  
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#fcfcfc] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  console.log(user, "testing");
   const steps = [
     {
       id: 1,
@@ -96,7 +113,7 @@ const OnboardingStartingScreen: React.FC<OnboardingStartingScreenProps> = ({
                 Unlock the full potential of your freelance career with Organaise. Begin a rewarding journey where your skills are valued and your professional growth is inevitable. Start now and pave the path to your success.
               </p>
             </div>
-            <Link href="/onboarding/step1" className="no-underline">
+            <Link href="/onboarding" className="no-underline">
               <Button 
                 className="bg-[#161616] text-white px-8 py-4 rounded-[30px] text-[18px] font-medium h-auto shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] hover:bg-[#2a2a2a] transition-colors"
               >

@@ -39,6 +39,10 @@
     "freelancer_dashboard": {
       "main": "src/freelancer_dashboard/src/main.mo",
       "type": "motoko"
+    },
+    "project_store": {
+      "main": "src/project_store/src/main.mo",
+      "type": "motoko"
     }
   },
   "defaults": {

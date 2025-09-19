@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/main';
+import { idlFactory } from '@/declarations/freelancer_dashboard';
 
-async function getMainActor() {
+async function getFreelancerDashboardActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
     verifyQuerySignatures: false,
@@ -12,41 +12,42 @@ async function getMainActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // Main canister ID
+  const canisterId = 'umunu-kh777-77774-qaaca-cai'; // Freelancer dashboard canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
 // GET - Check if freelancer profile exists
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const sessionId = url.searchParams.get('sessionId');
-    
-    if (!sessionId) {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get('email');
+
+    if (!email) {
       return NextResponse.json(
-        { error: 'Missing required parameter: sessionId' },
+        { success: false, error: 'Email parameter is required' },
         { status: 400 }
       );
     }
-    
-    const actor = await getMainActor();
-    const result = await actor.freelancerProfileExists(sessionId);
-    
-    if (result && typeof result === 'object' && 'err' in result) {
+
+    const actor = await getFreelancerDashboardActor();
+    const result = await actor.profileExists(email);
+
+    if (result.ok) {
+      return NextResponse.json({ 
+        success: true,
+        exists: result.ok,
+        email
+      });
+    } else {
       return NextResponse.json(
-        { error: 'Failed to check if profile exists', details: result.err },
+        { success: false, error: result.err },
         { status: 400 }
       );
     }
-    
-    return NextResponse.json({ 
-      success: true,
-      exists: result
-    });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Check profile exists error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { success: false, error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

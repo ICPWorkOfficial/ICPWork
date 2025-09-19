@@ -186,7 +186,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll, onOpenProjec
             <button onClick={() => setActiveTab('proposals')} className={`px-3 py-1 rounded-full ${activeTab === 'proposals' ? 'bg-white text-[#041D37]' : 'text-[#6F6F6F]'}`}>My Proposals</button>
           </div>
           <div>
-            <button className="text-sm px-3 py-1 rounded-md border" onClick={() => { /* hook to post new project */ }}>New Project</button>
+            <button className="text-sm px-3 py-1 rounded-md border" onClick={() => { /* hook to post new project */ }}>New Service</button>
           </div>
         </div>
 

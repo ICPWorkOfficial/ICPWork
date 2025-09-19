@@ -12,7 +12,7 @@ async function getUserManagementActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // User management canister ID
+  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 

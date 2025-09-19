@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/main';
+import { idlFactory } from '@/declarations/freelancer_dashboard';
 
-async function getMainActor() {
+async function getFreelancerDashboardActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
     verifyQuerySignatures: false,
@@ -12,223 +12,96 @@ async function getMainActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // Main canister ID
+  const canisterId = 'umunu-kh777-77774-qaaca-cai'; // Freelancer dashboard canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
-// POST - Create freelancer profile
-export async function POST(request: Request) {
+// GET - Get all freelancer profiles
+export async function GET(request: NextRequest) {
   try {
-    const { sessionId, profile } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const subCategory = searchParams.get('subCategory');
+    const search = searchParams.get('search');
+    const activeOnly = searchParams.get('activeOnly') === 'true';
+
+    const actor = await getFreelancerDashboardActor();
     
-    // Validate required fields
-    if (!sessionId || !profile) {
+    let result;
+    if (search) {
+      result = await actor.searchProfilesByTitle(search);
+    } else if (category && subCategory) {
+      result = await actor.getProfilesBySubCategory(category, subCategory);
+    } else if (category) {
+      result = await actor.getProfilesByCategory(category);
+    } else if (activeOnly) {
+      result = await actor.getActiveProfiles();
+    } else {
+      result = await actor.getAllProfiles();
+    }
+
+    if (result.ok) {
+      const profiles = result.ok;
+      const serializedProfiles = JSON.parse(JSON.stringify(profiles, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+      
+      return NextResponse.json({ 
+        success: true,
+        profiles: serializedProfiles,
+        count: serializedProfiles.length
+      });
+    } else {
       return NextResponse.json(
-        { error: 'Missing required fields: sessionId, profile' },
+        { success: false, error: result.err },
+        { status: 400 }
+      );
+    }
+  } catch (error: any) {
+    console.error('Get freelancer profiles error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Create freelancer profile
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email, profile } = body;
+
+    if (!email || !profile) {
+      return NextResponse.json(
+        { success: false, error: 'Email and profile data are required' },
         { status: 400 }
       );
     }
 
-    // Validate profile structure
-    if (!profile.serviceTitle || !profile.mainCategory || !profile.subCategory || !profile.description) {
-      return NextResponse.json(
-        { error: 'Missing required profile fields: serviceTitle, mainCategory, subCategory, description' },
-        { status: 400 }
-      );
-    }
+    const actor = await getFreelancerDashboardActor();
+    const result = await actor.createProfile(email, profile);
 
-    // Validate requirement plans
-    if (!profile.requirementPlans || !profile.requirementPlans.basic || !profile.requirementPlans.advanced || !profile.requirementPlans.premium) {
+    if (result.ok) {
+      const serializedProfile = JSON.parse(JSON.stringify(result.ok, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+      
+      return NextResponse.json({ 
+        success: true,
+        profile: serializedProfile,
+        message: 'Profile created successfully'
+      });
+    } else {
       return NextResponse.json(
-        { error: 'Missing required requirement plans: basic, advanced, premium' },
+        { success: false, error: result.err },
         { status: 400 }
       );
     }
-
-    // Validate portfolio images (max 5)
-    if (profile.portfolioImages && profile.portfolioImages.length > 5) {
-      return NextResponse.json(
-        { error: 'Too many portfolio images (maximum 5 allowed)' },
-        { status: 400 }
-      );
-    }
-    
-    const actor = await getMainActor();
-    const result = await actor.createFreelancerDashboardProfile(sessionId, profile);
-    
-    if (result && typeof result === 'object' && 'err' in result) {
-      return NextResponse.json(
-        { error: 'Failed to create freelancer profile', details: result.err },
-        { status: 400 }
-      );
-    }
-    
-    // Convert BigInt values to strings for JSON serialization
-    const serializedProfile = JSON.parse(JSON.stringify(result, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Freelancer profile created successfully',
-      profile: serializedProfile
-    });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create freelancer profile error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// GET - Get freelancer profile
-export async function GET(request: Request) {
-  try {
-    const url = new URL(request.url);
-    const sessionId = url.searchParams.get('sessionId');
-    const email = url.searchParams.get('email');
-    
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Missing required parameter: sessionId' },
-        { status: 400 }
-      );
-    }
-    
-    const actor = await getMainActor();
-    let result;
-    
-    if (email) {
-      // Get profile by email (for clients to view)
-      result = await actor.getFreelancerProfileByEmail(sessionId, email);
-    } else {
-      // Get own profile
-      result = await actor.getFreelancerDashboardProfile(sessionId);
-    }
-    
-    if (result && typeof result === 'object' && 'err' in result) {
-      return NextResponse.json(
-        { error: 'Failed to get freelancer profile', details: result.err },
-        { status: 400 }
-      );
-    }
-    
-    // Convert BigInt values to strings for JSON serialization
-    const serializedProfile = JSON.parse(JSON.stringify(result, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
-    
-    return NextResponse.json({ 
-      success: true,
-      profile: serializedProfile
-    });
-  } catch (error) {
-    console.error('Get freelancer profile error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT - Update freelancer profile
-export async function PUT(request: Request) {
-  try {
-    const { sessionId, profile } = await request.json();
-    
-    // Validate required fields
-    if (!sessionId || !profile) {
-      return NextResponse.json(
-        { error: 'Missing required fields: sessionId, profile' },
-        { status: 400 }
-      );
-    }
-
-    // Validate profile structure
-    if (!profile.serviceTitle || !profile.mainCategory || !profile.subCategory || !profile.description) {
-      return NextResponse.json(
-        { error: 'Missing required profile fields: serviceTitle, mainCategory, subCategory, description' },
-        { status: 400 }
-      );
-    }
-
-    // Validate requirement plans
-    if (!profile.requirementPlans || !profile.requirementPlans.basic || !profile.requirementPlans.advanced || !profile.requirementPlans.premium) {
-      return NextResponse.json(
-        { error: 'Missing required requirement plans: basic, advanced, premium' },
-        { status: 400 }
-      );
-    }
-
-    // Validate portfolio images (max 5)
-    if (profile.portfolioImages && profile.portfolioImages.length > 5) {
-      return NextResponse.json(
-        { error: 'Too many portfolio images (maximum 5 allowed)' },
-        { status: 400 }
-      );
-    }
-    
-    const actor = await getMainActor();
-    const result = await actor.updateFreelancerDashboardProfile(sessionId, profile);
-    
-    if (result && typeof result === 'object' && 'err' in result) {
-      return NextResponse.json(
-        { error: 'Failed to update freelancer profile', details: result.err },
-        { status: 400 }
-      );
-    }
-    
-    // Convert BigInt values to strings for JSON serialization
-    const serializedProfile = JSON.parse(JSON.stringify(result, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Freelancer profile updated successfully',
-      profile: serializedProfile
-    });
-  } catch (error) {
-    console.error('Update freelancer profile error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE - Delete freelancer profile
-export async function DELETE(request: Request) {
-  try {
-    const url = new URL(request.url);
-    const sessionId = url.searchParams.get('sessionId');
-    
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Missing required parameter: sessionId' },
-        { status: 400 }
-      );
-    }
-    
-    const actor = await getMainActor();
-    const result = await actor.deleteFreelancerDashboardProfile(sessionId);
-    
-    if (result && typeof result === 'object' && 'err' in result) {
-      return NextResponse.json(
-        { error: 'Failed to delete freelancer profile', details: result.err },
-        { status: 400 }
-      );
-    }
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Freelancer profile deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete freelancer profile error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { success: false, error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

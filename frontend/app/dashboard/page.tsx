@@ -1,6 +1,7 @@
 'use client';
-
-import React, { useState } from 'react';
+import {useAuth} from '@/context/AuthContext';
+import { useLocalStorageAuth } from '@/hooks/useLocalStorageAuth';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Bell, 
@@ -150,11 +151,30 @@ const Logo: React.FC = () => (
 
 // Main Dashboard Component
 const FreelancerDashboard: React.FC = () => {
+  const {user: serverUser} = useAuth();
+  const {user, isLoading: authLoading, isAuthenticated} = useLocalStorageAuth();
   const router = useRouter();
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [activeProject, setActiveProject] = useState<any | null>(null);
+  const [userData,setUserData] = useState<any | null>(null);
+  
+  // Use localStorage user as primary, fallback to server user
+  const currentUser = user || serverUser;
+  console.log(currentUser,"testing");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (currentUser?.email) {
+        const res = await fetch('/api/users/email/' + currentUser.email);
+        const data = await res.json();
+        console.log(data,"testing");
+        setUserData(data.user.ok);
+      }
+    }
+    fetchUser();
+  }, [currentUser]);
 
   // Mock data
   const stats: StatCard[] = [
@@ -281,6 +301,24 @@ const FreelancerDashboard: React.FC = () => {
     }
   };
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#FCFCFC] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-[#FCFCFC] flex">
       {/* Sidebar (desktop) */}
@@ -362,7 +400,9 @@ const FreelancerDashboard: React.FC = () => {
             {/* Client Dropdown */}
             <div className="bg-[#FCFCFC] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-5 flex items-center gap-2 hover:bg-gray-100 transition-colors duration-150 cursor-pointer">
               <div className="w-6 h-6 rounded-full bg-gray-200" />
-              <span className="hidden sm:inline text-[14px] text-black tracking-[-0.1px]">Client</span>
+              <span className="hidden sm:inline text-[14px] text-black tracking-[-0.1px]">{
+                  currentUser?.userType || 'User'
+                }</span>
               <ChevronDown size={12} className="text-black rotate-[270deg]" />
             </div>
             
@@ -373,7 +413,12 @@ const FreelancerDashboard: React.FC = () => {
               aria-label="Open profile"
             >
               <div className="w-[37px] h-[37px] rounded-full bg-gray-200" />
-              <span className="hidden sm:inline text-[14px] font-medium text-[#272D37] tracking-[-0.1px]">Darshana</span>
+              <span className="hidden sm:inline text-[14px] font-medium text-[#272D37] tracking-[-0.1px]">
+                {userData ? 
+                  (Array.isArray(userData.firstName) && userData.firstName.length > 0 ? userData.firstName[0] : userData.email) : 
+                  currentUser?.email || 'User'
+                }
+              </span>
               <ChevronDown size={12} className="text-black rotate-[270deg]" />
             </button>
           </div>

@@ -112,12 +112,9 @@ persistent actor FreelancerDashboard {
         plans.premium.description.size() > 0
     };
 
-    // Create freelancer profile - ONLY callable by main canister
+    // Create freelancer profile - Public access
     public shared(msg) func createProfile(email: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         // Validate email
         if (email.size() == 0) {
@@ -161,12 +158,9 @@ persistent actor FreelancerDashboard {
         }
     };
 
-    // Update freelancer profile - ONLY callable by main canister
+    // Update freelancer profile - Public access
     public shared(msg) func updateProfile(email: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         // Check if profile exists
         switch (profiles.get(email)) {
@@ -205,12 +199,9 @@ persistent actor FreelancerDashboard {
         }
     };
 
-    // Get freelancer profile by email - ONLY callable by main canister
+    // Get freelancer profile by email - Public access
     public shared(msg) func getProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
             case null { #err(#NotFound) };
@@ -218,22 +209,16 @@ persistent actor FreelancerDashboard {
         }
     };
 
-    // Get all freelancer profiles - ONLY callable by main canister
+    // Get all freelancer profiles - Public access
     public shared(msg) func getAllProfiles() : async Result.Result<[(Text, FreelancerProfile)], Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         #ok(Iter.toArray(profiles.entries()))
     };
 
-    // Get active freelancer profiles - ONLY callable by main canister
+    // Get active freelancer profiles - Public access
     public shared(msg) func getActiveProfiles() : async Result.Result<[(Text, FreelancerProfile)], Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         let activeProfiles = Iter.toArray(
             Iter.filter<(Text, FreelancerProfile)>(
@@ -244,12 +229,9 @@ persistent actor FreelancerDashboard {
         #ok(activeProfiles)
     };
 
-    // Get profiles by category - ONLY callable by main canister
+    // Get profiles by category - Public access
     public shared(msg) func getProfilesByCategory(mainCategory: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         let categoryProfiles = Iter.toArray(
             Iter.filter<(Text, FreelancerProfile)>(
@@ -260,12 +242,9 @@ persistent actor FreelancerDashboard {
         #ok(categoryProfiles)
     };
 
-    // Get profiles by subcategory - ONLY callable by main canister
+    // Get profiles by subcategory - Public access
     public shared(msg) func getProfilesBySubCategory(mainCategory: Text, subCategory: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         let subCategoryProfiles = Iter.toArray(
             Iter.filter<(Text, FreelancerProfile)>(
@@ -276,12 +255,9 @@ persistent actor FreelancerDashboard {
         #ok(subCategoryProfiles)
     };
 
-    // Delete freelancer profile - ONLY callable by main canister
+    // Delete freelancer profile - Public access
     public shared(msg) func deleteProfile(email: Text) : async Result.Result<(), Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         switch (profiles.remove(email)) {
             case null { #err(#NotFound) };
@@ -289,12 +265,9 @@ persistent actor FreelancerDashboard {
         }
     };
 
-    // Deactivate freelancer profile - ONLY callable by main canister
+    // Deactivate freelancer profile - Public access
     public shared(msg) func deactivateProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
             case null { #err(#NotFound) };
@@ -320,12 +293,9 @@ persistent actor FreelancerDashboard {
         }
     };
 
-    // Activate freelancer profile - ONLY callable by main canister
+    // Activate freelancer profile - Public access
     public shared(msg) func activateProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
             case null { #err(#NotFound) };
@@ -351,12 +321,9 @@ persistent actor FreelancerDashboard {
         }
     };
 
-    // Check if profile exists - ONLY callable by main canister
+    // Check if profile exists - Public access
     public shared(msg) func profileExists(email: Text) : async Result.Result<Bool, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
             case null { #ok(false) };
@@ -364,22 +331,16 @@ persistent actor FreelancerDashboard {
         }
     };
 
-    // Get total profiles count - ONLY callable by main canister
+    // Get total profiles count - Public access
     public shared(msg) func getTotalProfiles() : async Result.Result<Nat, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         #ok(profiles.size())
     };
 
-    // Get active profiles count - ONLY callable by main canister
+    // Get active profiles count - Public access
     public shared(msg) func getActiveProfilesCount() : async Result.Result<Nat, Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         let activeCount = Iter.size(
             Iter.filter<(Text, FreelancerProfile)>(
@@ -390,12 +351,9 @@ persistent actor FreelancerDashboard {
         #ok(activeCount)
     };
 
-    // Search profiles by service title - ONLY callable by main canister
+    // Search profiles by service title - Public access
     public shared(msg) func searchProfilesByTitle(searchTerm: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
-        // Check if caller is main canister
-        if (not onlyMainCanister(msg.caller)) {
-            return #err(#Unauthorized);
-        };
+        // Authorization removed - allow direct API calls
 
         let searchResults = Iter.toArray(
             Iter.filter<(Text, FreelancerProfile)>(

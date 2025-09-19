@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>localStorage Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>localStorage vs sessionStorage Test</h1>
+    
+    <div class="test-section">
+        <h2>Test localStorage Persistence</h2>
+        <p>This test demonstrates that localStorage persists across browser sessions, while sessionStorage does not.</p>
+        
+        <button onclick="setLocalStorage()">Set localStorage Data</button>
+        <button onclick="setSessionStorage()">Set sessionStorage Data</button>
+        <button onclick="getLocalStorage()">Get localStorage Data</button>
+        <button onclick="getSessionStorage()">Get sessionStorage Data</button>
+        <button onclick="clearAll()">Clear All Storage</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Click "Set localStorage Data" and "Set sessionStorage Data"</li>
+            <li>Close this browser tab/window completely</li>
+            <li>Open a new tab/window and navigate back to this page</li>
+            <li>Click "Get localStorage Data" and "Get sessionStorage Data"</li>
+            <li>Notice that localStorage data persists, but sessionStorage data is gone</li>
+        </ol>
+    </div>
+
+    <script>
+        function setLocalStorage() {
+            const testData = {
+                user: { email: 'test@example.com', userType: 'freelancer' },
+                timestamp: new Date().toISOString(),
+                message: 'This data will persist across browser sessions'
+            };
+            localStorage.setItem('ICP_USER', JSON.stringify(testData));
+            showResult('localStorage data set: ' + JSON.stringify(testData, null, 2));
+        }
+
+        function setSessionStorage() {
+            const testData = {
+                user: { email: 'test@example.com', userType: 'freelancer' },
+                timestamp: new Date().toISOString(),
+                message: 'This data will NOT persist across browser sessions'
+            };
+            sessionStorage.setItem('ICP_USER', JSON.stringify(testData));
+            showResult('sessionStorage data set: ' + JSON.stringify(testData, null, 2));
+        }
+
+        function getLocalStorage() {
+            const data = localStorage.getItem('ICP_USER');
+            if (data) {
+                showResult('localStorage data found: ' + data);
+            } else {
+                showResult('No localStorage data found');
+            }
+        }
+
+        function getSessionStorage() {
+            const data = sessionStorage.getItem('ICP_USER');
+            if (data) {
+                showResult('sessionStorage data found: ' + data);
+            } else {
+                showResult('No sessionStorage data found');
+            }
+        }
+
+        function clearAll() {
+            localStorage.removeItem('ICP_USER');
+            sessionStorage.removeItem('ICP_USER');
+            showResult('All storage cleared');
+        }
+
+        function showResult(message) {
+            document.getElementById('result').innerHTML = '<pre>' + message + '</pre>';
+        }
+
+        // Auto-check on page load
+        window.onload = function() {
+            const localData = localStorage.getItem('ICP_USER');
+            const sessionData = sessionStorage.getItem('ICP_USER');
+            
+            let message = 'Page loaded. Current storage status:\n';
+            message += 'localStorage: ' + (localData ? 'Data exists' : 'No data') + '\n';
+            message += 'sessionStorage: ' + (sessionData ? 'Data exists' : 'No data');
+            
+            showResult(message);
+        };
+    </script>
+</body>
+</html>

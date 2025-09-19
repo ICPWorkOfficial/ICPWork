@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/main';
+import { idlFactory } from '@/declarations/freelancer_dashboard';
 
-async function getMainActor() {
+async function getFreelancerDashboardActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
     verifyQuerySignatures: false,
@@ -12,46 +12,46 @@ async function getMainActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // Main canister ID
+  const canisterId = 'umunu-kh777-77774-qaaca-cai'; // Freelancer dashboard canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
 // POST - Deactivate freelancer profile
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { sessionId } = await request.json();
-    
-    if (!sessionId) {
+    const body = await request.json();
+    const { email } = body;
+
+    if (!email) {
       return NextResponse.json(
-        { error: 'Missing required field: sessionId' },
+        { success: false, error: 'Email is required' },
         { status: 400 }
       );
     }
-    
-    const actor = await getMainActor();
-    const result = await actor.deactivateFreelancerProfile(sessionId);
-    
-    if (result && typeof result === 'object' && 'err' in result) {
+
+    const actor = await getFreelancerDashboardActor();
+    const result = await actor.deactivateProfile(email);
+
+    if (result.ok) {
+      const serializedProfile = JSON.parse(JSON.stringify(result.ok, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+      
+      return NextResponse.json({ 
+        success: true,
+        profile: serializedProfile,
+        message: 'Profile deactivated successfully'
+      });
+    } else {
       return NextResponse.json(
-        { error: 'Failed to deactivate freelancer profile', details: result.err },
+        { success: false, error: result.err },
         { status: 400 }
       );
     }
-    
-    // Convert BigInt values to strings for JSON serialization
-    const serializedProfile = JSON.parse(JSON.stringify(result, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Freelancer profile deactivated successfully',
-      profile: serializedProfile
-    });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Deactivate freelancer profile error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { success: false, error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

@@ -19,7 +19,18 @@ type Project = {
 
 export default function ProjectFlowView({ project: initialProject, onUpdate }: { project: Project; onUpdate?: (p: Project) => void }) {
   const [project, setProject] = React.useState<Project>(initialProject);
-  const statusNorm = (project.status || '').toLowerCase();
+  
+  const getStatusString = (status: any): string => {
+    if (typeof status === 'object' && status !== null) {
+      if (status.Open !== undefined) return 'Open';
+      if (status.InProgress !== undefined) return 'InProgress';
+      if (status.Completed !== undefined) return 'Completed';
+      if (status.Cancelled !== undefined) return 'Cancelled';
+    }
+    return String(status || '');
+  };
+  
+  const statusNorm = getStatusString(project.status).toLowerCase();
   const isInProgress = ['in-progress', 'new', 'pending', 'work-pending'].includes(statusNorm) || statusNorm.includes('pend');
 
   return (
@@ -34,7 +45,7 @@ export default function ProjectFlowView({ project: initialProject, onUpdate }: {
           {/* derive steps and index from status */}
           {(() => {
             const steps = ['Payment In Escrow', 'Order Placed', 'Work Completion', 'Revision', 'Project Completion'];
-            const s = (project.status || '').toLowerCase();
+            const s = getStatusString(project.status).toLowerCase();
             const statusToIndex = (st: string) => {
               if (!st) return 0;
               if (st.includes('new') || st.includes('escrow')) return 0;

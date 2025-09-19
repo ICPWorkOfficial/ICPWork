@@ -4,13 +4,34 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, Star, BookmarkPlus, Share2, Check, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface Service {
-  id: number
-  title: string
-  provider: string
-  rating: number
-  reviews: string
-  price: string
-  image: string
+  id: string
+  overview: {
+    serviceTitle: string
+    mainCategory: string
+    subCategory: string
+    description: string
+    email?: string
+  }
+  projectTiers: {
+    Basic: {
+      title: string
+      description: string
+      price: string
+    }
+    Advanced: {
+      title: string
+      description: string
+      price: string
+    }
+    Premium: {
+      title: string
+      description: string
+      price: string
+    }
+  }
+  portfolioImages: string[]
+  isActive: boolean
+  createdAt: string
 }
 
 export default function ServiceDetail({ service, onBack }: { service: Service; onBack: () => void }) {
@@ -27,15 +48,15 @@ export default function ServiceDetail({ service, onBack }: { service: Service; o
           {/* Main Content */}
           <div className="flex-1">
             <div className="bg-white rounded-lg p-6 mb-8">
-              <h1 className="text-2xl font-semibold text-[#272d37] mb-4">{service.title}</h1>
+              <h1 className="text-2xl font-semibold text-[#272d37] mb-4">{service.overview.serviceTitle}</h1>
               <div className="flex items-center mb-6">
-                <img src={service.image} alt={service.provider} className="w-10 h-10 rounded-full mr-3" />
+                <img src={`https://i.pravatar.cc/40?u=${service.id}`} alt={service.overview.email || 'Provider'} className="w-10 h-10 rounded-full mr-3" />
                 <div>
-                  <div className="font-medium">{service.provider}</div>
+                  <div className="font-medium">{service.overview.email || 'Anonymous'}</div>
                   <div className="flex items-center text-sm">
                     <Star size={14} className="text-yellow-400 mr-1" fill="#FFD84F" />
-                    <span className="mr-3">{service.rating} ({service.reviews})</span>
-                    <span className="text-gray-600">1 contract in queue</span>
+                    <span className="mr-3">4.5 (0)</span>
+                    <span className="text-gray-600">{service.overview.mainCategory} • {service.overview.subCategory}</span>
                   </div>
                 </div>
                 <div className="ml-auto flex space-x-2">
@@ -48,11 +69,21 @@ export default function ServiceDetail({ service, onBack }: { service: Service; o
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {[1, 2, 3, 4].map((item) => (
-                  <div key={item} className="rounded-lg overflow-hidden">
-                    <img src={service.image} alt={`Service image ${item}`} className="w-full h-40 object-cover" />
-                  </div>
-                ))}
+                {service.portfolioImages.length > 0 ? (
+                  service.portfolioImages.slice(0, 4).map((image, index) => (
+                    <div key={index} className="rounded-lg overflow-hidden">
+                      <img src={image} alt={`Service image ${index + 1}`} className="w-full h-40 object-cover" />
+                    </div>
+                  ))
+                ) : (
+                  [1, 2, 3, 4].map((item) => (
+                    <div key={item} className="rounded-lg overflow-hidden bg-gray-200">
+                      <div className="w-full h-40 flex items-center justify-center text-gray-500">
+                        No Image
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-medium">Description</h2>
@@ -68,21 +99,18 @@ export default function ServiceDetail({ service, onBack }: { service: Service; o
               <div className="mb-8">
                 <div className="bg-[#FFF9E6] p-4 rounded-lg mb-4">
                   <p className="text-sm">
-                    <span className="font-medium">3000+ Projects Completed</span> on Upwork with Client Satisfaction! Expert designer with many years of experience.
+                    <span className="font-medium">Professional Service</span> - {service.overview.description}
                   </p>
                 </div>
-                <ul className="list-disc pl-5 space-y-1 text-sm mb-4">
-                  <li>Modern, Eye-Catching & Elegant Designs</li>
-                  <li>Minimalist & Responsive Designs</li>
-                  <li>User-friendly Interface</li>
-                  <li>Custom Prototyping & High-Fidelity Mockups</li>
-                  <li>Layered PSD or AI File-Editable Source file</li>
-                  <li>Guaranteed Satisfaction & Lifetime Support</li>
-                </ul>
-                <p className="text-sm mb-4">I have expertise in designing User Interfaces for websites, web apps, and mobile devices.</p>
-                <p className="text-sm">Designing creative Custom, Modern, and Responsive websites.</p>
+                <p className="text-sm mb-4">{service.overview.description}</p>
+                <div className="text-sm text-gray-600">
+                  <p><strong>Category:</strong> {service.overview.mainCategory}</p>
+                  <p><strong>Sub-category:</strong> {service.overview.subCategory}</p>
+                  <p><strong>Service ID:</strong> {service.id}</p>
+                  <p><strong>Created:</strong> {new Date(service.createdAt).toLocaleDateString()}</p>
+                </div>
               </div>
-              <ServiceTiers />
+              <ServiceTiers service={service} />
               <FAQs />
               <Comments />
               <SimilarServices />
@@ -177,31 +205,31 @@ const ServiceSidebar = ({ service }: { service: Service }) => {
       <div className="mb-6">
         <h2 className="text-xl font-medium mb-4">Select service tier</h2>
         <div className="flex flex-wrap gap-2 mb-6">
-          <button className="bg-white border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-50">Basic($100)</button>
-          <button className="bg-white border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-50">Advanced($180)</button>
-          <button className="bg-white border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-50">Premium</button>
+          <button className="bg-white border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-50">Basic(${service.projectTiers.Basic.price})</button>
+          <button className="bg-white border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-50">Advanced(${service.projectTiers.Advanced.price})</button>
+          <button className="bg-white border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-50">Premium(${service.projectTiers.Premium.price})</button>
         </div>
       </div>
       <div className="border border-gray-200 rounded-lg p-4 mb-6">
         <div className="mb-4">
-          <h3 className="font-medium mb-1">Title</h3>
-          <p className="text-sm text-gray-600">{service.title}</p>
+          <h3 className="font-medium mb-1">Service Title</h3>
+          <p className="text-sm text-gray-600">{service.overview.serviceTitle}</p>
         </div>
         <div className="mb-4">
-          <h3 className="font-medium mb-1">Description</h3>
-          <p className="text-sm text-gray-600">Short description about the service.</p>
+          <h3 className="font-medium mb-1">Category</h3>
+          <p className="text-sm text-gray-600">{service.overview.mainCategory} • {service.overview.subCategory}</p>
         </div>
         <div className="mb-4">
-          <h3 className="font-medium mb-1">No Of Days</h3>
-          <p className="text-sm text-gray-600">7</p>
+          <h3 className="font-medium mb-1">Provider</h3>
+          <p className="text-sm text-gray-600">{service.overview.email || 'Anonymous'}</p>
         </div>
         <div className="mb-4">
-          <h3 className="font-medium mb-1">Revisions</h3>
-          <p className="text-sm text-gray-600">Unlimited</p>
+          <h3 className="font-medium mb-1">Status</h3>
+          <p className="text-sm text-gray-600">{service.isActive ? 'Active' : 'Inactive'}</p>
         </div>
         <div>
-          <h3 className="font-medium mb-1">Amount</h3>
-          <p className="text-sm text-gray-600">{service.price}</p>
+          <h3 className="font-medium mb-1">Starting Price</h3>
+          <p className="text-sm text-gray-600">${service.projectTiers.Basic.price}</p>
         </div>
       </div>
       <button
@@ -209,16 +237,16 @@ const ServiceSidebar = ({ service }: { service: Service }) => {
         className="w-full text-white font-medium py-2 px-8 rounded-full"
         style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}
       >
-        Continue ({service.price})
+        Continue (${service.projectTiers.Basic.price})
       </button>
     </div>
   )
 }
 
-const ServiceTiers = () => {
+const ServiceTiers = ({ service }: { service: Service }) => {
   return (
     <div className="mb-10">
-      <h2 className="text-xl font-medium mb-6">Tier Comparison</h2>
+      <h2 className="text-xl font-medium mb-6">Service Tiers</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200 rounded-lg">
           <thead>
@@ -231,19 +259,19 @@ const ServiceTiers = () => {
           </thead>
           <tbody>
             <tr className="border-t border-gray-200">
-              <td className="py-4 px-6 text-sm text-gray-700">Service Tiers</td>
-              <td className="py-4 px-6 text-center text-sm text-gray-700">$100</td>
-              <td className="py-4 px-6 text-center text-sm text-gray-700">$180</td>
-              <td className="py-4 px-6 text-center text-sm text-gray-700">$234</td>
+              <td className="py-4 px-6 text-sm text-gray-700">Price</td>
+              <td className="py-4 px-6 text-center text-sm text-gray-700">${service.projectTiers.Basic.price}</td>
+              <td className="py-4 px-6 text-center text-sm text-gray-700">${service.projectTiers.Advanced.price}</td>
+              <td className="py-4 px-6 text-center text-sm text-gray-700">${service.projectTiers.Premium.price}</td>
             </tr>
             <tr className="border-t border-gray-200">
-              <td className="py-4 px-6 text-sm text-gray-700">Delivery Days</td>
-              <td className="py-4 px-6 text-center text-sm text-gray-700">7 Days</td>
-              <td className="py-4 px-6 text-center text-sm text-gray-700">7 Days</td>
-              <td className="py-4 px-6 text-center text-sm text-gray-700">7 Days</td>
+              <td className="py-4 px-6 text-sm text-gray-700">Description</td>
+              <td className="py-4 px-6 text-center text-sm text-gray-700">{service.projectTiers.Basic.description}</td>
+              <td className="py-4 px-6 text-center text-sm text-gray-700">{service.projectTiers.Advanced.description}</td>
+              <td className="py-4 px-6 text-center text-sm text-gray-700">{service.projectTiers.Premium.description}</td>
             </tr>
             <tr className="border-t border-gray-200">
-              <td className="py-4 px-6 text-sm text-gray-700">Source Files</td>
+              <td className="py-4 px-6 text-sm text-gray-700">Available</td>
               <td className="py-4 px-6 text-center text-sm text-gray-700"><Check size={18} className="mx-auto text-green-500" /></td>
               <td className="py-4 px-6 text-center text-sm text-gray-700"><Check size={18} className="mx-auto text-green-500" /></td>
               <td className="py-4 px-6 text-center text-sm text-gray-700"><Check size={18} className="mx-auto text-green-500" /></td>

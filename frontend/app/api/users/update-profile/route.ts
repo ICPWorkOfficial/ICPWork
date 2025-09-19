@@ -12,7 +12,7 @@ async function getUserManagementActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // User management canister ID
+  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
@@ -58,25 +58,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate and sanitize profile data
+    // Validate and sanitize profile data - convert empty strings to null for Motoko optional fields
     const validatedProfileData = {
-      firstName: profileData.firstName ? String(profileData.firstName).trim() : null,
-      lastName: profileData.lastName ? String(profileData.lastName).trim() : null,
-      phoneNumber: profileData.phoneNumber ? String(profileData.phoneNumber).trim() : null,
-      companyName: profileData.companyName ? String(profileData.companyName).trim() : null,
-      companyWebsite: profileData.companyWebsite ? String(profileData.companyWebsite).trim() : null,
-      industry: profileData.industry ? String(profileData.industry).trim() : null,
-      businessType: profileData.businessType ? String(profileData.businessType).trim() : null,
+      firstName: profileData.firstName && String(profileData.firstName).trim() ? String(profileData.firstName).trim() : null,
+      lastName: profileData.lastName && String(profileData.lastName).trim() ? String(profileData.lastName).trim() : null,
+      phoneNumber: profileData.phoneNumber && String(profileData.phoneNumber).trim() ? String(profileData.phoneNumber).trim() : null,
+      companyName: profileData.companyName && String(profileData.companyName).trim() ? String(profileData.companyName).trim() : null,
+      companyWebsite: profileData.companyWebsite && String(profileData.companyWebsite).trim() ? String(profileData.companyWebsite).trim() : null,
+      industry: profileData.industry && String(profileData.industry).trim() ? String(profileData.industry).trim() : null,
+      businessType: profileData.businessType && String(profileData.businessType).trim() ? String(profileData.businessType).trim() : null,
       numberOfEmployees: profileData.numberOfEmployees ? Number(profileData.numberOfEmployees) : null,
-      description: profileData.description ? String(profileData.description).trim() : null,
+      description: profileData.description && String(profileData.description).trim() ? String(profileData.description).trim() : null,
       skills: Array.isArray(profileData.skills) ? profileData.skills.map(skill => String(skill).trim()).filter(skill => skill.length > 0) : [],
-      country: profileData.country ? String(profileData.country).trim() : null,
-      state: profileData.state ? String(profileData.state).trim() : null,
-      city: profileData.city ? String(profileData.city).trim() : null,
-      zipCode: profileData.zipCode ? String(profileData.zipCode).trim() : null,
-      streetAddress: profileData.streetAddress ? String(profileData.streetAddress).trim() : null,
-      photo: profileData.photo ? String(profileData.photo).trim() : null,
-      linkedinProfile: profileData.linkedinProfile ? String(profileData.linkedinProfile).trim() : null,
+      country: profileData.country && String(profileData.country).trim() ? String(profileData.country).trim() : null,
+      state: profileData.state && String(profileData.state).trim() ? String(profileData.state).trim() : null,
+      city: profileData.city && String(profileData.city).trim() ? String(profileData.city).trim() : null,
+      zipCode: profileData.zipCode && String(profileData.zipCode).trim() ? String(profileData.zipCode).trim() : null,
+      streetAddress: profileData.streetAddress && String(profileData.streetAddress).trim() ? String(profileData.streetAddress).trim() : null,
+      photo: profileData.photo && String(profileData.photo).trim() ? String(profileData.photo).trim() : null,
+      linkedinProfile: profileData.linkedinProfile && String(profileData.linkedinProfile).trim() ? String(profileData.linkedinProfile).trim() : null,
     };
 
     // Additional validation for specific fields
@@ -126,7 +126,29 @@ export async function POST(request: NextRequest) {
 
     // Call the user management canister
     const actor = await getUserManagementActor();
-    const result = await actor.updateUserProfile(email, validatedProfileData);
+    
+    // Transform the data to match Motoko's expected format
+    const motokoProfileData = {
+      firstName: validatedProfileData.firstName ? [validatedProfileData.firstName] : [],
+      lastName: validatedProfileData.lastName ? [validatedProfileData.lastName] : [],
+      phoneNumber: validatedProfileData.phoneNumber ? [validatedProfileData.phoneNumber] : [],
+      companyName: validatedProfileData.companyName ? [validatedProfileData.companyName] : [],
+      companyWebsite: validatedProfileData.companyWebsite ? [validatedProfileData.companyWebsite] : [],
+      industry: validatedProfileData.industry ? [validatedProfileData.industry] : [],
+      businessType: validatedProfileData.businessType ? [validatedProfileData.businessType] : [],
+      numberOfEmployees: validatedProfileData.numberOfEmployees ? [validatedProfileData.numberOfEmployees] : [],
+      description: validatedProfileData.description ? [validatedProfileData.description] : [],
+      skills: validatedProfileData.skills,
+      country: validatedProfileData.country ? [validatedProfileData.country] : [],
+      state: validatedProfileData.state ? [validatedProfileData.state] : [],
+      city: validatedProfileData.city ? [validatedProfileData.city] : [],
+      zipCode: validatedProfileData.zipCode ? [validatedProfileData.zipCode] : [],
+      streetAddress: validatedProfileData.streetAddress ? [validatedProfileData.streetAddress] : [],
+      photo: validatedProfileData.photo ? [validatedProfileData.photo] : [],
+      linkedinProfile: validatedProfileData.linkedinProfile ? [validatedProfileData.linkedinProfile] : [],
+    };
+    
+    const result = await actor.updateUserProfile(email, motokoProfileData);
     
     if ('ok' in result) {
       // Convert BigInt values to strings for JSON serialization

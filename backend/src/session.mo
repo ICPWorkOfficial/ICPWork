@@ -30,8 +30,7 @@ module {
             let timestamp = Time.now(); 
             let tsText = Int.toText(timestamp);
             let combined = email # tsText;
-            let sessionHash = Utils.hashPassword(combined);
-            debug_show(sessionHash)
+            combined
         };
 
         // Create new session

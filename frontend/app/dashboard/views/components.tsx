@@ -26,10 +26,21 @@ export const StatCard: React.FC<{ stat: StatCardType }> = ({ stat }) => (
   </div>
 );
 
+const getStatusString = (status: any): string => {
+  if (typeof status === 'object' && status !== null) {
+    if (status.Open !== undefined) return 'Open';
+    if (status.InProgress !== undefined) return 'InProgress';
+    if (status.Completed !== undefined) return 'Completed';
+    if (status.Cancelled !== undefined) return 'Cancelled';
+  }
+  return String(status || '');
+};
+
 export const ProjectRow: React.FC<{ project: { id: string; title: string; amount: string; status: string; date: string; from: string } }> = ({ project }) => {
   const isNegative = project.amount.trim().startsWith('-');
   const amountColor = isNegative ? '#D12A2A' : '#058700';
-  const statusColor = project.status === 'completed' ? '#058700' : project.status === 'pending' ? '#F59E0B' : '#D12A2A';
+  const statusStr = getStatusString(project.status);
+  const statusColor = statusStr === 'completed' ? '#058700' : statusStr === 'pending' ? '#F59E0B' : '#D12A2A';
 
   return (
     <div className="bg-[#FDFDFD] border border-[#F9F9F9] rounded-xl py-3 flex items-center justify-between gap-4 md:gap-6">
@@ -48,7 +59,7 @@ export const ProjectRow: React.FC<{ project: { id: string; title: string; amount
         <div className="flex items-center gap-3">
           <span className="text-[12px] md:text-[15px] font-bold" style={{ color: amountColor }}>{project.amount}</span>
           <div className="px-2 py-1 rounded-lg h-[28px] flex items-center justify-center" style={{ background: isNegative ? 'rgba(209,42,42,0.12)' : 'rgba(104,255,102,0.14)' }}>
-            <span className="text-[11px] md:text-[12px] font-medium" style={{ color: statusColor, textTransform: 'capitalize' }}>{project.status}</span>
+            <span className="text-[11px] md:text-[12px] font-medium" style={{ color: statusColor, textTransform: 'capitalize' }}>{statusStr}</span>
           </div>
         </div>
         <span className="text-[12px] text-gray-500">{project.date}</span>

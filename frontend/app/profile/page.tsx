@@ -77,6 +77,79 @@ const SocialIcons: { [key: string]: any } = {
   globe: Globe
 };
 
+// Transform user data from API to profile format
+function transformUserDataToProfile(userData: any): ProfileData {
+  // Helper function to get first value from array or return empty string
+  const getFirstValue = (arr: any[] | undefined): string => {
+    return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
+  };
+
+  const firstName = getFirstValue(userData.firstName);
+  const lastName = getFirstValue(userData.lastName);
+  const fullName = `${firstName} ${lastName}`.trim() || userData.email;
+  
+  return {
+    personal: {
+      name: fullName,
+      title: getFirstValue(userData.description) || 'Professional',
+      description: getFirstValue(userData.description) || 'No description available',
+      about: getFirstValue(userData.description) || 'No about information available',
+      profileImage: '/caffine.png', // Default profile image
+      socials: [
+        {
+          platform: 'linkedin',
+          url: getFirstValue(userData.linkedinProfile) || '#',
+          icon: 'linkedin'
+        }
+      ]
+    },
+    skills: userData.skills || [],
+    stats: {
+      companiesServed: 0,
+      projectsDone: 0,
+      hackathonsParticipated: 0
+    },
+    workExperience: [
+      {
+        id: 1,
+        designation: 'Web Developer',
+        company: getFirstValue(userData.companyName) || 'Freelancer',
+        description: getFirstValue(userData.description) || 'Professional web development services',
+        duration: '2023 - Present',
+        timeWorked: '1+ years'
+      }
+    ],
+    services: [
+      {
+        id: 1,
+        title: 'Web Development',
+        image: '/caffine.png',
+        personName: fullName,
+        description: getFirstValue(userData.description) || 'Professional web development services',
+        rating: 5,
+        price: '$50/hr'
+      }
+    ],
+    reviews: [
+      {
+        id: 1,
+        text: 'Great work! Very professional and delivered on time.',
+        reviewer: 'Client Name',
+        designation: 'Project Manager'
+      }
+    ],
+    portfolio: [
+      {
+        id: 1,
+        title: 'Sample Project',
+        image: '/caffine.png',
+        description: 'A sample project showcasing web development skills'
+      }
+    ],
+    status: 'complete'
+  };
+}
+
 export default function ProfilePage() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [editing, setEditing] = useState(false);
@@ -98,20 +171,28 @@ export default function ProfilePage() {
           const m = window.location.pathname.match(/\/profile\/(.+?)(?:\/|$)/);
           if (m) id = decodeURIComponent(m[1]);
         }
+        
         let response;
         if (id) {
           response = await fetch(`/api/profile?id=${encodeURIComponent(id)}`);
         } else {
+          // Use the profile API which handles session authentication
           response = await fetch('/api/profile');
         }
 
-        const result = await response.json();
-        // API may return { ok, profiles } or { ok, profile } or legacy { ok, data }
-        if (result.ok) {
-          if (result.profile) setProfileData(result.profile);
-          else if (result.profiles) setProfileData(result.profiles[0] || null);
-          else if (result.data) setProfileData(result.data);
-          else setProfileData(null);
+        if (response) {
+          const result = await response.json();
+          // API may return { success: true, profile } or { ok, profiles } or { ok, profile } or legacy { ok, data }
+          if (result.success && result.profile) {
+            setProfileData(result.profile);
+          } else if (result.ok) {
+            if (result.profile) setProfileData(result.profile);
+            else if (result.profiles) setProfileData(result.profiles[0] || null);
+            else if (result.data) setProfileData(result.data);
+            else setProfileData(null);
+          } else {
+            setProfileData(null);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch profile:', error);

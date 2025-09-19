@@ -1,49 +1,160 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextRequest, NextResponse } from 'next/server';
+import { HttpAgent, Actor } from '@dfinity/agent';
+import { idlFactory } from '@/declarations/project_store';
 
-const dataPath = path.join(process.cwd(), 'data', 'projects.json');
+async function getProjectStoreActor() {
+  const agent = new HttpAgent({ 
+    host: 'http://127.0.0.1:4943',
+    verifyQuerySignatures: false,
+    verifyUpdateSignatures: false,
+    fetchRootKey: true
+  });
+  
+  await agent.fetchRootKey();
+  
+  const canisterId = 'vu5yx-eh777-77774-qaaga-cai'; // Project store canister ID
+  return Actor.createActor(idlFactory, { agent, canisterId });
+}
 
-export async function GET(req: Request) {
+function getStatusString(status: any): string {
+  if (typeof status === 'object' && status !== null) {
+    if (status.Open !== undefined) return 'Open';
+    if (status.InProgress !== undefined) return 'InProgress';
+    if (status.Completed !== undefined) return 'Completed';
+    if (status.Cancelled !== undefined) return 'Cancelled';
+  }
+  return String(status);
+}
+
+// GET - Get all projects
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(req.url);
-    const id = url.searchParams.get('id');
-    let raw = '{}';
-    try { raw = await fs.promises.readFile(dataPath, 'utf-8'); } catch (e: any) { if (e?.code === 'ENOENT') raw = '{}'; else throw e; }
-    const data = JSON.parse(raw || '{}');
-    const projects = data.projects || [];
-    if (id) {
-      const p = projects.find((x: any) => x.id === id);
-      return NextResponse.json({ ok: true, project: p });
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const clientEmail = searchParams.get('client');
+
+    const actor = await getProjectStoreActor();
+    let result;
+
+    if (clientEmail) {
+      // Get projects by client
+      result = await actor.getProjectsByClient(clientEmail);
+    } else if (status === 'open') {
+      // Get only open projects
+      result = await actor.getOpenProjects();
+    } else {
+      // Get all projects
+      result = await actor.getAllProjects();
     }
-    return NextResponse.json({ ok: true, projects });
-  } catch (err) {
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
+
+    if (result.ok) {
+      const projects = result.ok.map(([id, project]) => ({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        requirements: project.requirements,
+        budget: project.budget,
+        timeline: project.timeline,
+        category: project.category,
+        skills: project.skills,
+        clientEmail: project.clientEmail,
+        status: getStatusString(project.status),
+        createdAt: project.createdAt.toString(),
+        updatedAt: project.updatedAt.toString(),
+        applications: project.applications
+      }));
+
+      return NextResponse.json({
+        success: true,
+        projects: projects,
+        count: projects.length
+      });
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: result.err
+      }, { status: 400 });
+    }
+  } catch (error: any) {
+    console.error('Get projects error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    }, { status: 500 });
   }
 }
 
-export async function PATCH(req: Request) {
+// POST - Create a new project
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { id, status, files } = body || {};
-    if (!id) return NextResponse.json({ ok: false, error: 'id required' }, { status: 400 });
+    const body = await request.json();
+    const { 
+      title, 
+      description, 
+      requirements, 
+      budget, 
+      timeline, 
+      category, 
+      skills, 
+      clientEmail 
+    } = body;
 
-    let raw = '{}';
-    try { raw = await fs.promises.readFile(dataPath, 'utf-8'); } catch (e: any) { if (e?.code === 'ENOENT') raw = '{}'; else throw e; }
-    const data = JSON.parse(raw || '{}');
-    const projects = data.projects || [];
-    const idx = projects.findIndex((x: any) => x.id === id);
-    if (idx === -1) return NextResponse.json({ ok: false, error: 'project not found' }, { status: 404 });
-
-    if (status) projects[idx].status = status;
-    if (files && Array.isArray(files)) {
-      projects[idx].files = Array.from(new Set([...(projects[idx].files || []), ...files]));
+    // Validate required fields
+    if (!title || !description || !clientEmail) {
+      return NextResponse.json({
+        success: false,
+        error: 'Title, description, and client email are required'
+      }, { status: 400 });
     }
 
-    data.projects = projects;
-    await fs.promises.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf-8');
-    return NextResponse.json({ ok: true, project: projects[idx] });
-  } catch (err) {
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
+    const actor = await getProjectStoreActor();
+    const result = await actor.createProject(
+      title,
+      description,
+      requirements || '',
+      budget || '',
+      timeline || '',
+      category || '',
+      skills || [],
+      clientEmail
+    );
+
+    if (result.ok) {
+      const project = result.ok;
+      const serializedProject = {
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        requirements: project.requirements,
+        budget: project.budget,
+        timeline: project.timeline,
+        category: project.category,
+        skills: project.skills,
+        clientEmail: project.clientEmail,
+        status: getStatusString(project.status),
+        createdAt: project.createdAt.toString(),
+        updatedAt: project.updatedAt.toString(),
+        applications: project.applications
+      };
+
+      return NextResponse.json({
+        success: true,
+        project: serializedProject,
+        message: 'Project created successfully'
+      });
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: result.err
+      }, { status: 400 });
+    }
+  } catch (error: any) {
+    console.error('Create project error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    }, { status: 500 });
   }
 }

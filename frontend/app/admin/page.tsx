@@ -55,6 +55,16 @@ const UsersListView: React.FC<{ title: string; filter?: string }> = ({ title, fi
   )
 }
 
+const getStatusString = (status: any): string => {
+  if (typeof status === 'object' && status !== null) {
+    if (status.Open !== undefined) return 'Open';
+    if (status.InProgress !== undefined) return 'InProgress';
+    if (status.Completed !== undefined) return 'Completed';
+    if (status.Cancelled !== undefined) return 'Cancelled';
+  }
+  return String(status);
+};
+
 const ProjectRow: React.FC<{ project: { id: string; title: string; client: string; budget: string; status: string } }> = ({ project }) => {
   return (
     <div className="flex items-start gap-4 bg-white rounded-lg p-4 border border-[#F2F2F2]">
@@ -67,7 +77,7 @@ const ProjectRow: React.FC<{ project: { id: string; title: string; client: strin
           </div>
           <div className="text-sm text-gray-600">{project.budget}</div>
         </div>
-        <div className="mt-2 text-sm text-gray-500">Status: {project.status}</div>
+        <div className="mt-2 text-sm text-gray-500">Status: {getStatusString(project.status)}</div>
       </div>
     </div>
   )

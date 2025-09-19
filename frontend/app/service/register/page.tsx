@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { FileText, FolderOpen, DollarSign, Image, MoreHorizontal } from 'lucide-react';
-
+import { serviceAPI, ServiceData } from '@/lib/service-api';
+import { useLocalStorageAuth } from '@/hooks/useLocalStorageAuth';
 interface TabData {
   id: string;
   name: string;
@@ -64,6 +65,9 @@ export function PreviewSection() {
 }
 
 export default function ServiceRegisterPage() {
+  const {user, isLoading: authLoading, isAuthenticated} = useLocalStorageAuth();
+  console.log(user,"testing");
+  
   const [activeTab, setActiveTab] = useState('overview');
   const [activeTier, setActiveTier] = useState('Basic'); // For mobile tier toggle
   const [formData, setFormData] = useState<any>({});
@@ -97,30 +101,41 @@ export default function ServiceRegisterPage() {
 
   const publishService = async () => {
     try {
-      const payload = {
-        overview: formData,
+      const serviceData: ServiceData = {
+        overview: {
+          serviceTitle: formData.serviceTitle || '',
+          mainCategory: formData.mainCategory || '',
+          subCategory: formData.subCategory || '',
+          description: formData.description || formData.serviceTitle || '',
+          email: user?.email || '' // This should come from auth context
+        },
         projectTiers,
         additionalCharges,
         portfolioImages: portfolioImages.map((f) => f.name),
         questions,
       }
 
-      const res = await fetch('/api/service/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (data?.success) {
-        // navigate to profile or show confirmation
-        alert('Service published — ID: ' + data.id)
-        // optional: redirect to profile page: window.location.href = `/profile/${data.id}`
+      const result = await serviceAPI.publishService(serviceData)
+      
+      if (result.success) {
+        alert('Service published successfully!')
+        // Reset form or redirect
+        setFormData({})
+        setProjectTiers({
+          Basic: { title: '', description: '', price: '' },
+          Advanced: { title: '', description: '', price: '' },
+          Premium: { title: '', description: '', price: '' }
+        })
+        setAdditionalCharges([{ name: '', price: '' }])
+        setPortfolioImages([])
+        setQuestions([{ question: '', type: 'text', options: [''] }])
+        setActiveTab('overview')
       } else {
-        alert('Failed to publish')
+        alert('Failed to publish service: ' + (result.error || 'Unknown error'))
       }
     } catch (err) {
-      console.error(err)
-      alert('Failed to publish')
+      console.error('Publish service error:', err)
+      alert('Failed to publish service')
     }
   }
 

@@ -12,7 +12,7 @@ async function getUserManagementActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vizcg-th777-77774-qaaea-cai'; // User management canister ID
+  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
@@ -33,7 +33,7 @@ export async function GET() {
       count: serializedUsers.length,
       message: `Retrieved ${serializedUsers.length} users`
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get all users error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
@@ -41,3 +41,4 @@ export async function GET() {
     );
   }
 }
+

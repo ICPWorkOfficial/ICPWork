@@ -8,8 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useSafeAuth } from '@/hooks/useSafeAuth';
 // Type definitions
 type AuthMode = 'login' | 'signup';
 
@@ -44,9 +44,10 @@ interface PasswordValidation {
 
 export default function AuthForm() {
   const params = useParams();
-  const userType = params.user as string;
+  const searchParams = useSearchParams();
+  const userType = searchParams.get('user') || params.user as string;
   const router = useRouter();
-  const auth = useAuth();
+  const auth = useSafeAuth();
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: '',
@@ -185,7 +186,7 @@ export default function AuthForm() {
 
   setIsLoading(true);
   try {
-    const url = authMode === 'login' ? '/api/login' : '/api/signup';
+    const url = authMode === 'login' ? '/api/users/login' : '/api/users';
     const payload = authMode === 'login'
       ? { email: loginData.email, password: loginData.password }
       : { email: signupData.email, password: signupData.password, confirmPassword: signupData.confirmPassword, userType: signupData.userType };

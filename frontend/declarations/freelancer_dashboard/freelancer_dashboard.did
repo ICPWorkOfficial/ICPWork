@@ -1,0 +1,95 @@
+type Result_4 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result_3 = 
+ variant {
+   err: Error;
+   ok: nat;
+ };
+type Result_2 = 
+ variant {
+   err: Error;
+   ok: bool;
+ };
+type Result_1 = 
+ variant {
+   err: Error;
+   ok: vec record {
+             text;
+             FreelancerProfile;
+           };
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok: FreelancerProfile;
+ };
+type RequirementPlans = 
+ record {
+   advanced: PlanDetails;
+   basic: PlanDetails;
+   premium: PlanDetails;
+ };
+type PlanDetails = 
+ record {
+   deliveryTime: text;
+   description: text;
+   features: vec text;
+   price: text;
+ };
+type FreelancerProfile = 
+ record {
+   additionalCharges: AdditionalCharges;
+   additionalQuestions: vec text;
+   createdAt: int;
+   description: text;
+   email: text;
+   isActive: bool;
+   mainCategory: text;
+   portfolioImages: vec text;
+   requirementPlans: RequirementPlans;
+   serviceTitle: text;
+   subCategory: text;
+   updatedAt: int;
+ };
+type Error = 
+ variant {
+   InvalidData;
+   InvalidEmail;
+   InvalidPlanData;
+   NotFound;
+   TooManyImages;
+   Unauthorized;
+ };
+type ChargeDetails = 
+ record {
+   description: text;
+   isEnabled: bool;
+   price: text;
+ };
+type AdditionalCharges = 
+ record {
+   additionalChanges: opt ChargeDetails;
+   fastDelivery: opt ChargeDetails;
+   perExtraChange: opt ChargeDetails;
+ };
+service : {
+  activateProfile: (email: text) -> (Result);
+  createProfile: (email: text, profile: FreelancerProfile) -> (Result);
+  deactivateProfile: (email: text) -> (Result);
+  deleteProfile: (email: text) -> (Result_4);
+  getActiveProfiles: () -> (Result_1);
+  getActiveProfilesCount: () -> (Result_3);
+  getAllProfiles: () -> (Result_1);
+  getProfile: (email: text) -> (Result);
+  getProfilesByCategory: (mainCategory: text) -> (Result_1);
+  getProfilesBySubCategory: (mainCategory: text, subCategory: text) ->
+   (Result_1);
+  getTotalProfiles: () -> (Result_3);
+  profileExists: (email: text) -> (Result_2);
+  searchProfilesByTitle: (searchTerm: text) -> (Result_1);
+  setMainCanister: () -> ();
+  updateProfile: (email: text, profile: FreelancerProfile) -> (Result);
+}

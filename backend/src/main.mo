@@ -144,34 +144,34 @@ persistent actor Main {
     } = null;
 
     private transient var clientStorage : ?{
-        storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
-        updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
-        getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
+        storeClient: shared (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        updateClient: shared (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        getClient: shared (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteClient: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllClients: shared () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
     } = null;
 
     private transient var messageStorage : ?{
-        storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        storeMessage: shared (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getConversationMessages: shared (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsRead: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsDelivered: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUserConversations: shared (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUnreadMessageCount: shared (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        deleteMessage: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getMessage: shared (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
     } = null;
 
     private transient var onboardingStorage : ?{
-        createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-        updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-        deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        createOnboardingRecord: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        updateOnboardingStep: shared (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        completeOnboarding: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecord: shared (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getAllOnboardingRecords: shared () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByStatus: shared (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByUserType: shared (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        deleteOnboardingRecord: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingStats: shared () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
     } = null;
 
     // Bounties data types
@@ -324,36 +324,36 @@ persistent actor Main {
     };
 
     private transient var bountiesStorage : ?{
-        createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
-        updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
-        registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
-        submitToBounty: (Text, Text, Text, Text) -> async Result.Result<(), Text>;
-        getBounty: (Text) -> async ?Bounty;
-        getAllBounties: () -> async [Bounty];
-        getBountiesByStatus: (BountyStatus) -> async [Bounty];
-        getBountiesByCategory: (BountyCategory) -> async [Bounty];
-        getFeaturedBounties: () -> async [Bounty];
-        getBountiesByOrganizer: (Text) -> async [Bounty];
-        getUserBounties: (Text) -> async [Bounty];
-        getBountyStats: () -> async BountyStats;
-        deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
+        createBounty: shared (Text, BountyInput) -> async Result.Result<Bounty, Text>;
+        updateBounty: shared (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
+        registerForBounty: shared (Text, Text) -> async Result.Result<(), Text>;
+        submitToBounty: shared (Text, Text, Text, Text) -> async Result.Result<(), Text>;
+        getBounty: shared (Text) -> async ?Bounty;
+        getAllBounties: shared () -> async [Bounty];
+        getBountiesByStatus: shared (BountyStatus) -> async [Bounty];
+        getBountiesByCategory: shared (BountyCategory) -> async [Bounty];
+        getFeaturedBounties: shared () -> async [Bounty];
+        getBountiesByOrganizer: shared (Text) -> async [Bounty];
+        getUserBounties: shared (Text) -> async [Bounty];
+        getBountyStats: shared () -> async BountyStats;
+        deleteBounty: shared (Text, Text) -> async Result.Result<(), Text>;
     } = null;
 
     private transient var freelancerDashboardStorage : ?{
-        createProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
-        updateProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
-        getProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        getAllProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        getActiveProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        getProfilesByCategory: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        getProfilesBySubCategory: (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        deleteProfile: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        deactivateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
-        activateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
-        profileExists: (Text) -> async Result.Result<Bool, {#Unauthorized}>;
-        getTotalProfiles: () -> async Result.Result<Nat, {#Unauthorized}>;
-        getActiveProfilesCount: () -> async Result.Result<Nat, {#Unauthorized}>;
-        searchProfilesByTitle: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        createProfile: shared (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        updateProfile: shared (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        getProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        getAllProfiles: shared () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getActiveProfiles: shared () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesByCategory: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesBySubCategory: shared (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        deleteProfile: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        deactivateProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        activateProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        profileExists: shared (Text) -> async Result.Result<Bool, {#Unauthorized}>;
+        getTotalProfiles: shared () -> async Result.Result<Nat, {#Unauthorized}>;
+        getActiveProfilesCount: shared () -> async Result.Result<Nat, {#Unauthorized}>;
+        searchProfilesByTitle: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
     } = null;
 
 
@@ -424,26 +424,26 @@ persistent actor Main {
     };
 
     private func getMessageStorage() : {
-        storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-        getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        storeMessage: shared (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getConversationMessages: shared (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsRead: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        markMessageAsDelivered: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUserConversations: shared (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getUnreadMessageCount: shared (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        deleteMessage: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+        getMessage: shared (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
     } {
         switch (messageStorage) {
             case null {
                 let actor_ref = actor("message_store") : actor {
-                    storeMessage: (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-                    getConversationMessages: (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-                    markMessageAsRead: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-                    markMessageAsDelivered: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-                    getUserConversations: (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-                    getUnreadMessageCount: (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-                    deleteMessage: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
-                    getMessage: (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    storeMessage: shared (Text, Text, Text, Int, MessageType) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getConversationMessages: shared (Text, Text, ?Nat, ?Nat) -> async Result.Result<[Message], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    markMessageAsRead: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    markMessageAsDelivered: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getUserConversations: shared (Text) -> async Result.Result<[ConversationSummary], {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getUnreadMessageCount: shared (Text) -> async Result.Result<Nat, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    deleteMessage: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
+                    getMessage: shared (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
                 };
                 messageStorage := ?actor_ref;
                 actor_ref
@@ -453,28 +453,28 @@ persistent actor Main {
     };
 
     private func getOnboardingStorage() : {
-        createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-        updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-        deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-        getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        createOnboardingRecord: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        updateOnboardingStep: shared (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        completeOnboarding: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecord: shared (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getAllOnboardingRecords: shared () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByStatus: shared (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingRecordsByUserType: shared (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+        deleteOnboardingRecord: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+        getOnboardingStats: shared () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
     } {
         switch (onboardingStorage) {
             case null {
                 let actor_ref = actor("onboarding_store") : actor {
-                    createOnboardingRecord: (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-                    updateOnboardingStep: (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-                    completeOnboarding: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-                    getOnboardingRecord: (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-                    getAllOnboardingRecords: () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-                    getOnboardingRecordsByStatus: (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-                    getOnboardingRecordsByUserType: (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
-                    deleteOnboardingRecord: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
-                    getOnboardingStats: () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    createOnboardingRecord: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+                    updateOnboardingStep: shared (Text, ?ProfileMethod, ?PersonalInfo, ?[Text], ?AddressData, ?ProfileData, ?FinalData, ?CompanyData) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    completeOnboarding: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingRecord: shared (Text) -> async Result.Result<OnboardingRecord, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getAllOnboardingRecords: shared () -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingRecordsByStatus: shared (Bool) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingRecordsByUserType: shared (Text) -> async Result.Result<[(Text, OnboardingRecord)], {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text; #InvalidUserType}>;
+                    deleteOnboardingRecord: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
+                    getOnboardingStats: shared () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
                 };
                 onboardingStorage := ?actor_ref;
                 actor_ref
@@ -484,36 +484,36 @@ persistent actor Main {
     };
 
     private func getBountiesStorage() : {
-        createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
-        updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
-        registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
-        submitToBounty: (Text, Text, Text, Text) -> async Result.Result<(), Text>;
-        getBounty: (Text) -> async ?Bounty;
-        getAllBounties: () -> async [Bounty];
-        getBountiesByStatus: (BountyStatus) -> async [Bounty];
-        getBountiesByCategory: (BountyCategory) -> async [Bounty];
-        getFeaturedBounties: () -> async [Bounty];
-        getBountiesByOrganizer: (Text) -> async [Bounty];
-        getUserBounties: (Text) -> async [Bounty];
-        getBountyStats: () -> async BountyStats;
-        deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
+        createBounty: shared (Text, BountyInput) -> async Result.Result<Bounty, Text>;
+        updateBounty: shared (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
+        registerForBounty: shared (Text, Text) -> async Result.Result<(), Text>;
+        submitToBounty: shared (Text, Text, Text, Text) -> async Result.Result<(), Text>;
+        getBounty: shared (Text) -> async ?Bounty;
+        getAllBounties: shared () -> async [Bounty];
+        getBountiesByStatus: shared (BountyStatus) -> async [Bounty];
+        getBountiesByCategory: shared (BountyCategory) -> async [Bounty];
+        getFeaturedBounties: shared () -> async [Bounty];
+        getBountiesByOrganizer: shared (Text) -> async [Bounty];
+        getUserBounties: shared (Text) -> async [Bounty];
+        getBountyStats: shared () -> async BountyStats;
+        deleteBounty: shared (Text, Text) -> async Result.Result<(), Text>;
     } {
         switch (bountiesStorage) {
             case null {
                 let actor_ref = actor("bounties_store") : actor {
-                    createBounty: (Text, BountyInput) -> async Result.Result<Bounty, Text>;
-                    updateBounty: (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
-                    registerForBounty: (Text, Text) -> async Result.Result<(), Text>;
-                    submitToBounty: (Text, Text, Text, Text) -> async Result.Result<(), Text>;
-                    getBounty: (Text) -> async ?Bounty;
-                    getAllBounties: () -> async [Bounty];
-                    getBountiesByStatus: (BountyStatus) -> async [Bounty];
-                    getBountiesByCategory: (BountyCategory) -> async [Bounty];
-                    getFeaturedBounties: () -> async [Bounty];
-                    getBountiesByOrganizer: (Text) -> async [Bounty];
-                    getUserBounties: (Text) -> async [Bounty];
-                    getBountyStats: () -> async BountyStats;
-                    deleteBounty: (Text, Text) -> async Result.Result<(), Text>;
+                    createBounty: shared (Text, BountyInput) -> async Result.Result<Bounty, Text>;
+                    updateBounty: shared (Text, Text, BountyUpdate) -> async Result.Result<Bounty, Text>;
+                    registerForBounty: shared (Text, Text) -> async Result.Result<(), Text>;
+                    submitToBounty: shared (Text, Text, Text, Text) -> async Result.Result<(), Text>;
+                    getBounty: shared (Text) -> async ?Bounty;
+                    getAllBounties: shared () -> async [Bounty];
+                    getBountiesByStatus: shared (BountyStatus) -> async [Bounty];
+                    getBountiesByCategory: shared (BountyCategory) -> async [Bounty];
+                    getFeaturedBounties: shared () -> async [Bounty];
+                    getBountiesByOrganizer: shared (Text) -> async [Bounty];
+                    getUserBounties: shared (Text) -> async [Bounty];
+                    getBountyStats: shared () -> async BountyStats;
+                    deleteBounty: shared (Text, Text) -> async Result.Result<(), Text>;
                 };
                 bountiesStorage := ?actor_ref;
                 actor_ref
@@ -523,38 +523,38 @@ persistent actor Main {
     };
 
     private func getFreelancerDashboardStorage() : {
-        createProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
-        updateProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
-        getProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        getAllProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        getActiveProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        getProfilesByCategory: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        getProfilesBySubCategory: (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-        deleteProfile: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        deactivateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
-        activateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
-        profileExists: (Text) -> async Result.Result<Bool, {#Unauthorized}>;
-        getTotalProfiles: () -> async Result.Result<Nat, {#Unauthorized}>;
-        getActiveProfilesCount: () -> async Result.Result<Nat, {#Unauthorized}>;
-        searchProfilesByTitle: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        createProfile: shared (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        updateProfile: shared (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+        getProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        getAllProfiles: shared () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getActiveProfiles: shared () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesByCategory: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        getProfilesBySubCategory: shared (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+        deleteProfile: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        deactivateProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        activateProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+        profileExists: shared (Text) -> async Result.Result<Bool, {#Unauthorized}>;
+        getTotalProfiles: shared () -> async Result.Result<Nat, {#Unauthorized}>;
+        getActiveProfilesCount: shared () -> async Result.Result<Nat, {#Unauthorized}>;
+        searchProfilesByTitle: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
     } {
         switch (freelancerDashboardStorage) {
             case null {
                 let actor_ref = actor("freelancer_dashboard") : actor {
-                    createProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
-                    updateProfile: (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
-                    getProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
-                    getAllProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-                    getActiveProfiles: () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-                    getProfilesByCategory: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-                    getProfilesBySubCategory: (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
-                    deleteProfile: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-                    deactivateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
-                    activateProfile: (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
-                    profileExists: (Text) -> async Result.Result<Bool, {#Unauthorized}>;
-                    getTotalProfiles: () -> async Result.Result<Nat, {#Unauthorized}>;
-                    getActiveProfilesCount: () -> async Result.Result<Nat, {#Unauthorized}>;
-                    searchProfilesByTitle: (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    createProfile: shared (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+                    updateProfile: shared (Text, FreelancerProfile) -> async Result.Result<FreelancerProfile, {#NotFound; #InvalidData; #Unauthorized; #InvalidEmail; #TooManyImages; #InvalidPlanData}>;
+                    getProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized; #InvalidEmail}>;
+                    getAllProfiles: shared () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    getActiveProfiles: shared () -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    getProfilesByCategory: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    getProfilesBySubCategory: shared (Text, Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+                    deleteProfile: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+                    deactivateProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+                    activateProfile: shared (Text) -> async Result.Result<FreelancerProfile, {#NotFound; #Unauthorized}>;
+                    profileExists: shared (Text) -> async Result.Result<Bool, {#Unauthorized}>;
+                    getTotalProfiles: shared () -> async Result.Result<Nat, {#Unauthorized}>;
+                    getActiveProfilesCount: shared () -> async Result.Result<Nat, {#Unauthorized}>;
+                    searchProfilesByTitle: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
                 };
                 freelancerDashboardStorage := ?actor_ref;
                 actor_ref
@@ -953,6 +953,7 @@ persistent actor Main {
             };
         }
     };
+
 
     // ADMIN FUNCTIONS
 

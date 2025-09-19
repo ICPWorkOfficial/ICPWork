@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { serviceAPI, ServiceData } from '@/lib/service-api'
 
 // PreviewSection component (carousel) copied from register preview
 const previewImages = [
@@ -105,22 +106,36 @@ export default function ServiceViewPage() {
   // Using client component so we can use hooks and show loading state
   const params = useParams() as { id?: string }
   const id = params?.id
-  const [service, setService] = useState<any>(null)
+  const [service, setService] = useState<ServiceData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    fetch(`/api/service/${id}`)
-      .then(r => r.json())
-      .then((data) => {
-        if (data?.success) setService(data.service)
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    setError(null)
+    
+    const fetchService = async () => {
+      try {
+        const result = await serviceAPI.getService(id)
+        if (result.success && result.service) {
+          setService(result.service)
+        } else {
+          setError(result.error || 'Service not found')
+        }
+      } catch (err) {
+        console.error('Error fetching service:', err)
+        setError('Failed to load service')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchService()
   }, [id])
 
   if (loading) return <div className="p-6">Loading...</div>
+  if (error) return <div className="p-6 text-red-600">Error: {error}</div>
   if (!service) return <div className="p-6">Service not found.</div>
 
   const { overview = {}, projectTiers = {}, additionalCharges = [], questions = [], portfolioImages = [] } = service
