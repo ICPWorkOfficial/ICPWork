@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { StatCard, ProjectRow } from '../components';
+import { StatCard, ProjectRow, OrdersDisplay } from '../components';
 import { Keyboard, BarChart3, Calendar, TrendingUp, PlusCircle, FileText, Eye } from 'lucide-react';
 import { freelancerService, FreelancerStats } from '@/lib/freelancer-service';
 import { useRouter } from 'next/navigation';
+import { useLocalStorageAuth } from '@/hooks/useLocalStorageAuth';
 type DashboardViewProps = {
   onBrowseAll?: () => void;
 };
@@ -13,6 +14,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
   const [stats, setStats] = useState<FreelancerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { user } = useLocalStorageAuth();
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -135,23 +137,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Recent Projects */}
+        {/* Recent Orders */}
         <div className="col-span-2">
-          <div className="bg-white rounded-xl border border-[#EDEDED] p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-[22px] md:text-[24px] font-semibold text-gray-800">Recent Projects</h2>
-                  <button onClick={() => onBrowseAll?.()} className="flex items-center gap-2 text-[12px] md:text-[13px] font-medium uppercase tracking-[0.4px] text-black bg-transparent rounded-full px-3 py-2 hover:bg-gray-100 transition-colors">
-                    <Eye size={14} />
-                    Browse All
-                  </button>
-                </div>
-
-            <div className="space-y-4">
-              {projects.map((project) => (
-                <ProjectRow key={project.id} project={project} />
-              ))}
-            </div>
-          </div>
+          <OrdersDisplay 
+            userEmail={user?.email || ''} 
+            userType="client"
+            onViewAll={() => router.push('/orders')}
+          />
         </div>
 
         {/* Right Column */}

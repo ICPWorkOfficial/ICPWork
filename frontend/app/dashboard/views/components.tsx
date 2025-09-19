@@ -36,6 +36,9 @@ const getStatusString = (status: any): string => {
   return String(status || '');
 };
 
+// Export OrdersDisplay component
+export { default as OrdersDisplay } from './components/OrdersDisplay';
+
 export const ProjectRow: React.FC<{ project: { id: string; title: string; amount: string; status: string; date: string; from: string } }> = ({ project }) => {
   const isNegative = project.amount.trim().startsWith('-');
   const amountColor = isNegative ? '#D12A2A' : '#058700';
