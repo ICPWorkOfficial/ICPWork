@@ -2,7 +2,6 @@ import HashMap "mo:base/HashMap";
 import Text "mo:base/Text";
 import Result "mo:base/Result";
 import Iter "mo:base/Iter";
-import Principal "mo:base/Principal";
 import Blob "mo:base/Blob";
 import Array "mo:base/Array";
 import Utils "../../utils";
@@ -76,7 +75,7 @@ persistent actor UserManagement {
     };
 
     // Validate user data
-    private func validateUser(user: User) : Bool {
+    private func _validateUser(user: User) : Bool {
         Text.size(user.email) > 0 and
         Text.size(user.userId) > 0 and
         (user.userType == "client" or user.userType == "freelancer")
@@ -165,7 +164,7 @@ persistent actor UserManagement {
     };
 
     // Update user profile
-    public shared(msg) func updateUserProfile(email: Text, profileData: {
+    public shared(_msg) func updateUserProfile(email: Text, profileData: {
         firstName: ?Text;
         lastName: ?Text;
         phoneNumber: ?Text;
@@ -256,7 +255,7 @@ persistent actor UserManagement {
     };
 
     // Delete user
-    public shared(msg) func deleteUser(email: Text) : async Result.Result<(), Error> {
+    public shared(_msg) func deleteUser(email: Text) : async Result.Result<(), Error> {
         switch (users.remove(email)) {
             case null { #err(#NotFound) };
             case (?_removed) { #ok(()) };
@@ -264,7 +263,7 @@ persistent actor UserManagement {
     };
 
     // Change password
-    public shared(msg) func changePassword(email: Text, oldPassword: Text, newPassword: Text) : async Result.Result<(), Error> {
+    public shared(_msg) func changePassword(email: Text, oldPassword: Text, newPassword: Text) : async Result.Result<(), Error> {
         switch (users.get(email)) {
             case null { #err(#NotFound) };
             case (?user) {
