@@ -266,7 +266,7 @@ export default function AuthForm() {
           </Link>
           <div className="text-gray-700">
             <span>Want to Hire? </span>
-            <Link href="/client-signup" className="text-green-600 hover:text-green-700 font-medium hover:underline">
+            <Link href="/login?user=client" className="text-green-600 hover:text-green-700 font-medium hover:underline">
               Join As Client
             </Link>
           </div>

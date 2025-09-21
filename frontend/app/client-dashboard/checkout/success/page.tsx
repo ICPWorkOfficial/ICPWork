@@ -32,38 +32,38 @@ export default function CheckoutSuccessPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+    <div className="min-h-screen bg-brand-muted flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full bg-brand-white rounded-lg shadow-lg p-6 sm:p-10 text-center">
         <div className="mb-6">
-          <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
-          <p className="text-gray-600">
+          <CheckCircle size={64} className="text-[var(--brand-1)] mx-auto mb-4" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--brand-4)] mb-2">Payment Successful!</h1>
+          <p className="text-gray-600 max-w-xl mx-auto">
             Your project has been successfully booked. The service provider will contact you within 24 hours to discuss the project details.
           </p>
         </div>
 
         {(escrowId || orderNumber) && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="bg-[rgba(82,39,132,0.04)] border border-[rgba(82,39,132,0.06)] rounded-lg p-4 mb-4">
             <div className="flex items-center justify-center mb-2">
-              <Shield size={20} className="text-green-600 mr-2" />
-              <h3 className="font-semibold text-green-900">Order Confirmed</h3>
+              <Shield size={20} className="text-[var(--brand-4)] mr-2" />
+              <h3 className="font-semibold text-[var(--brand-4)]">Order Confirmed</h3>
             </div>
             {orderNumber && (
-              <p className="text-sm text-green-800 mb-2">
+              <p className="text-sm text-[var(--brand-4)] mb-2">
                 <strong>Order Number:</strong> {orderNumber}
               </p>
             )}
             {escrowId && (
-              <p className="text-sm text-green-800">
+              <p className="text-sm text-[var(--brand-4)]">
                 Your payment is secured in escrow (ID: {escrowId}). Funds will be released to the freelancer only after project completion and your approval.
               </p>
             )}
           </div>
         )}
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-blue-900 mb-2">What's Next?</h3>
-          <ul className="text-sm text-blue-800 text-left space-y-1">
+        <div className="bg-[rgba(240,90,36,0.06)] border border-[rgba(240,90,36,0.12)] rounded-lg p-4 mb-6 text-left">
+          <h3 className="font-semibold text-[var(--brand-4)] mb-2">What's Next?</h3>
+          <ul className="text-sm text-[rgba(82,39,132,0.85)] space-y-1">
             <li>• Service provider will contact you within 24 hours</li>
             <li>• Discuss project requirements and timeline</li>
             <li>• Work begins after agreement on project scope</li>
@@ -72,12 +72,12 @@ export default function CheckoutSuccessPage() {
           </ul>
         </div>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div className="bg-[rgba(250,175,59,0.06)] border border-[rgba(250,175,59,0.12)] rounded-lg p-4 mb-6">
           <div className="flex items-center justify-center mb-2">
-            <Clock size={20} className="text-yellow-600 mr-2" />
-            <h3 className="font-semibold text-yellow-900">Platform Fee</h3>
+            <Clock size={20} className="text-[var(--brand-2)] mr-2" />
+            <h3 className="font-semibold text-[var(--brand-2)]">Platform Fee</h3>
           </div>
-          <p className="text-sm text-yellow-800">
+          <p className="text-sm text-[rgba(250,175,59,0.9)]">
             A 10% platform fee has been deducted from the total amount. This fee supports platform maintenance and dispute resolution services.
           </p>
         </div>
@@ -85,22 +85,22 @@ export default function CheckoutSuccessPage() {
         <div className="space-y-3">
           <button
             onClick={() => router.push('/orders')}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center"
+            className="w-full btn-brand py-3 rounded-lg font-medium flex items-center justify-center"
           >
-            <Package size={16} className="mr-2" />
+            <Package size={16} className="mr-2 text-white" />
             View My Orders
           </button>
           
           <button
             onClick={() => router.push('/client-dashboard')}
-            className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 flex items-center justify-center"
+            className="w-full bg-[rgba(82,39,132,0.04)] text-[var(--brand-4)] py-3 px-4 rounded-lg font-medium hover:bg-[rgba(82,39,132,0.06)] flex items-center justify-center"
           >
-            <Home size={16} className="mr-2" />
+            <Home size={16} className="mr-2 text-[var(--brand-4)]" />
             Back to Dashboard
           </button>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        <div className="mt-6 pt-6 border-t border-[rgba(82,39,132,0.06)]">
           <p className="text-xs text-gray-500">
             Need help? Contact our support team at support@icpwork.com
           </p>

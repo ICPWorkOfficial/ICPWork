@@ -111,30 +111,33 @@ export default function ServiceViewPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!id) return
+    if (!id) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     ;(async () => {
       try {
-        const res = await fetch(`/api/service/${id}`, { credentials: 'same-origin' })
-        if (!res.ok) {
-          console.error('Failed to fetch service', res.status)
+        const res = await serviceAPI.getService(id)
+        if (!res) {
+          setError('No response from service API')
           setService(null)
           return
         }
-        const data = await res.json()
-        console.debug('service api response:', data)
 
-        let svc: any = null
-        // common shapes: { success, service }, { service }, { data: { service } }, direct service object, or array
-        if (data?.service) svc = data.service
-        else if (data?.data?.service) svc = data.data.service
-        else if (data?.data) svc = data.data
-        else if (Array.isArray(data) && data.length > 0) svc = data[0]
-        else svc = data
+        if (!res.success) {
+          // try to extract useful message or fallback
+          const msg = res.message || res.error || 'Service not found'
+          setError(msg)
+          setService(res.service || null)
+          return
+        }
 
-        setService(svc)
+        // success path
+        setService(res.service || null)
       } catch (err) {
-        console.error('Failed to fetch service by id:', err)
+        console.error('Failed to fetch service by id via serviceAPI:', err)
+        setError('Failed to fetch service')
         setService(null)
       } finally {
         setLoading(false)
@@ -146,7 +149,13 @@ export default function ServiceViewPage() {
   if (error) return <div className="p-6 text-red-600">Error: {error}</div>
   if (!service) return <div className="p-6">Service not found.</div>
 
-  const { overview = {}, projectTiers = {}, additionalCharges = [], questions = [], portfolioImages = [] } = service
+  const svc = service as ServiceData | null
+
+  const overview = svc?.overview ?? ({ serviceTitle: '', mainCategory: '', subCategory: '', description: '' } as ServiceData['overview'])
+  const projectTiers = svc?.projectTiers ?? ({} as ServiceData['projectTiers'])
+  const additionalCharges = svc?.additionalCharges ?? []
+  const questions = svc?.questions ?? []
+  const portfolioImages = svc?.portfolioImages ?? []
 
   const tiers = ['Basic', 'Advanced', 'Premium']
 

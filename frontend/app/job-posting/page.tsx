@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileText, FolderOpen, MapPin, DollarSign, Send } from 'lucide-react';
 
 interface TabData {
@@ -20,6 +21,7 @@ const tabs: TabData[] = [
 export default function JobPostingPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [formData, setFormData] = useState<any>({});
+  const router = useRouter();
 
   const handleSave = (tabId: string) => {
     // simple client-side save and navigate to next tab
@@ -158,7 +160,7 @@ export default function JobPostingPage() {
               </div>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setActiveTab('overview')} className="w-40 py-3 bg-gray-200 text-gray-700 font-thin rounded-full">Save</button>
+              <button onClick={() => router.push('/client-dashboard')} className="w-40 py-3 bg-gray-200 text-gray-700 font-thin rounded-full">Back</button>
               <button onClick={() => handleSave('overview')} className="w-40 py-3 bg-black text-white font-thin rounded-full">Next</button>
             </div>
           </div>
@@ -421,7 +423,7 @@ export default function JobPostingPage() {
             </div>
             <div className="flex gap-3">
               <button onClick={() => setActiveTab('budget')} className="w-40 py-3 bg-gray-200 text-gray-700 font-thin rounded-full">Back</button>
-              <button onClick={publishJob} className="w-40 py-3 bg-black text-white font-thin rounded-full">Publish Job</button>
+              <button onClick={async () => { await publishJob(); router.push('/client-dashboard'); }} className="w-40 py-3 bg-black text-white font-thin rounded-full">Publish Job</button>
             </div>
           </div>
         );
