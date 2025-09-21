@@ -6,12 +6,11 @@ import Float "mo:base/Float";
 import Result "mo:base/Result";
 import Time "mo:base/Time";
 import Array "mo:base/Array";
-import Option "mo:base/Option";
-import Principal "mo:base/Principal";
 import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
+import Order "mo:base/Order";
 
-actor ICPSwap {
+persistent actor ICPSwap {
     
     // ===== TYPES =====
     
@@ -114,24 +113,24 @@ actor ICPSwap {
     
     // ===== STORAGE =====
     
-    private stable var transactionEntries: [(Text, SwapTransaction)] = [];
-    private stable var poolEntries: [(Text, LiquidityPool)] = [];
-    private stable var positionEntries: [(Text, PoolPosition)] = [];
-    private stable var tokenInfoEntries: [(TokenSymbol, TokenInfo)] = [];
+    private var transactionEntries: [(Text, SwapTransaction)] = [];
+    private var poolEntries: [(Text, LiquidityPool)] = [];
+    private var positionEntries: [(Text, PoolPosition)] = [];
+    private var tokenInfoEntries: [(TokenSymbol, TokenInfo)] = [];
     
-    private var transactions = HashMap.HashMap<Text, SwapTransaction>(
+    private transient var transactions = HashMap.HashMap<Text, SwapTransaction>(
         0, Text.equal, Text.hash
     );
     
-    private var pools = HashMap.HashMap<Text, LiquidityPool>(
+    private transient var pools = HashMap.HashMap<Text, LiquidityPool>(
         0, Text.equal, Text.hash
     );
     
-    private var positions = HashMap.HashMap<Text, PoolPosition>(
+    private transient var positions = HashMap.HashMap<Text, PoolPosition>(
         0, Text.equal, Text.hash
     );
     
-    private var tokenInfos = HashMap.HashMap<TokenSymbol, TokenInfo>(
+    private transient var tokenInfos = HashMap.HashMap<TokenSymbol, TokenInfo>(
         0, func(a, b) { a == b }, func(a) { 
             switch(a) {
                 case (#ICP) 0;
@@ -244,25 +243,48 @@ actor ICPSwap {
     private func generateId(): Text {
         let time = Time.now();
         let random = time % 1000000;
-        "tx_" # Nat.toText(Int.abs(time)) # "_" # Nat.toText(random)
+        "tx_" # Int.toText(time) # "_" # Int.toText(random)
     };
     
     private func generatePoolId(): Text {
         let time = Time.now();
         let random = time % 1000000;
-        "pool_" # Nat.toText(Int.abs(time)) # "_" # Nat.toText(random)
+        "pool_" # Nat.toText(Int.abs(time)) # "_" # Int.toText(random)
     };
     
     private func generatePositionId(): Text {
         let time = Time.now();
         let random = time % 1000000;
-        "pos_" # Nat.toText(Int.abs(time)) # "_" # Nat.toText(random)
+        "pos_" # Nat.toText(Int.abs(time)) # "_" # Int.toText(random)
     };
     
     private func parseFloat(text: Text): ?Float {
-        switch (Float.fromText(text)) {
-            case null { null };
-            case (?f) { ?f };
+   
+        let parts = Text.split(text, #char '.');
+        let partsArray = Iter.toArray(parts);
+        
+        if (partsArray.size() == 1) {
+            switch (Nat.fromText(partsArray[0])) {
+                case null { null };
+                case (?nat) { ?Float.fromInt(Int.abs(Int.abs(nat))) };
+            }
+        } else if (partsArray.size() == 2) {
+            switch (Nat.fromText(partsArray[0])) {
+                case null { null };
+                case (?intPart) {
+                    switch (Nat.fromText(partsArray[1])) {
+                        case null { null };
+                        case (?decPart) {
+                            let intFloat = Float.fromInt(Int.abs(Int.abs(intPart)));
+                            let decFloat = Float.fromInt(Int.abs(Int.abs(decPart)));
+                            let divisor = Float.fromInt(10 ** Text.size(partsArray[1]));
+                            ?(intFloat + (decFloat / divisor))
+                        };
+                    }
+                };
+            }
+        } else {
+            null
         }
     };
     
@@ -392,13 +414,15 @@ actor ICPSwap {
         
         // Sort by creation time (newest first)
         let sorted = Buffer.toArray(userTxs);
-        Array.sort(sorted, func(a: SwapTransaction, b: SwapTransaction): {#less; #equal; #greater} {
+        let mutableSorted = Array.thaw<SwapTransaction>(sorted);
+        Array.sortInPlace(mutableSorted, func(a: SwapTransaction, b: SwapTransaction): Order.Order {
             if (a.createdAt > b.createdAt) { #less }
             else if (a.createdAt < b.createdAt) { #greater }
             else { #equal }
         });
+        let finalSorted = Array.freeze(mutableSorted);
         
-        sorted
+        finalSorted
     };
     
     public func updateTransactionStatus(
@@ -502,21 +526,17 @@ actor ICPSwap {
                 let now = Time.now();
                 
                 // Calculate liquidity based on the smaller amount
-                let liquidity = if (parseFloat(tokenAAmount) != null and parseFloat(tokenBAmount) != null) {
-                    let amountA = Option.unwrap(parseFloat(tokenAAmount));
-                    let amountB = Option.unwrap(parseFloat(tokenBAmount));
-                    let reserveA = Option.unwrap(parseFloat(pool.reserveA));
-                    let reserveB = Option.unwrap(parseFloat(pool.reserveB));
-                    
-                    if (reserveA == 0.0 or reserveB == 0.0) {
-                        amountA // First liquidity
-                    } else {
-                        let liquidityA = (amountA * Option.unwrap(parseFloat(pool.totalSupply))) / reserveA;
-                        let liquidityB = (amountB * Option.unwrap(parseFloat(pool.totalSupply))) / reserveB;
-                        if (liquidityA < liquidityB) { liquidityA } else { liquidityB }
-                    }
-                } else {
-                    return #err(#InvalidAmount);
+                let liquidity = switch (parseFloat(tokenAAmount), parseFloat(tokenBAmount), parseFloat(pool.reserveA), parseFloat(pool.reserveB), parseFloat(pool.totalSupply)) {
+                    case (?amountA, ?amountB, ?reserveA, ?reserveB, ?totalSupply) {
+                        if (reserveA == 0.0 or reserveB == 0.0) {
+                            amountA // First liquidity
+                        } else {
+                            let liquidityA = (amountA * totalSupply) / reserveA;
+                            let liquidityB = (amountB * totalSupply) / reserveB;
+                            if (liquidityA < liquidityB) { liquidityA } else { liquidityB }
+                        }
+                    };
+                    case _ { return #err(#InvalidAmount) };
                 };
                 
                 let position: PoolPosition = {
@@ -532,22 +552,19 @@ actor ICPSwap {
                 positions.put(positionId, position);
                 
                 // Update pool reserves
-                let newReserveA = if (parseFloat(pool.reserveA) != null and parseFloat(tokenAAmount) != null) {
-                    formatFloat(Option.unwrap(parseFloat(pool.reserveA)) + Option.unwrap(parseFloat(tokenAAmount)))
-                } else {
-                    pool.reserveA
+                let newReserveA = switch (parseFloat(pool.reserveA), parseFloat(tokenAAmount)) {
+                    case (?reserveA, ?amountA) { formatFloat(reserveA + amountA) };
+                    case _ { pool.reserveA };
                 };
                 
-                let newReserveB = if (parseFloat(pool.reserveB) != null and parseFloat(tokenBAmount) != null) {
-                    formatFloat(Option.unwrap(parseFloat(pool.reserveB)) + Option.unwrap(parseFloat(tokenBAmount)))
-                } else {
-                    pool.reserveB
+                let newReserveB = switch (parseFloat(pool.reserveB), parseFloat(tokenBAmount)) {
+                    case (?reserveB, ?amountB) { formatFloat(reserveB + amountB) };
+                    case _ { pool.reserveB };
                 };
                 
-                let newTotalSupply = if (parseFloat(pool.totalSupply) != null) {
-                    formatFloat(Option.unwrap(parseFloat(pool.totalSupply)) + liquidity)
-                } else {
-                    pool.totalSupply
+                let newTotalSupply = switch (parseFloat(pool.totalSupply)) {
+                    case (?totalSupply) { formatFloat(totalSupply + liquidity) };
+                    case null { pool.totalSupply };
                 };
                 
                 let updatedPool = {
@@ -598,26 +615,31 @@ actor ICPSwap {
                         ((pool.tokenA == tokenIn and pool.tokenB == tokenOut) or
                          (pool.tokenA == tokenOut and pool.tokenB == tokenIn))) {
                         
-                        let reserveIn = if (pool.tokenA == tokenIn) {
-                            Option.unwrap(parseFloat(pool.reserveA))
-                        } else {
-                            Option.unwrap(parseFloat(pool.reserveB))
-                        };
-                        
-                        let reserveOut = if (pool.tokenA == tokenOut) {
-                            Option.unwrap(parseFloat(pool.reserveA))
-                        } else {
-                            Option.unwrap(parseFloat(pool.reserveB))
-                        };
-                        
-                        if (reserveIn > 0.0 and reserveOut > 0.0) {
-                            // Simple AMM calculation: amountOut = (amountIn * reserveOut) / (reserveIn + amountIn)
-                            let output = (amount * reserveOut) / (reserveIn + amount);
-                            
-                            if (output > bestOutput) {
-                                bestOutput := output;
-                                bestPool := ?pool;
+                        switch (parseFloat(pool.reserveA), parseFloat(pool.reserveB)) {
+                            case (?reserveA, ?reserveB) {
+                                let reserveIn = if (pool.tokenA == tokenIn) {
+                                    reserveA
+                                } else {
+                                    reserveB
+                                };
+                                
+                                let reserveOut = if (pool.tokenA == tokenOut) {
+                                    reserveA
+                                } else {
+                                    reserveB
+                                };
+                                
+                                if (reserveIn > 0.0 and reserveOut > 0.0) {
+                                    // Simple AMM calculation: amountOut = (amountIn * reserveOut) / (reserveIn + amountIn)
+                                    let output = (amount * reserveOut) / (reserveIn + amount);
+                                    
+                                    if (output > bestOutput) {
+                                        bestOutput := output;
+                                        bestPool := ?pool;
+                                    };
+                                };
                             };
+                            case _ {}; // Skip this pool if reserves can't be parsed
                         };
                     };
                 };

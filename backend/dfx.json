@@ -47,6 +47,10 @@
     "icpswap": {
       "main": "src/icpswap/src/main.mo",
       "type": "motoko"
+    },
+    "hackathon_store": {
+      "main": "src/hackathon_store/src/main.mo",
+      "type": "motoko"
     }
   },
   "defaults": {
