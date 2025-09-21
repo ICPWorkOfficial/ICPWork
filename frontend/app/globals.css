@@ -1,47 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
+
+
 
 :root {
   --radius: 0.625rem;
@@ -78,6 +40,52 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Brand palette */
+:root {
+  --brand-white: #ffffff;
+  --brand-1: #F05A24;
+  --brand-2: #FAAF3B;
+  --brand-3: #EC1E79;
+  --brand-4: #522784;
+  --brand-muted: #f7f7f7;
+}
+
+/* Useful utilities for the brand */
+.brand-bg {
+  background: var(--brand-white);
+}
+.brand-accent { background-color: var(--brand-1); }
+.brand-accent-2 { background-color: var(--brand-2); }
+.brand-accent-3 { background-color: var(--brand-3); }
+.brand-accent-4 { background-color: var(--brand-4); }
+.brand-text { color: var(--brand-4); }
+
+/* Convenience utilities used in components */
+.text-brand-4 { color: var(--brand-4); }
+.bg-brand-white { background: var(--brand-white); }
+.bg-brand-muted { background: var(--brand-muted); }
+.hover\:text-brand-4:hover { color: var(--brand-4); }
+
+/* Responsive helpers */
+@media (max-width: 640px) {
+  .mobile-hidden { display: none !important; }
+  .mobile-only { display: block !important; }
+}
+@media (min-width: 641px) {
+  .mobile-only { display: none !important; }
+}
+
+/* Buttons */
+.btn-brand {
+  background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+  color: #fff;
+}
+.btn-outline-brand {
+  border: 1px solid var(--brand-4);
+  color: var(--brand-4);
+  background: transparent;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -112,11 +120,4 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
+
