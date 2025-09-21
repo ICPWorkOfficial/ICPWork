@@ -49,6 +49,17 @@ persistent actor Main {
         #InvalidCredentials;
         #InvalidEmail;
         #WeakPassword;
+        #InvalidToken;
+        #InsufficientBalance;
+        #InsufficientLiquidity;
+        #InvalidAmount;
+        #TransactionNotFound;
+        #PoolNotFound;
+        #Unauthorized;
+        #InvalidRate;
+        #SlippageTooHigh;
+        #TransactionFailed;
+        #InvalidPool;
     };
 
     // Message types
@@ -282,6 +293,90 @@ persistent actor Main {
         totalParticipants: Nat;
     };
 
+    // ICPSwap types
+    public type TokenSymbol = {
+        #ICP;
+        #ETH;
+        #BTC;
+        #EOS;
+        #USDC;
+        #USDT;
+    };
+    
+    public type TokenInfo = {
+        symbol: TokenSymbol;
+        name: Text;
+        decimals: Nat8;
+        canisterId: ?Text;
+        contractAddress: ?Text;
+    };
+    
+    public type SwapTransaction = {
+        id: Text;
+        from: TokenSymbol;
+        to: TokenSymbol;
+        amount: Text;
+        converted: Text;
+        rate: Float;
+        userEmail: Text;
+        status: TransactionStatus;
+        createdAt: Int;
+        updatedAt: Int;
+        txHash: ?Text;
+    };
+    
+    public type TransactionStatus = {
+        #pending;
+        #processing;
+        #completed;
+        #failed;
+        #cancelled;
+    };
+    
+    public type ConversionRequest = {
+        from: TokenSymbol;
+        to: TokenSymbol;
+        amount: Text;
+    };
+    
+    public type ConversionResponse = {
+        rate: Float;
+        converted: Text;
+        slippage: Float;
+        estimatedGas: ?Text;
+    };
+    
+    public type LiquidityPool = {
+        id: Text;
+        tokenA: TokenSymbol;
+        tokenB: TokenSymbol;
+        reserveA: Text;
+        reserveB: Text;
+        totalSupply: Text;
+        fee: Float;
+        createdAt: Int;
+        isActive: Bool;
+    };
+    
+    public type PoolPosition = {
+        id: Text;
+        poolId: Text;
+        userEmail: Text;
+        liquidity: Text;
+        tokenAAmount: Text;
+        tokenBAmount: Text;
+        createdAt: Int;
+    };
+    
+    public type SwapQuote = {
+        inputAmount: Text;
+        outputAmount: Text;
+        priceImpact: Float;
+        route: [TokenSymbol];
+        minimumReceived: Text;
+        fee: Text;
+    };
+
     // Freelancer Dashboard types
     public type FreelancerProfile = {
         email: Text;
@@ -354,6 +449,18 @@ persistent actor Main {
         getTotalProfiles: shared () -> async Result.Result<Nat, {#Unauthorized}>;
         getActiveProfilesCount: shared () -> async Result.Result<Nat, {#Unauthorized}>;
         searchProfilesByTitle: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
+    } = null;
+
+    private transient var icpswapStorage : ?{
+        convertCurrency: shared (ConversionRequest) -> async Result.Result<ConversionResponse, {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #InvalidRate; #SlippageTooHigh}>;
+        createTransaction: shared (TokenSymbol, TokenSymbol, Text, Text, Float, Text) -> async Result.Result<SwapTransaction, {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #TransactionNotFound; #PoolNotFound; #Unauthorized; #InvalidRate; #SlippageTooHigh; #TransactionFailed; #InvalidPool}>;
+        getTransaction: shared (Text) -> async ?SwapTransaction;
+        getUserTransactions: shared (Text) -> async [SwapTransaction];
+        updateTransactionStatus: shared (Text, TransactionStatus, ?Text) -> async Result.Result<(), {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #TransactionNotFound; #PoolNotFound; #Unauthorized; #InvalidRate; #SlippageTooHigh; #TransactionFailed; #InvalidPool}>;
+        getTransactionsByStatus: shared (TransactionStatus) -> async [SwapTransaction];
+        getSwapStats: shared () -> async {totalTransactions: Nat; totalVolume: Text; activePools: Nat; totalLiquidity: Text};
+        getAllTokens: shared () -> async [(TokenSymbol, TokenInfo)];
+        getTokenInfo: shared (TokenSymbol) -> async ?TokenInfo;
     } = null;
 
 
@@ -623,6 +730,48 @@ persistent actor Main {
                     searchProfilesByTitle = actor_ref.searchProfilesByTitle;
                 };
                 freelancerDashboardStorage := ?storage;
+                storage
+            };
+            case (?storage) storage;
+        }
+    };
+
+    private func getICPSwapStorage() : {
+        convertCurrency: shared (ConversionRequest) -> async Result.Result<ConversionResponse, {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #InvalidRate; #SlippageTooHigh}>;
+        createTransaction: shared (TokenSymbol, TokenSymbol, Text, Text, Float, Text) -> async Result.Result<SwapTransaction, {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #TransactionNotFound; #PoolNotFound; #Unauthorized; #InvalidRate; #SlippageTooHigh; #TransactionFailed; #InvalidPool}>;
+        getTransaction: shared (Text) -> async ?SwapTransaction;
+        getUserTransactions: shared (Text) -> async [SwapTransaction];
+        updateTransactionStatus: shared (Text, TransactionStatus, ?Text) -> async Result.Result<(), {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #TransactionNotFound; #PoolNotFound; #Unauthorized; #InvalidRate; #SlippageTooHigh; #TransactionFailed; #InvalidPool}>;
+        getTransactionsByStatus: shared (TransactionStatus) -> async [SwapTransaction];
+        getSwapStats: shared () -> async {totalTransactions: Nat; totalVolume: Text; activePools: Nat; totalLiquidity: Text};
+        getAllTokens: shared () -> async [(TokenSymbol, TokenInfo)];
+        getTokenInfo: shared (TokenSymbol) -> async ?TokenInfo;
+    } {
+        switch (icpswapStorage) {
+            case null {
+                let actor_ref = actor("icpswap") : actor {
+                    convertCurrency: shared (ConversionRequest) -> async Result.Result<ConversionResponse, {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #InvalidRate; #SlippageTooHigh}>;
+                    createTransaction: shared (TokenSymbol, TokenSymbol, Text, Text, Float, Text) -> async Result.Result<SwapTransaction, {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #TransactionNotFound; #PoolNotFound; #Unauthorized; #InvalidRate; #SlippageTooHigh; #TransactionFailed; #InvalidPool}>;
+                    getTransaction: shared (Text) -> async ?SwapTransaction;
+                    getUserTransactions: shared (Text) -> async [SwapTransaction];
+                    updateTransactionStatus: shared (Text, TransactionStatus, ?Text) -> async Result.Result<(), {#InvalidToken; #InsufficientBalance; #InsufficientLiquidity; #InvalidAmount; #TransactionNotFound; #PoolNotFound; #Unauthorized; #InvalidRate; #SlippageTooHigh; #TransactionFailed; #InvalidPool}>;
+                    getTransactionsByStatus: shared (TransactionStatus) -> async [SwapTransaction];
+                    getSwapStats: shared () -> async {totalTransactions: Nat; totalVolume: Text; activePools: Nat; totalLiquidity: Text};
+                    getAllTokens: shared () -> async [(TokenSymbol, TokenInfo)];
+                    getTokenInfo: shared (TokenSymbol) -> async ?TokenInfo;
+                };
+                let storage = {
+                    convertCurrency = actor_ref.convertCurrency;
+                    createTransaction = actor_ref.createTransaction;
+                    getTransaction = actor_ref.getTransaction;
+                    getUserTransactions = actor_ref.getUserTransactions;
+                    updateTransactionStatus = actor_ref.updateTransactionStatus;
+                    getTransactionsByStatus = actor_ref.getTransactionsByStatus;
+                    getSwapStats = actor_ref.getSwapStats;
+                    getAllTokens = actor_ref.getAllTokens;
+                    getTokenInfo = actor_ref.getTokenInfo;
+                };
+                icpswapStorage := ?storage;
                 storage
             };
             case (?storage) storage;
@@ -1722,6 +1871,181 @@ persistent actor Main {
                     #err(#StorageError("Freelancer dashboard storage canister error"))
                 }
             };
+        }
+    };
+
+    // ===== ICPSWAP FUNCTIONS =====
+
+    // Convert currency
+    public func convertCurrency(sessionId: Text, request: ConversionRequest): async Result.Result<ConversionResponse, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getICPSwapStorage().convertCurrency(request);
+                    switch (result) {
+                        case (#ok(response)) { #ok(response) };
+                        case (#err(swapError)) { 
+                            switch (swapError) {
+                                case (#InvalidToken) { #err(#InvalidToken) };
+                                case (#InsufficientBalance) { #err(#InsufficientBalance) };
+                                case (#InsufficientLiquidity) { #err(#InsufficientLiquidity) };
+                                case (#InvalidAmount) { #err(#InvalidAmount) };
+                                case (#InvalidRate) { #err(#InvalidRate) };
+                                case (#SlippageTooHigh) { #err(#SlippageTooHigh) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("ICPSwap canister error"))
+                }
+            };
+        }
+    };
+
+    // Create swap transaction
+    public func createSwapTransaction(
+        sessionId: Text,
+        from: TokenSymbol,
+        to: TokenSymbol,
+        amount: Text,
+        converted: Text,
+        rate: Float
+    ): async Result.Result<SwapTransaction, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getICPSwapStorage().createTransaction(from, to, amount, converted, rate, session.email);
+                    switch (result) {
+                        case (#ok(transaction)) { #ok(transaction) };
+                        case (#err(swapError)) { 
+                            switch (swapError) {
+                                case (#InvalidToken) { #err(#InvalidToken) };
+                                case (#InsufficientBalance) { #err(#InsufficientBalance) };
+                                case (#InsufficientLiquidity) { #err(#InsufficientLiquidity) };
+                                case (#InvalidAmount) { #err(#InvalidAmount) };
+                                case (#TransactionNotFound) { #err(#TransactionNotFound) };
+                                case (#PoolNotFound) { #err(#PoolNotFound) };
+                                case (#Unauthorized) { #err(#Unauthorized) };
+                                case (#InvalidRate) { #err(#InvalidRate) };
+                                case (#SlippageTooHigh) { #err(#SlippageTooHigh) };
+                                case (#TransactionFailed) { #err(#TransactionFailed) };
+                                case (#InvalidPool) { #err(#InvalidPool) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("ICPSwap canister error"))
+                }
+            };
+        }
+    };
+
+    // Get transaction by ID
+    public func getSwapTransaction(id: Text): async ?SwapTransaction {
+        try {
+            await getICPSwapStorage().getTransaction(id)
+        } catch (_error) {
+            null
+        }
+    };
+
+    // Get user transactions
+    public func getUserSwapTransactions(sessionId: Text): async Result.Result<[SwapTransaction], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let transactions = await getICPSwapStorage().getUserTransactions(session.email);
+                    #ok(transactions)
+                } catch (_error) {
+                    #err(#StorageError("ICPSwap canister error"))
+                }
+            };
+        }
+    };
+
+    // Update transaction status
+    public func updateSwapTransactionStatus(
+        sessionId: Text,
+        id: Text,
+        status: TransactionStatus,
+        txHash: ?Text
+    ): async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getICPSwapStorage().updateTransactionStatus(id, status, txHash);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(swapError)) { 
+                            switch (swapError) {
+                                case (#InvalidToken) { #err(#InvalidToken) };
+                                case (#InsufficientBalance) { #err(#InsufficientBalance) };
+                                case (#InsufficientLiquidity) { #err(#InsufficientLiquidity) };
+                                case (#InvalidAmount) { #err(#InvalidAmount) };
+                                case (#TransactionNotFound) { #err(#TransactionNotFound) };
+                                case (#PoolNotFound) { #err(#PoolNotFound) };
+                                case (#Unauthorized) { #err(#Unauthorized) };
+                                case (#InvalidRate) { #err(#InvalidRate) };
+                                case (#SlippageTooHigh) { #err(#SlippageTooHigh) };
+                                case (#TransactionFailed) { #err(#TransactionFailed) };
+                                case (#InvalidPool) { #err(#InvalidPool) };
+                            }
+                        };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("ICPSwap canister error"))
+                }
+            };
+        }
+    };
+
+    // Get transactions by status
+    public func getSwapTransactionsByStatus(status: TransactionStatus): async [SwapTransaction] {
+        try {
+            await getICPSwapStorage().getTransactionsByStatus(status)
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get swap statistics
+    public func getSwapStatistics(): async {
+        totalTransactions: Nat;
+        totalVolume: Text;
+        activePools: Nat;
+        totalLiquidity: Text;
+    } {
+        try {
+            await getICPSwapStorage().getSwapStats()
+        } catch (_error) {
+            {
+                totalTransactions = 0;
+                totalVolume = "0";
+                activePools = 0;
+                totalLiquidity = "0";
+            }
+        }
+    };
+
+    // Get all supported tokens
+    public func getAllSupportedTokens(): async [(TokenSymbol, TokenInfo)] {
+        try {
+            await getICPSwapStorage().getAllTokens()
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get token info
+    public func getTokenInfo(symbol: TokenSymbol): async ?TokenInfo {
+        try {
+            await getICPSwapStorage().getTokenInfo(symbol)
+        } catch (_error) {
+            null
         }
     };
 }

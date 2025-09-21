@@ -43,6 +43,10 @@
     "project_store": {
       "main": "src/project_store/src/main.mo",
       "type": "motoko"
+    },
+    "icpswap": {
+      "main": "src/icpswap/src/main.mo",
+      "type": "motoko"
     }
   },
   "defaults": {
