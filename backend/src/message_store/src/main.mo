@@ -5,7 +5,6 @@ import Result "mo:base/Result";
 import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Int "mo:base/Int";
-import Debug "mo:base/Debug";
 
 persistent actor MessageStore {
     
@@ -46,11 +45,11 @@ persistent actor MessageStore {
     };
 
     // Stable storage for messages
-    private stable var messageEntries : [(Text, Message)] = [];
+    private var messageEntries : [(Text, Message)] = [];
     private transient var messages = Map.HashMap<Text, Message>(0, Text.equal, Text.hash);
 
     // Stable storage for user conversations (mapping user email to list of conversation partners)
-    private stable var conversationEntries : [(Text, [Text])] = [];
+    private var conversationEntries : [(Text, [Text])] = [];
     private transient var userConversations = Map.HashMap<Text, [Text]>(0, Text.equal, Text.hash);
 
     // System functions for upgrades
@@ -77,7 +76,7 @@ persistent actor MessageStore {
     };
 
     // Helper function to get conversation key (consistent ordering)
-    private func getConversationKey(userA: Text, userB: Text) : Text {
+    private func _getConversationKey(userA: Text, userB: Text) : Text {
         if (Text.compare(userA, userB) == #less) {
             userA # "_" # userB
         } else {
