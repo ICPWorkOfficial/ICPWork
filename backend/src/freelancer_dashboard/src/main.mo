@@ -109,12 +109,12 @@ persistent actor FreelancerDashboard {
     };
 
     // Set main canister principal (called during initialization)
-    public shared(msg) func setMainCanister() : async () {
-        mainCanisterPrincipal := ?msg.caller;
+    public shared(_msg) func setMainCanister() : async () {
+        mainCanisterPrincipal := ?_msg.caller;
     };
 
     // Access control modifier
-    private func onlyMainCanister(caller: Principal) : Bool {
+    private func _onlyMainCanister(caller: Principal) : Bool {
         switch (mainCanisterPrincipal) {
             case null false;
             case (?principal) Principal.equal(caller, principal);
@@ -198,7 +198,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Create freelancer profile - Public access
-    public shared(msg) func createProfile(email: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
+    public shared(_msg) func createProfile(email: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
         // Authorization removed - allow direct API calls
 
         // Validate email
@@ -261,7 +261,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Update freelancer profile - Public access
-    public shared(msg) func updateProfile(email: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
+    public shared(_msg) func updateProfile(email: Text, profile: FreelancerProfile) : async Result.Result<FreelancerProfile, Error> {
         // Authorization removed - allow direct API calls
 
         // Check if profile exists
@@ -322,7 +322,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Get freelancer profile by email - Public access
-    public shared(msg) func getProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
+    public shared(_msg) func getProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
         // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
@@ -332,7 +332,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Get freelancer profile by slug - Public access
-    public shared(msg) func getProfileBySlug(slug: Text) : async Result.Result<FreelancerProfile, Error> {
+    public shared(_msg) func getProfileBySlug(slug: Text) : async Result.Result<FreelancerProfile, Error> {
         // Authorization removed - allow direct API calls
 
         switch (slugToEmail.get(slug)) {
@@ -347,14 +347,14 @@ persistent actor FreelancerDashboard {
     };
 
     // Get all freelancer profiles - Public access
-    public shared(msg) func getAllProfiles() : async Result.Result<[(Text, FreelancerProfile)], Error> {
+    public shared(_msg) func getAllProfiles() : async Result.Result<[(Text, FreelancerProfile)], Error> {
         // Authorization removed - allow direct API calls
 
         #ok(Iter.toArray(profiles.entries()))
     };
 
     // Get active freelancer profiles - Public access
-    public shared(msg) func getActiveProfiles() : async Result.Result<[(Text, FreelancerProfile)], Error> {
+    public shared(_msg) func getActiveProfiles() : async Result.Result<[(Text, FreelancerProfile)], Error> {
         // Authorization removed - allow direct API calls
 
         let activeProfiles = Iter.toArray(
@@ -367,7 +367,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Get profiles by category - Public access
-    public shared(msg) func getProfilesByCategory(mainCategory: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
+    public shared(_msg) func getProfilesByCategory(mainCategory: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
         // Authorization removed - allow direct API calls
 
         let categoryProfiles = Iter.toArray(
@@ -380,7 +380,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Get profiles by subcategory - Public access
-    public shared(msg) func getProfilesBySubCategory(mainCategory: Text, subCategory: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
+    public shared(_msg) func getProfilesBySubCategory(mainCategory: Text, subCategory: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
         // Authorization removed - allow direct API calls
 
         let subCategoryProfiles = Iter.toArray(
@@ -393,7 +393,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Delete freelancer profile - Public access
-    public shared(msg) func deleteProfile(email: Text) : async Result.Result<(), Error> {
+    public shared(_msg) func deleteProfile(email: Text) : async Result.Result<(), Error> {
         // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
@@ -409,7 +409,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Deactivate freelancer profile - Public access
-    public shared(msg) func deactivateProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
+    public shared(_msg) func deactivateProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
         // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
@@ -438,7 +438,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Activate freelancer profile - Public access
-    public shared(msg) func activateProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
+    public shared(_msg) func activateProfile(email: Text) : async Result.Result<FreelancerProfile, Error> {
         // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
@@ -467,7 +467,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Check if profile exists - Public access
-    public shared(msg) func profileExists(email: Text) : async Result.Result<Bool, Error> {
+    public shared(_msg) func profileExists(email: Text) : async Result.Result<Bool, Error> {
         // Authorization removed - allow direct API calls
 
         switch (profiles.get(email)) {
@@ -477,14 +477,14 @@ persistent actor FreelancerDashboard {
     };
 
     // Get total profiles count - Public access
-    public shared(msg) func getTotalProfiles() : async Result.Result<Nat, Error> {
+    public shared(_msg) func getTotalProfiles() : async Result.Result<Nat, Error> {
         // Authorization removed - allow direct API calls
 
         #ok(profiles.size())
     };
 
     // Get active profiles count - Public access
-    public shared(msg) func getActiveProfilesCount() : async Result.Result<Nat, Error> {
+    public shared(_msg) func getActiveProfilesCount() : async Result.Result<Nat, Error> {
         // Authorization removed - allow direct API calls
 
         let activeCount = Iter.size(
@@ -497,7 +497,7 @@ persistent actor FreelancerDashboard {
     };
 
     // Search profiles by service title - Public access
-    public shared(msg) func searchProfilesByTitle(searchTerm: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
+    public shared(_msg) func searchProfilesByTitle(searchTerm: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
         // Authorization removed - allow direct API calls
 
         let searchResults = Iter.toArray(
