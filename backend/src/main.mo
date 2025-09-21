@@ -377,6 +377,174 @@ persistent actor Main {
         fee: Text;
     };
 
+    // Hackathon types
+    public type HackathonStatus = {
+        #RegistrationOpen;
+        #Upcoming;
+        #Ongoing;
+        #Completed;
+        #Cancelled;
+    };
+
+    public type HackathonMode = {
+        #Virtual;
+        #InPerson;
+        #Hybrid;
+    };
+
+    public type HackathonCategory = {
+        #Web3;
+        #DeFi;
+        #NFT;
+        #SmartContracts;
+        #Frontend;
+        #Backend;
+        #Mobile;
+        #AI;
+        #Security;
+        #Infrastructure;
+        #Other : Text;
+    };
+
+    public type HackathonParticipantStatus = {
+        #Registered;
+        #Submitted;
+        #Winner;
+        #RunnerUp;
+        #Disqualified;
+        #Withdrawn;
+    };
+
+    public type HackathonParticipant = {
+        userId: Text;
+        userEmail: Text;
+        registeredAt: Int;
+        status: HackathonParticipantStatus;
+        submissionUrl: ?Text;
+        submissionDescription: ?Text;
+        submittedAt: ?Int;
+        teamMembers: [Text];
+        githubRepo: ?Text;
+        demoUrl: ?Text;
+        presentationUrl: ?Text;
+    };
+
+    public type HackathonPrize = {
+        position: Text;
+        amount: Text;
+        description: ?Text;
+        token: ?Text;
+    };
+
+    public type Hackathon = {
+        id: Text;
+        title: Text;
+        description: Text;
+        organizer: Text;
+        organizerId: Text;
+        mode: HackathonMode;
+        prizePool: Text;
+        prizes: [HackathonPrize];
+        timeline: Text;
+        startDate: Int;
+        endDate: Int;
+        registrationDeadline: Int;
+        submissionDeadline: Int;
+        tags: [Text];
+        category: HackathonCategory;
+        status: HackathonStatus;
+        featured: Bool;
+        requirements: [Text];
+        deliverables: [Text];
+        judgingCriteria: [Text];
+        maxParticipants: ?Nat;
+        maxTeamSize: ?Nat;
+        createdAt: Int;
+        updatedAt: Int;
+        participants: [HackathonParticipant];
+        winnerIds: [Text];
+        location: ?Text;
+        website: ?Text;
+        discord: ?Text;
+        twitter: ?Text;
+        imageUrl: ?Text;
+        bannerUrl: ?Text;
+    };
+
+    public type HackathonInput = {
+        title: Text;
+        description: Text;
+        organizer: Text;
+        mode: HackathonMode;
+        prizePool: Text;
+        prizes: [HackathonPrize];
+        timeline: Text;
+        startDate: Int;
+        endDate: Int;
+        registrationDeadline: Int;
+        submissionDeadline: Int;
+        tags: [Text];
+        category: HackathonCategory;
+        featured: Bool;
+        requirements: [Text];
+        deliverables: [Text];
+        judgingCriteria: [Text];
+        maxParticipants: ?Nat;
+        maxTeamSize: ?Nat;
+        location: ?Text;
+        website: ?Text;
+        discord: ?Text;
+        twitter: ?Text;
+        imageUrl: ?Text;
+        bannerUrl: ?Text;
+    };
+
+    public type HackathonUpdate = {
+        title: ?Text;
+        description: ?Text;
+        prizePool: ?Text;
+        prizes: ?[HackathonPrize];
+        timeline: ?Text;
+        startDate: ?Int;
+        endDate: ?Int;
+        registrationDeadline: ?Int;
+        submissionDeadline: ?Int;
+        tags: ?[Text];
+        status: ?HackathonStatus;
+        featured: ?Bool;
+        requirements: ?[Text];
+        deliverables: ?[Text];
+        judgingCriteria: ?[Text];
+        maxParticipants: ?Nat;
+        maxTeamSize: ?Nat;
+        location: ?Text;
+        website: ?Text;
+        discord: ?Text;
+        twitter: ?Text;
+        imageUrl: ?Text;
+        bannerUrl: ?Text;
+    };
+
+    public type HackathonStats = {
+        totalHackathons: Nat;
+        activeHackathons: Nat;
+        completedHackathons: Nat;
+        totalPrizePool: Text;
+        totalParticipants: Nat;
+        totalWinners: Nat;
+    };
+
+    public type HackathonSearchFilters = {
+        status: ?HackathonStatus;
+        category: ?HackathonCategory;
+        mode: ?HackathonMode;
+        featured: ?Bool;
+        organizer: ?Text;
+        tags: ?[Text];
+        minPrizePool: ?Text;
+        maxParticipants: ?Nat;
+    };
+
     // Freelancer Dashboard types
     public type FreelancerProfile = {
         email: Text;
@@ -461,6 +629,26 @@ persistent actor Main {
         getSwapStats: shared () -> async {totalTransactions: Nat; totalVolume: Text; activePools: Nat; totalLiquidity: Text};
         getAllTokens: shared () -> async [(TokenSymbol, TokenInfo)];
         getTokenInfo: shared (TokenSymbol) -> async ?TokenInfo;
+    } = null;
+
+    private transient var hackathonStorage : ?{
+        createHackathon: shared (Text, HackathonInput) -> async Result.Result<Hackathon, Text>;
+        updateHackathon: shared (Text, Text, HackathonUpdate) -> async Result.Result<Hackathon, Text>;
+        deleteHackathon: shared (Text, Text) -> async Result.Result<(), Text>;
+        registerForHackathon: shared (Text, Text, [Text]) -> async Result.Result<(), Text>;
+        submitToHackathon: shared (Text, Text, Text, Text, ?Text, ?Text, ?Text) -> async Result.Result<(), Text>;
+        withdrawFromHackathon: shared (Text, Text) -> async Result.Result<(), Text>;
+        getHackathon: shared (Text) -> async ?Hackathon;
+        getAllHackathons: shared () -> async [Hackathon];
+        getHackathonsByStatus: shared (HackathonStatus) -> async [Hackathon];
+        getHackathonsByCategory: shared (HackathonCategory) -> async [Hackathon];
+        getFeaturedHackathons: shared () -> async [Hackathon];
+        getHackathonsByOrganizer: shared (Text) -> async [Hackathon];
+        getUserHackathons: shared (Text) -> async [Hackathon];
+        searchHackathons: shared (HackathonSearchFilters) -> async [Hackathon];
+        getHackathonStats: shared () -> async HackathonStats;
+        updateParticipantStatus: shared (Text, Text, HackathonParticipantStatus, Text) -> async Result.Result<(), Text>;
+        setWinners: shared (Text, [Text], Text) -> async Result.Result<(), Text>;
     } = null;
 
 
@@ -772,6 +960,72 @@ persistent actor Main {
                     getTokenInfo = actor_ref.getTokenInfo;
                 };
                 icpswapStorage := ?storage;
+                storage
+            };
+            case (?storage) storage;
+        }
+    };
+
+    private func getHackathonStorage() : {
+        createHackathon: shared (Text, HackathonInput) -> async Result.Result<Hackathon, Text>;
+        updateHackathon: shared (Text, Text, HackathonUpdate) -> async Result.Result<Hackathon, Text>;
+        deleteHackathon: shared (Text, Text) -> async Result.Result<(), Text>;
+        registerForHackathon: shared (Text, Text, [Text]) -> async Result.Result<(), Text>;
+        submitToHackathon: shared (Text, Text, Text, Text, ?Text, ?Text, ?Text) -> async Result.Result<(), Text>;
+        withdrawFromHackathon: shared (Text, Text) -> async Result.Result<(), Text>;
+        getHackathon: shared (Text) -> async ?Hackathon;
+        getAllHackathons: shared () -> async [Hackathon];
+        getHackathonsByStatus: shared (HackathonStatus) -> async [Hackathon];
+        getHackathonsByCategory: shared (HackathonCategory) -> async [Hackathon];
+        getFeaturedHackathons: shared () -> async [Hackathon];
+        getHackathonsByOrganizer: shared (Text) -> async [Hackathon];
+        getUserHackathons: shared (Text) -> async [Hackathon];
+        searchHackathons: shared (HackathonSearchFilters) -> async [Hackathon];
+        getHackathonStats: shared () -> async HackathonStats;
+        updateParticipantStatus: shared (Text, Text, HackathonParticipantStatus, Text) -> async Result.Result<(), Text>;
+        setWinners: shared (Text, [Text], Text) -> async Result.Result<(), Text>;
+    } {
+        switch (hackathonStorage) {
+            case null {
+                let actor_ref = actor("hackathon_store") : actor {
+                    createHackathon: shared (Text, HackathonInput) -> async Result.Result<Hackathon, Text>;
+                    updateHackathon: shared (Text, Text, HackathonUpdate) -> async Result.Result<Hackathon, Text>;
+                    deleteHackathon: shared (Text, Text) -> async Result.Result<(), Text>;
+                    registerForHackathon: shared (Text, Text, [Text]) -> async Result.Result<(), Text>;
+                    submitToHackathon: shared (Text, Text, Text, Text, ?Text, ?Text, ?Text) -> async Result.Result<(), Text>;
+                    withdrawFromHackathon: shared (Text, Text) -> async Result.Result<(), Text>;
+                    getHackathon: shared (Text) -> async ?Hackathon;
+                    getAllHackathons: shared () -> async [Hackathon];
+                    getHackathonsByStatus: shared (HackathonStatus) -> async [Hackathon];
+                    getHackathonsByCategory: shared (HackathonCategory) -> async [Hackathon];
+                    getFeaturedHackathons: shared () -> async [Hackathon];
+                    getHackathonsByOrganizer: shared (Text) -> async [Hackathon];
+                    getUserHackathons: shared (Text) -> async [Hackathon];
+                    searchHackathons: shared (HackathonSearchFilters) -> async [Hackathon];
+                    getHackathonStats: shared () -> async HackathonStats;
+                    updateParticipantStatus: shared (Text, Text, HackathonParticipantStatus, Text) -> async Result.Result<(), Text>;
+                    setWinners: shared (Text, [Text], Text) -> async Result.Result<(), Text>;
+                };
+                let storage = {
+                    createHackathon = actor_ref.createHackathon;
+                    updateHackathon = actor_ref.updateHackathon;
+                    deleteHackathon = actor_ref.deleteHackathon;
+                    registerForHackathon = actor_ref.registerForHackathon;
+                    submitToHackathon = actor_ref.submitToHackathon;
+                    withdrawFromHackathon = actor_ref.withdrawFromHackathon;
+                    getHackathon = actor_ref.getHackathon;
+                    getAllHackathons = actor_ref.getAllHackathons;
+                    getHackathonsByStatus = actor_ref.getHackathonsByStatus;
+                    getHackathonsByCategory = actor_ref.getHackathonsByCategory;
+                    getFeaturedHackathons = actor_ref.getFeaturedHackathons;
+                    getHackathonsByOrganizer = actor_ref.getHackathonsByOrganizer;
+                    getUserHackathons = actor_ref.getUserHackathons;
+                    searchHackathons = actor_ref.searchHackathons;
+                    getHackathonStats = actor_ref.getHackathonStats;
+                    updateParticipantStatus = actor_ref.updateParticipantStatus;
+                    setWinners = actor_ref.setWinners;
+                };
+                hackathonStorage := ?storage;
                 storage
             };
             case (?storage) storage;
@@ -2046,6 +2300,252 @@ persistent actor Main {
             await getICPSwapStorage().getTokenInfo(symbol)
         } catch (_error) {
             null
+        }
+    };
+
+    // ===== HACKATHON FUNCTIONS =====
+
+    // Create hackathon
+    public func createHackathon(sessionId: Text, input: HackathonInput): async Result.Result<Hackathon, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().createHackathon(session.email, input);
+                    switch (result) {
+                        case (#ok(hackathon)) { #ok(hackathon) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Update hackathon
+    public func updateHackathon(sessionId: Text, hackathonId: Text, update: HackathonUpdate): async Result.Result<Hackathon, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().updateHackathon(hackathonId, session.email, update);
+                    switch (result) {
+                        case (#ok(hackathon)) { #ok(hackathon) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Delete hackathon
+    public func deleteHackathon(sessionId: Text, hackathonId: Text): async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().deleteHackathon(hackathonId, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Register for hackathon
+    public func registerForHackathon(sessionId: Text, hackathonId: Text, teamMembers: [Text]): async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().registerForHackathon(hackathonId, session.email, teamMembers);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Submit to hackathon
+    public func submitToHackathon(sessionId: Text, hackathonId: Text, submissionUrl: Text, description: Text, githubRepo: ?Text, demoUrl: ?Text, presentationUrl: ?Text): async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().submitToHackathon(hackathonId, session.email, submissionUrl, description, githubRepo, demoUrl, presentationUrl);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Withdraw from hackathon
+    public func withdrawFromHackathon(sessionId: Text, hackathonId: Text): async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().withdrawFromHackathon(hackathonId, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Get hackathon by ID
+    public func getHackathon(hackathonId: Text): async ?Hackathon {
+        try {
+            await getHackathonStorage().getHackathon(hackathonId)
+        } catch (_error) {
+            null
+        }
+    };
+
+    // Get all hackathons
+    public func getAllHackathons(): async [Hackathon] {
+        try {
+            await getHackathonStorage().getAllHackathons()
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get hackathons by status
+    public func getHackathonsByStatus(status: HackathonStatus): async [Hackathon] {
+        try {
+            await getHackathonStorage().getHackathonsByStatus(status)
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get hackathons by category
+    public func getHackathonsByCategory(category: HackathonCategory): async [Hackathon] {
+        try {
+            await getHackathonStorage().getHackathonsByCategory(category)
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get featured hackathons
+    public func getFeaturedHackathons(): async [Hackathon] {
+        try {
+            await getHackathonStorage().getFeaturedHackathons()
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get hackathons by organizer
+    public func getHackathonsByOrganizer(sessionId: Text): async Result.Result<[Hackathon], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let hackathons = await getHackathonStorage().getHackathonsByOrganizer(session.email);
+                    #ok(hackathons)
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Get user's hackathons
+    public func getUserHackathons(sessionId: Text): async Result.Result<[Hackathon], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let hackathons = await getHackathonStorage().getUserHackathons(session.email);
+                    #ok(hackathons)
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Search hackathons
+    public func searchHackathons(filters: HackathonSearchFilters): async [Hackathon] {
+        try {
+            await getHackathonStorage().searchHackathons(filters)
+        } catch (_error) {
+            []
+        }
+    };
+
+    // Get hackathon statistics
+    public func getHackathonStatistics(): async HackathonStats {
+        try {
+            await getHackathonStorage().getHackathonStats()
+        } catch (_error) {
+            {
+                totalHackathons = 0;
+                activeHackathons = 0;
+                completedHackathons = 0;
+                totalPrizePool = "$0";
+                totalParticipants = 0;
+                totalWinners = 0;
+            }
+        }
+    };
+
+    // Update participant status (organizer only)
+    public func updateHackathonParticipantStatus(sessionId: Text, hackathonId: Text, userEmail: Text, status: HackathonParticipantStatus): async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().updateParticipantStatus(hackathonId, userEmail, status, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // Set winners (organizer only)
+    public func setHackathonWinners(sessionId: Text, hackathonId: Text, winnerIds: [Text]): async Result.Result<(), Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?session) {
+                try {
+                    let result = await getHackathonStorage().setWinners(hackathonId, winnerIds, session.email);
+                    switch (result) {
+                        case (#ok()) { #ok(()) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Hackathon canister error"))
+                }
+            };
         }
     };
 }
