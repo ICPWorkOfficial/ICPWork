@@ -2,7 +2,7 @@ import HashMap "mo:base/HashMap";
 import Text "mo:base/Text";
 import Result "mo:base/Result";
 import Iter "mo:base/Iter";
-import Principal "mo:base/Principal";
+import _Principal "mo:base/Principal";
 import Time "mo:base/Time";
 import Array "mo:base/Array";
 import Option "mo:base/Option";
@@ -119,11 +119,11 @@ persistent actor BountiesStorage {
     };
 
     // Stable storage for bounties
-    private stable var bountyEntries : [(Text, Bounty)] = [];
+    private var bountyEntries : [(Text, Bounty)] = [];
     private transient var bounties = HashMap.HashMap<Text, Bounty>(0, Text.equal, Text.hash);
 
     // Stable storage for bounty counter
-    private stable var bountyCounter : Nat = 0;
+    private var bountyCounter : Nat = 0;
 
     // System functions for upgrades
     system func preupgrade() {

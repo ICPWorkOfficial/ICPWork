@@ -5,6 +5,7 @@ import Principal "mo:base/Principal";
 import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Nat32 "mo:base/Nat32";
+import Nat "mo:base/Nat";
 
 persistent actor EscrowBank {
     
@@ -106,9 +107,8 @@ persistent actor EscrowBank {
         };
         
         // Safe subtraction since we've verified currentBalance >= amount
-        let newBalance = currentBalance - amount;
+        let newBalance: Nat = currentBalance - amount;
         updateBalance(caller, newBalance);
-        
         #ok(newBalance)
     };
     
