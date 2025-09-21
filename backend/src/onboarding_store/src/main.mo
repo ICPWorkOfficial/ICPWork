@@ -5,7 +5,6 @@ import Iter "mo:base/Iter";
 import Principal "mo:base/Principal";
 import Time "mo:base/Time";
 import Array "mo:base/Array";
-import Option "mo:base/Option";
 
 persistent actor OnboardingStorage {
     
@@ -344,7 +343,7 @@ persistent actor OnboardingStorage {
         };
 
         let totalCount = allRecords.size();
-        let pendingCount = if (totalCount > completedCount) totalCount - completedCount else 0;
+        let pendingCount: Nat = totalCount - completedCount;
 
         #ok({
             totalRecords = totalCount;
