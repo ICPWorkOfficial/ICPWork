@@ -378,11 +378,11 @@ persistent actor Main {
 
     // Helper functions for lazy actor initialization
     private func getFreelancerStorage() : {
-        storeFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
-        updateFreelancer: (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
-        getFreelancer: (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
+        storeFreelancer: shared (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        updateFreelancer: shared (Text, Freelancer) -> async Result.Result<(), {#NotFound; #InvalidSkillsCount; #Unauthorized; #InvalidEmail}>;
+        getFreelancer: shared (Text) -> async Result.Result<Freelancer, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteFreelancer: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllFreelancers: shared () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
     } {
         switch (freelancerStorage) {
             case null {
@@ -393,19 +393,26 @@ persistent actor Main {
                     deleteFreelancer: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
                     getAllFreelancers: () -> async Result.Result<[(Text, Freelancer)], {#Unauthorized}>;
                 };
-                freelancerStorage := ?actor_ref;
-                actor_ref
+                let storage = {
+                    storeFreelancer = actor_ref.storeFreelancer;
+                    updateFreelancer = actor_ref.updateFreelancer;
+                    getFreelancer = actor_ref.getFreelancer;
+                    deleteFreelancer = actor_ref.deleteFreelancer;
+                    getAllFreelancers = actor_ref.getAllFreelancers;
+                };
+                freelancerStorage := ?storage;
+                storage
             };
-            case (?actor_ref) actor_ref;
+            case (?storage) storage;
         }
     };
 
     private func getClientStorage() : {
-        storeClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
-        updateClient: (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
-        getClient: (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
-        deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
-        getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
+        storeClient: shared (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        updateClient: shared (Text, Client) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidData; #InvalidEmail}>;
+        getClient: shared (Text) -> async Result.Result<Client, {#NotFound; #Unauthorized; #InvalidEmail}>;
+        deleteClient: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
+        getAllClients: shared () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
     } {
         switch (clientStorage) {
             case null {
@@ -416,10 +423,17 @@ persistent actor Main {
                     deleteClient: (Text) -> async Result.Result<(), {#NotFound; #Unauthorized}>;
                     getAllClients: () -> async Result.Result<[(Text, Client)], {#Unauthorized}>;
                 };
-                clientStorage := ?actor_ref;
-                actor_ref
+                let storage = {
+                    storeClient = actor_ref.storeClient;
+                    updateClient = actor_ref.updateClient;
+                    getClient = actor_ref.getClient;
+                    deleteClient = actor_ref.deleteClient;
+                    getAllClients = actor_ref.getAllClients;
+                };
+                clientStorage := ?storage;
+                storage
             };
-            case (?actor_ref) actor_ref;
+            case (?storage) storage;
         }
     };
 
@@ -445,10 +459,20 @@ persistent actor Main {
                     deleteMessage: shared (Text, Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
                     getMessage: shared (Text, Text) -> async Result.Result<Message, {#NotFound; #Unauthorized; #InvalidMessage; #InvalidEmail; #StorageError: Text}>;
                 };
-                messageStorage := ?actor_ref;
-                actor_ref
+                let storage = {
+                    storeMessage = actor_ref.storeMessage;
+                    getConversationMessages = actor_ref.getConversationMessages;
+                    markMessageAsRead = actor_ref.markMessageAsRead;
+                    markMessageAsDelivered = actor_ref.markMessageAsDelivered;
+                    getUserConversations = actor_ref.getUserConversations;
+                    getUnreadMessageCount = actor_ref.getUnreadMessageCount;
+                    deleteMessage = actor_ref.deleteMessage;
+                    getMessage = actor_ref.getMessage;
+                };
+                messageStorage := ?storage;
+                storage
             };
-            case (?actor_ref) actor_ref;
+            case (?storage) storage;
         }
     };
 
@@ -476,10 +500,21 @@ persistent actor Main {
                     deleteOnboardingRecord: shared (Text) -> async Result.Result<(), {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
                     getOnboardingStats: shared () -> async Result.Result<{totalRecords: Nat; completedRecords: Nat; pendingRecords: Nat; freelancerRecords: Nat; clientRecords: Nat}, {#NotFound; #Unauthorized; #InvalidEmail; #InvalidData; #StorageError: Text}>;
                 };
-                onboardingStorage := ?actor_ref;
-                actor_ref
+                let storage = {
+                    createOnboardingRecord = actor_ref.createOnboardingRecord;
+                    updateOnboardingStep = actor_ref.updateOnboardingStep;
+                    completeOnboarding = actor_ref.completeOnboarding;
+                    getOnboardingRecord = actor_ref.getOnboardingRecord;
+                    getAllOnboardingRecords = actor_ref.getAllOnboardingRecords;
+                    getOnboardingRecordsByStatus = actor_ref.getOnboardingRecordsByStatus;
+                    getOnboardingRecordsByUserType = actor_ref.getOnboardingRecordsByUserType;
+                    deleteOnboardingRecord = actor_ref.deleteOnboardingRecord;
+                    getOnboardingStats = actor_ref.getOnboardingStats;
+                };
+                onboardingStorage := ?storage;
+                storage
             };
-            case (?actor_ref) actor_ref;
+            case (?storage) storage;
         }
     };
 
@@ -515,10 +550,25 @@ persistent actor Main {
                     getBountyStats: shared () -> async BountyStats;
                     deleteBounty: shared (Text, Text) -> async Result.Result<(), Text>;
                 };
-                bountiesStorage := ?actor_ref;
-                actor_ref
+                let storage = {
+                    createBounty = actor_ref.createBounty;
+                    updateBounty = actor_ref.updateBounty;
+                    registerForBounty = actor_ref.registerForBounty;
+                    submitToBounty = actor_ref.submitToBounty;
+                    getBounty = actor_ref.getBounty;
+                    getAllBounties = actor_ref.getAllBounties;
+                    getBountiesByStatus = actor_ref.getBountiesByStatus;
+                    getBountiesByCategory = actor_ref.getBountiesByCategory;
+                    getFeaturedBounties = actor_ref.getFeaturedBounties;
+                    getBountiesByOrganizer = actor_ref.getBountiesByOrganizer;
+                    getUserBounties = actor_ref.getUserBounties;
+                    getBountyStats = actor_ref.getBountyStats;
+                    deleteBounty = actor_ref.deleteBounty;
+                };
+                bountiesStorage := ?storage;
+                storage
             };
-            case (?actor_ref) actor_ref;
+            case (?storage) storage;
         }
     };
 
@@ -556,10 +606,26 @@ persistent actor Main {
                     getActiveProfilesCount: shared () -> async Result.Result<Nat, {#Unauthorized}>;
                     searchProfilesByTitle: shared (Text) -> async Result.Result<[(Text, FreelancerProfile)], {#Unauthorized}>;
                 };
-                freelancerDashboardStorage := ?actor_ref;
-                actor_ref
+                let storage = {
+                    createProfile = actor_ref.createProfile;
+                    updateProfile = actor_ref.updateProfile;
+                    getProfile = actor_ref.getProfile;
+                    getAllProfiles = actor_ref.getAllProfiles;
+                    getActiveProfiles = actor_ref.getActiveProfiles;
+                    getProfilesByCategory = actor_ref.getProfilesByCategory;
+                    getProfilesBySubCategory = actor_ref.getProfilesBySubCategory;
+                    deleteProfile = actor_ref.deleteProfile;
+                    deactivateProfile = actor_ref.deactivateProfile;
+                    activateProfile = actor_ref.activateProfile;
+                    profileExists = actor_ref.profileExists;
+                    getTotalProfiles = actor_ref.getTotalProfiles;
+                    getActiveProfilesCount = actor_ref.getActiveProfilesCount;
+                    searchProfilesByTitle = actor_ref.searchProfilesByTitle;
+                };
+                freelancerDashboardStorage := ?storage;
+                storage
             };
-            case (?actor_ref) actor_ref;
+            case (?storage) storage;
         }
     };
 
@@ -591,7 +657,7 @@ persistent actor Main {
     };
 
     // Helper function to check if user type matches expected type
-    func validateUserType(session: SessionManager.Session, expectedType: Text) : Bool {
+    func _validateUserType(session: SessionManager.Session, expectedType: Text) : Bool {
         session.userType == expectedType
     };
 
@@ -673,21 +739,21 @@ persistent actor Main {
 
 
     // Verify OTP (placeholder - implement based on your OTP system)
-    public func verifyOTP(userId: Text, otp: Text) : async Result.Result<Text, Error> {
+    public func verifyOTP(_userId: Text, _otp: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP verification logic
         #ok("OTP verified successfully")
     };
 
     // Resend OTP (placeholder - implement based on your OTP system)
-    public func resendOTP(userId: Text) : async Result.Result<Text, Error> {
+    public func resendOTP(_userId: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual OTP resending logic
         #ok("OTP sent successfully")
     };
 
     // Change password (placeholder - implement based on your OTP system)
-    public func changePassword(userId: Text, otp: Text, newPassword: Text) : async Result.Result<Text, Error> {
+    public func changePassword(_userId: Text, _otp: Text, _newPassword: Text) : async Result.Result<Text, Error> {
         // This is a placeholder implementation
         // You would need to implement actual password change with OTP verification
         #ok("Password changed successfully")
@@ -786,7 +852,7 @@ persistent actor Main {
     public func getAllFreelancers(sessionId: Text) : async Result.Result<[(Text, Freelancer)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 // Add admin check here if needed
                 try {
                     let result = await getFreelancerStorage().getAllFreelancers();
@@ -881,7 +947,7 @@ persistent actor Main {
     public func getAllClients(sessionId: Text) : async Result.Result<[(Text, Client)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 // Add admin check here if needed
                 try {
                     let result = await getClientStorage().getAllClients();
@@ -944,7 +1010,7 @@ persistent actor Main {
     public func getUserByEmailWithSession(sessionId: Text, email: Text) : async Result.Result<User, Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 // Add admin check here if needed
                 switch (auth.getUserByEmail(email)) {
                     case null { #err(#UserNotFound) };
@@ -959,11 +1025,11 @@ persistent actor Main {
 
     // Update canister IDs (admin function)
     public func updateCanisterIds(
-        freelancerId: ?Text,
-        clientId: ?Text,
-        messageId: ?Text,
-        onboardingId: ?Text,
-        bountiesId: ?Text
+        _freelancerId: ?Text,
+        _clientId: ?Text,
+        _messageId: ?Text,
+        _onboardingId: ?Text,
+        _bountiesId: ?Text
     ) : async Result.Result<(), Error> {
         // This function allows updating canister IDs after deployment
         // For now, we'll just return success since we're using hardcoded names
