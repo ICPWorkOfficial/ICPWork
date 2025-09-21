@@ -4,7 +4,6 @@ import Time "mo:base/Time";
 import Result "mo:base/Result";
 import Iter "mo:base/Iter";
 import Array "mo:base/Array";
-import Option "mo:base/Option";
 import Nat "mo:base/Nat";
 
 persistent actor ProjectStore {
@@ -65,7 +64,7 @@ persistent actor ProjectStore {
     private transient var nextApplicationId: Nat = 1;
 
     // Create a new project
-    public shared(msg) func createProject(
+    public shared(_msg) func createProject(
         title: Text,
         description: Text,
         requirements: Text,
@@ -104,7 +103,7 @@ persistent actor ProjectStore {
     };
 
     // Get project by ID
-    public shared(msg) func getProject(projectId: Text) : async Result.Result<Project, Error> {
+    public shared(_msg) func getProject(projectId: Text) : async Result.Result<Project, Error> {
         switch (projects.get(projectId)) {
             case null { #err(#ProjectNotFound) };
             case (?project) { #ok(project) };
@@ -112,12 +111,12 @@ persistent actor ProjectStore {
     };
 
     // Get all projects
-    public shared(msg) func getAllProjects() : async Result.Result<[(Text, Project)], Error> {
+    public shared(_msg) func getAllProjects() : async Result.Result<[(Text, Project)], Error> {
         #ok(Iter.toArray(projects.entries()))
     };
 
     // Get projects by client email
-    public shared(msg) func getProjectsByClient(clientEmail: Text) : async Result.Result<[(Text, Project)], Error> {
+    public shared(_msg) func getProjectsByClient(clientEmail: Text) : async Result.Result<[(Text, Project)], Error> {
         let clientProjects = Iter.toArray(
             Iter.filter<(Text, Project)>(
                 projects.entries(),
@@ -128,7 +127,7 @@ persistent actor ProjectStore {
     };
 
     // Get open projects (for freelancers to browse)
-    public shared(msg) func getOpenProjects() : async Result.Result<[(Text, Project)], Error> {
+    public shared(_msg) func getOpenProjects() : async Result.Result<[(Text, Project)], Error> {
         let openProjects = Iter.toArray(
             Iter.filter<(Text, Project)>(
                 projects.entries(),
@@ -139,7 +138,7 @@ persistent actor ProjectStore {
     };
 
     // Update project status
-    public shared(msg) func updateProjectStatus(projectId: Text, status: ProjectStatus) : async Result.Result<Project, Error> {
+    public shared(_msg) func updateProjectStatus(projectId: Text, status: ProjectStatus) : async Result.Result<Project, Error> {
         switch (projects.get(projectId)) {
             case null { #err(#ProjectNotFound) };
             case (?project) {
@@ -165,7 +164,7 @@ persistent actor ProjectStore {
     };
 
     // Apply to project
-    public shared(msg) func applyToProject(
+    public shared(_msg) func applyToProject(
         projectId: Text,
         freelancerEmail: Text,
         proposal: Text,
@@ -228,7 +227,7 @@ persistent actor ProjectStore {
     };
 
     // Get applications for a project
-    public shared(msg) func getProjectApplications(projectId: Text) : async Result.Result<[ProjectApplication], Error> {
+    public shared(_msg) func getProjectApplications(projectId: Text) : async Result.Result<[ProjectApplication], Error> {
         let projectApplications = Iter.toArray(
             Iter.filter<(Text, ProjectApplication)>(
                 applications.entries(),
@@ -242,7 +241,7 @@ persistent actor ProjectStore {
     };
 
     // Get applications by freelancer
-    public shared(msg) func getFreelancerApplications(freelancerEmail: Text) : async Result.Result<[ProjectApplication], Error> {
+    public shared(_msg) func getFreelancerApplications(freelancerEmail: Text) : async Result.Result<[ProjectApplication], Error> {
         let freelancerApplications = Iter.toArray(
             Iter.filter<(Text, ProjectApplication)>(
                 applications.entries(),
@@ -256,7 +255,7 @@ persistent actor ProjectStore {
     };
 
     // Accept/Reject application
-    public shared(msg) func updateApplicationStatus(
+    public shared(_msg) func updateApplicationStatus(
         applicationId: Text,
         status: {
             #Accepted;
@@ -310,7 +309,7 @@ persistent actor ProjectStore {
     };
 
     // Delete project
-    public shared(msg) func deleteProject(projectId: Text) : async Result.Result<(), Error> {
+    public shared(_msg) func deleteProject(projectId: Text) : async Result.Result<(), Error> {
         switch (projects.remove(projectId)) {
             case null { #err(#ProjectNotFound) };
             case (?_removed) { #ok(()) };
@@ -318,7 +317,7 @@ persistent actor ProjectStore {
     };
 
     // Get project statistics
-    public shared(msg) func getProjectStats() : async Result.Result<{
+    public shared(_msg) func getProjectStats() : async Result.Result<{
         totalProjects: Nat;
         openProjects: Nat;
         inProgressProjects: Nat;
