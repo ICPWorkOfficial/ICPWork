@@ -3,7 +3,7 @@ import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Int "mo:base/Int";
 import Iter "mo:base/Iter";
-import Utils "./utils";
+import _Utils "./utils";
 
 module {
     public type Session = {
