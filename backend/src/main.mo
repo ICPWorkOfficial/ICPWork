@@ -2,6 +2,7 @@ import Auth "./auth";
 import SessionManager "./session";
 import Text "mo:base/Text";
 import Result "mo:base/Result";
+import Principal "mo:base/Principal";
 
 persistent actor Main {
     
@@ -60,6 +61,63 @@ persistent actor Main {
         #SlippageTooHigh;
         #TransactionFailed;
         #InvalidPool;
+        #EscrowNotFound;
+        #EscrowNotPending;
+        #InvalidEscrowAmount;
+        #InsufficientEscrowBalance;
+        #InvalidDeadline;
+        #NoArbitratorAssigned;
+        #AlreadyApproved;
+        #OnlyBuyerCanApprove;
+        #OnlySellerCanApprove;
+        #OnlyBuyerCanCancel;
+        #OnlyBuyerCanDispute;
+        #OnlySellerCanDispute;
+        #OnlyArbitratorCanResolve;
+        #EscrowNotDisputed;
+        #CannotDisputeBeforeDeadline;
+    };
+
+    // Escrow types
+    public type EscrowId = Nat;
+    public type Balance = Nat;
+    public type Timestamp = Int;
+    
+    public type EscrowStatus = {
+        #Pending;
+        #Completed;
+        #Disputed;
+        #Cancelled;
+        #Refunded;
+    };
+    
+    public type EscrowAgreement = {
+        id: EscrowId;
+        buyer: Principal;
+        seller: Principal;
+        arbitrator: ?Principal;
+        amount: Balance;
+        platformFee: Balance; // 5% of the amount
+        netAmount: Balance; // Amount after platform fee deduction
+        description: Text;
+        status: EscrowStatus;
+        createdAt: Timestamp;
+        deadline: Timestamp; // Project deadline
+        completedAt: ?Timestamp;
+        buyerApproved: Bool;
+        sellerApproved: Bool;
+        serviceId: Text; // Reference to the service
+        projectTitle: Text;
+    };
+    
+    public type CreateEscrowArgs = {
+        seller: Principal;
+        arbitrator: ?Principal;
+        amount: Balance;
+        description: Text;
+        deadline: Timestamp; // Project deadline in nanoseconds
+        serviceId: Text;
+        projectTitle: Text;
     };
 
     // Message types
@@ -651,6 +709,27 @@ persistent actor Main {
         setWinners: shared (Text, [Text], Text) -> async Result.Result<(), Text>;
     } = null;
 
+    private transient var escrowStorage : ?{
+        deposit: shared (Balance) -> async Result.Result<Balance, Text>;
+        withdraw: shared (Balance) -> async Result.Result<Balance, Text>;
+        getMyBalance: shared () -> async Balance;
+        createEscrow: shared (CreateEscrowArgs) -> async Result.Result<EscrowId, Text>;
+        buyerApprove: shared (EscrowId) -> async Result.Result<Text, Text>;
+        sellerApprove: shared (EscrowId) -> async Result.Result<Text, Text>;
+        cancelEscrow: shared (EscrowId) -> async Result.Result<Text, Text>;
+        raiseDispute: shared (EscrowId) -> async Result.Result<Text, Text>;
+        resolveDispute: shared (EscrowId, Bool) -> async Result.Result<Text, Text>;
+        raiseClientDispute: shared (EscrowId, Text) -> async Result.Result<Text, Text>;
+        raiseFreelancerDispute: shared (EscrowId, Text) -> async Result.Result<Text, Text>;
+        getEscrow: shared (EscrowId) -> async ?EscrowAgreement;
+        getMyEscrows: shared () -> async [EscrowAgreement];
+        getArbitrationEscrows: shared () -> async [EscrowAgreement];
+        getPlatformFeeBalance: shared () -> async Balance;
+        getPlatformFeeStats: shared () -> async { totalFees: Balance; totalTransactions: Nat; collectedFees: Balance; };
+        getEscrowsByService: shared (Text) -> async [EscrowAgreement];
+        checkOverdueProjects: shared () -> async Result.Result<[EscrowId], Text>;
+    } = null;
+
 
     // Initialize modules
     transient let auth = Auth.Auth();
@@ -1032,6 +1111,76 @@ persistent actor Main {
         }
     };
 
+    // Escrow storage initialization
+    private func getEscrowStorage() : {
+        deposit: shared (Balance) -> async Result.Result<Balance, Text>;
+        withdraw: shared (Balance) -> async Result.Result<Balance, Text>;
+        getMyBalance: shared () -> async Balance;
+        createEscrow: shared (CreateEscrowArgs) -> async Result.Result<EscrowId, Text>;
+        buyerApprove: shared (EscrowId) -> async Result.Result<Text, Text>;
+        sellerApprove: shared (EscrowId) -> async Result.Result<Text, Text>;
+        cancelEscrow: shared (EscrowId) -> async Result.Result<Text, Text>;
+        raiseDispute: shared (EscrowId) -> async Result.Result<Text, Text>;
+        resolveDispute: shared (EscrowId, Bool) -> async Result.Result<Text, Text>;
+        raiseClientDispute: shared (EscrowId, Text) -> async Result.Result<Text, Text>;
+        raiseFreelancerDispute: shared (EscrowId, Text) -> async Result.Result<Text, Text>;
+        getEscrow: shared (EscrowId) -> async ?EscrowAgreement;
+        getMyEscrows: shared () -> async [EscrowAgreement];
+        getArbitrationEscrows: shared () -> async [EscrowAgreement];
+        getPlatformFeeBalance: shared () -> async Balance;
+        getPlatformFeeStats: shared () -> async { totalFees: Balance; totalTransactions: Nat; collectedFees: Balance; };
+        getEscrowsByService: shared (Text) -> async [EscrowAgreement];
+        checkOverdueProjects: shared () -> async Result.Result<[EscrowId], Text>;
+    } {
+        switch (escrowStorage) {
+            case null {
+                let actor_ref = actor("escrow") : actor {
+                    deposit: shared (Balance) -> async Result.Result<Balance, Text>;
+                    withdraw: shared (Balance) -> async Result.Result<Balance, Text>;
+                    getMyBalance: shared () -> async Balance;
+                    createEscrow: shared (CreateEscrowArgs) -> async Result.Result<EscrowId, Text>;
+                    buyerApprove: shared (EscrowId) -> async Result.Result<Text, Text>;
+                    sellerApprove: shared (EscrowId) -> async Result.Result<Text, Text>;
+                    cancelEscrow: shared (EscrowId) -> async Result.Result<Text, Text>;
+                    raiseDispute: shared (EscrowId) -> async Result.Result<Text, Text>;
+                    resolveDispute: shared (EscrowId, Bool) -> async Result.Result<Text, Text>;
+                    raiseClientDispute: shared (EscrowId, Text) -> async Result.Result<Text, Text>;
+                    raiseFreelancerDispute: shared (EscrowId, Text) -> async Result.Result<Text, Text>;
+                    getEscrow: shared (EscrowId) -> async ?EscrowAgreement;
+                    getMyEscrows: shared () -> async [EscrowAgreement];
+                    getArbitrationEscrows: shared () -> async [EscrowAgreement];
+                    getPlatformFeeBalance: shared () -> async Balance;
+                    getPlatformFeeStats: shared () -> async { totalFees: Balance; totalTransactions: Nat; collectedFees: Balance; };
+                    getEscrowsByService: shared (Text) -> async [EscrowAgreement];
+                    checkOverdueProjects: shared () -> async Result.Result<[EscrowId], Text>;
+                };
+                let storage = {
+                    deposit = actor_ref.deposit;
+                    withdraw = actor_ref.withdraw;
+                    getMyBalance = actor_ref.getMyBalance;
+                    createEscrow = actor_ref.createEscrow;
+                    buyerApprove = actor_ref.buyerApprove;
+                    sellerApprove = actor_ref.sellerApprove;
+                    cancelEscrow = actor_ref.cancelEscrow;
+                    raiseDispute = actor_ref.raiseDispute;
+                    resolveDispute = actor_ref.resolveDispute;
+                    raiseClientDispute = actor_ref.raiseClientDispute;
+                    raiseFreelancerDispute = actor_ref.raiseFreelancerDispute;
+                    getEscrow = actor_ref.getEscrow;
+                    getMyEscrows = actor_ref.getMyEscrows;
+                    getArbitrationEscrows = actor_ref.getArbitrationEscrows;
+                    getPlatformFeeBalance = actor_ref.getPlatformFeeBalance;
+                    getPlatformFeeStats = actor_ref.getPlatformFeeStats;
+                    getEscrowsByService = actor_ref.getEscrowsByService;
+                    checkOverdueProjects = actor_ref.checkOverdueProjects;
+                };
+                escrowStorage := ?storage;
+                storage
+            };
+            case (?storage) storage;
+        }
+    };
+
     // AUTHENTICATION FUNCTIONS
 
     // Helper function to convert UserType text to enum
@@ -1255,7 +1404,7 @@ persistent actor Main {
     public func getAllFreelancers(sessionId: Text) : async Result.Result<[(Text, Freelancer)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 // Add admin check here if needed
                 try {
                     let result = await getFreelancerStorage().getAllFreelancers();
@@ -1350,7 +1499,7 @@ persistent actor Main {
     public func getAllClients(sessionId: Text) : async Result.Result<[(Text, Client)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 // Add admin check here if needed
                 try {
                     let result = await getClientStorage().getAllClients();
@@ -1413,7 +1562,7 @@ persistent actor Main {
     public func getUserByEmailWithSession(sessionId: Text, email: Text) : async Result.Result<User, Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 // Add admin check here if needed
                 switch (auth.getUserByEmail(email)) {
                     case null { #err(#UserNotFound) };
@@ -1716,7 +1865,7 @@ persistent actor Main {
     public func getAllOnboardingRecords(sessionId: Text) : async Result.Result<[(Text, OnboardingRecord)], Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 try {
                     let result = await getOnboardingStorage().getAllOnboardingRecords();
                     switch (result) {
@@ -1739,7 +1888,7 @@ persistent actor Main {
     public func getOnboardingRecordsByStatus(sessionId: Text, isComplete: Bool) : async Result.Result<[(Text, OnboardingRecord)], Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 try {
                     let result = await getOnboardingStorage().getOnboardingRecordsByStatus(isComplete);
                     switch (result) {
@@ -1762,7 +1911,7 @@ persistent actor Main {
     public func getOnboardingRecordsByUserType(sessionId: Text, userType: Text) : async Result.Result<[(Text, OnboardingRecord)], Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 try {
                     let result = await getOnboardingStorage().getOnboardingRecordsByUserType(userType);
                     switch (result) {
@@ -1792,7 +1941,7 @@ persistent actor Main {
     }, Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 try {
                     let result = await getOnboardingStorage().getOnboardingStats();
                     switch (result) {
@@ -2085,7 +2234,7 @@ persistent actor Main {
     public func getAllActiveFreelancerProfiles(sessionId: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 try {
                     let result = await getFreelancerDashboardStorage().getActiveProfiles();
                     switch (result) {
@@ -2134,7 +2283,7 @@ persistent actor Main {
     public func convertCurrency(sessionId: Text, request: ConversionRequest): async Result.Result<ConversionResponse, Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 try {
                     let result = await getICPSwapStorage().convertCurrency(request);
                     switch (result) {
@@ -2229,7 +2378,7 @@ persistent actor Main {
     ): async Result.Result<(), Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?_session) {
+            case (?session) {
                 try {
                     let result = await getICPSwapStorage().updateTransactionStatus(id, status, txHash);
                     switch (result) {
@@ -2544,6 +2693,311 @@ persistent actor Main {
                     }
                 } catch (_error) {
                     #err(#StorageError("Hackathon canister error"))
+                }
+            };
+        }
+    };
+
+    // ESCROW FUNCTIONS
+
+    // Deposit funds to escrow account
+    public func depositToEscrow(sessionId: Text, amount: Balance): async Result.Result<Balance, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().deposit(amount);
+                    switch (result) {
+                        case (#ok(balance)) { #ok(balance) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Withdraw funds from escrow account
+    public func withdrawFromEscrow(sessionId: Text, amount: Balance): async Result.Result<Balance, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().withdraw(amount);
+                    switch (result) {
+                        case (#ok(balance)) { #ok(balance) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Get user's escrow balance
+    public func getEscrowBalance(sessionId: Text): async Result.Result<Balance, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let balance = await getEscrowStorage().getMyBalance();
+                    #ok(balance)
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Create new escrow agreement
+    public func createEscrow(sessionId: Text, args: CreateEscrowArgs): async Result.Result<EscrowId, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().createEscrow(args);
+                    switch (result) {
+                        case (#ok(escrowId)) { #ok(escrowId) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Buyer approves escrow
+    public func buyerApproveEscrow(sessionId: Text, escrowId: EscrowId): async Result.Result<Text, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().buyerApprove(escrowId);
+                    switch (result) {
+                        case (#ok(msg)) { #ok(msg) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Seller approves escrow
+    public func sellerApproveEscrow(sessionId: Text, escrowId: EscrowId): async Result.Result<Text, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().sellerApprove(escrowId);
+                    switch (result) {
+                        case (#ok(msg)) { #ok(msg) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Cancel escrow
+    public func cancelEscrow(sessionId: Text, escrowId: EscrowId): async Result.Result<Text, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().cancelEscrow(escrowId);
+                    switch (result) {
+                        case (#ok(msg)) { #ok(msg) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Raise dispute
+    public func raiseEscrowDispute(sessionId: Text, escrowId: EscrowId): async Result.Result<Text, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().raiseDispute(escrowId);
+                    switch (result) {
+                        case (#ok(msg)) { #ok(msg) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Resolve dispute
+    public func resolveEscrowDispute(sessionId: Text, escrowId: EscrowId, favorBuyer: Bool): async Result.Result<Text, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().resolveDispute(escrowId, favorBuyer);
+                    switch (result) {
+                        case (#ok(msg)) { #ok(msg) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Raise client dispute
+    public func raiseClientDispute(sessionId: Text, escrowId: EscrowId, reason: Text): async Result.Result<Text, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().raiseClientDispute(escrowId, reason);
+                    switch (result) {
+                        case (#ok(msg)) { #ok(msg) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Raise freelancer dispute
+    public func raiseFreelancerDispute(sessionId: Text, escrowId: EscrowId, reason: Text): async Result.Result<Text, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().raiseFreelancerDispute(escrowId, reason);
+                    switch (result) {
+                        case (#ok(msg)) { #ok(msg) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Get escrow details
+    public func getEscrow(sessionId: Text, escrowId: EscrowId): async Result.Result<?EscrowAgreement, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let escrow = await getEscrowStorage().getEscrow(escrowId);
+                    #ok(escrow)
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Get user's escrows
+    public func getMyEscrows(sessionId: Text): async Result.Result<[EscrowAgreement], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let escrows = await getEscrowStorage().getMyEscrows();
+                    #ok(escrows)
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Get arbitration escrows
+    public func getArbitrationEscrows(sessionId: Text): async Result.Result<[EscrowAgreement], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let escrows = await getEscrowStorage().getArbitrationEscrows();
+                    #ok(escrows)
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Get platform fee balance (admin function)
+    public func getPlatformFeeBalance(sessionId: Text): async Result.Result<Balance, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let balance = await getEscrowStorage().getPlatformFeeBalance();
+                    #ok(balance)
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Get platform fee statistics (admin function)
+    public func getPlatformFeeStats(sessionId: Text): async Result.Result<{ totalFees: Balance; totalTransactions: Nat; collectedFees: Balance; }, Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let stats = await getEscrowStorage().getPlatformFeeStats();
+                    #ok(stats)
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Get escrows by service ID
+    public func getEscrowsByService(sessionId: Text, serviceId: Text): async Result.Result<[EscrowAgreement], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let escrows = await getEscrowStorage().getEscrowsByService(serviceId);
+                    #ok(escrows)
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
+                }
+            };
+        }
+    };
+
+    // Check overdue projects (admin function)
+    public func checkOverdueProjects(sessionId: Text): async Result.Result<[EscrowId], Error> {
+        switch (sessionManager.validateSession(sessionId)) {
+            case null { return #err(#InvalidSession) };
+            case (?_session) {
+                try {
+                    let result = await getEscrowStorage().checkOverdueProjects();
+                    switch (result) {
+                        case (#ok(escrowIds)) { #ok(escrowIds) };
+                        case (#err(msg)) { #err(#StorageError(msg)) };
+                    }
+                } catch (_error) {
+                    #err(#StorageError("Escrow canister error"))
                 }
             };
         }

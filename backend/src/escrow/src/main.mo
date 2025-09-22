@@ -28,7 +28,7 @@ persistent actor EscrowBank {
         seller: Principal;
         arbitrator: ?Principal;
         amount: Balance;
-        platformFee: Balance; // 10% of the amount
+        platformFee: Balance; // 5% of the amount
         netAmount: Balance; // Amount after platform fee deduction
         description: Text;
         status: EscrowStatus;
@@ -55,6 +55,7 @@ persistent actor EscrowBank {
     private var nextEscrowId: EscrowId = 1;
     private transient var escrows = Map.HashMap<EscrowId, EscrowAgreement>(10, func(a: EscrowId, b: EscrowId) : Bool { a == b }, func(id: EscrowId) : Nat32 { Nat32.fromNat(id) });
     private transient var balances = Map.HashMap<Principal, Balance>(10, Principal.equal, Principal.hash);
+    private var platformFeeBalance: Balance = 0; // Track collected platform fees
     
     // Helper function to get caller's balance
     private func getBalance(principal: Principal) : Balance {
@@ -64,17 +65,37 @@ persistent actor EscrowBank {
         };
     };
     
-    // Helper function to update balance
+    // Helper function to update balance with overflow protection
     private func updateBalance(principal: Principal, newBalance: Balance) {
-        balances.put(principal, newBalance);
+        // Prevent negative balances
+        if (newBalance < 0) {
+            balances.put(principal, 0);
+        } else {
+            balances.put(principal, newBalance);
+        };
     };
     
-    // Calculate platform fee (10% of the amount)
+    // Helper function to safely add to balance with overflow protection
+    private func addToBalance(principal: Principal, amount: Balance) : Balance {
+        let currentBalance = getBalance(principal);
+        let newBalance = currentBalance + amount;
+        // Check for overflow
+        if (newBalance < currentBalance) {
+            // Overflow occurred, set to maximum possible value
+            balances.put(principal, 0xFFFFFFFFFFFFFFFF);
+            0xFFFFFFFFFFFFFFFF
+        } else {
+            balances.put(principal, newBalance);
+            newBalance
+        };
+    };
+    
+    // Calculate platform fee (5% of the amount)
     private func calculatePlatformFee(amount: Balance) : Balance {
         if (amount == 0) {
             0
         } else {
-            amount / 10; // 10% fee
+            amount / 20; // 5% fee (amount / 20 = 5%)
         }
     };
     
@@ -90,10 +111,7 @@ persistent actor EscrowBank {
             return #err("Amount must be greater than 0");
         };
         
-        let currentBalance = getBalance(caller);
-        let newBalance = currentBalance + amount;
-        updateBalance(caller, newBalance);
-        
+        let newBalance = addToBalance(caller, amount);
         #ok(newBalance)
     };
     
@@ -104,6 +122,10 @@ persistent actor EscrowBank {
         
         if (amount > currentBalance) {
             return #err("Insufficient balance");
+        };
+        
+        if (amount == 0) {
+            return #err("Amount must be greater than 0");
         };
         
         // Safe subtraction since we've verified currentBalance >= amount
@@ -186,6 +208,10 @@ persistent actor EscrowBank {
                     return #err("Escrow is not in pending status");
                 };
                 
+                if (escrow.buyerApproved) {
+                    return #err("Buyer has already approved this escrow");
+                };
+                
                 let updatedEscrow = {
                     escrow with
                     buyerApproved = true;
@@ -201,8 +227,10 @@ persistent actor EscrowBank {
                     escrows.put(escrowId, completedEscrow);
                     
                     // Transfer net amount to seller (after platform fee deduction)
-                    let sellerBalance = getBalance(escrow.seller);
-                    updateBalance(escrow.seller, sellerBalance + escrow.netAmount);
+                    ignore addToBalance(escrow.seller, escrow.netAmount);
+                    
+                    // Collect platform fee
+                    platformFeeBalance += escrow.platformFee;
                     
                     #ok("Escrow completed successfully. Platform fee deducted.")
                 } else {
@@ -228,6 +256,10 @@ persistent actor EscrowBank {
                     return #err("Escrow is not in pending status");
                 };
                 
+                if (escrow.sellerApproved) {
+                    return #err("Seller has already approved this escrow");
+                };
+                
                 let updatedEscrow = {
                     escrow with
                     sellerApproved = true;
@@ -243,8 +275,10 @@ persistent actor EscrowBank {
                     escrows.put(escrowId, completedEscrow);
                     
                     // Transfer net amount to seller (after platform fee deduction)
-                    let sellerBalance = getBalance(escrow.seller);
-                    updateBalance(escrow.seller, sellerBalance + escrow.netAmount);
+                    ignore addToBalance(escrow.seller, escrow.netAmount);
+                    
+                    // Collect platform fee
+                    platformFeeBalance += escrow.platformFee;
                     
                     #ok("Escrow completed successfully. Platform fee deducted.")
                 } else {
@@ -270,9 +304,11 @@ persistent actor EscrowBank {
                     return #err("Can only cancel pending escrows");
                 };
                 
-                // Refund full amount to buyer (including platform fee)
-                let buyerBalance = getBalance(escrow.buyer);
-                updateBalance(escrow.buyer, buyerBalance + escrow.amount);
+                // Refund net amount to buyer (platform fee is kept by platform)
+                ignore addToBalance(escrow.buyer, escrow.netAmount);
+                
+                // Collect platform fee
+                platformFeeBalance += escrow.platformFee;
                 
                 let cancelledEscrow = {
                     escrow with
@@ -281,7 +317,7 @@ persistent actor EscrowBank {
                 };
                 
                 escrows.put(escrowId, cancelledEscrow);
-                #ok("Escrow cancelled and full amount refunded (including platform fee)")
+                #ok("Escrow cancelled and net amount refunded (platform fee retained)")
             };
         };
     };
@@ -336,9 +372,11 @@ persistent actor EscrowBank {
                         };
                         
                         if (favorBuyer) {
-                            // Refund full amount to buyer (including platform fee)
-                            let buyerBalance = getBalance(escrow.buyer);
-                            updateBalance(escrow.buyer, buyerBalance + escrow.amount);
+                            // Refund net amount to buyer (platform fee is kept by platform)
+                            ignore addToBalance(escrow.buyer, escrow.netAmount);
+                            
+                            // Collect platform fee
+                            platformFeeBalance += escrow.platformFee;
                             
                             let resolvedEscrow = {
                                 escrow with
@@ -346,11 +384,13 @@ persistent actor EscrowBank {
                                 completedAt = ?Time.now();
                             };
                             escrows.put(escrowId, resolvedEscrow);
-                            #ok("Dispute resolved in favor of buyer, full amount refunded (including platform fee)")
+                            #ok("Dispute resolved in favor of buyer, net amount refunded (platform fee retained)")
                         } else {
                             // Pay net amount to seller (after platform fee deduction)
-                            let sellerBalance = getBalance(escrow.seller);
-                            updateBalance(escrow.seller, sellerBalance + escrow.netAmount);
+                            ignore addToBalance(escrow.seller, escrow.netAmount);
+                            
+                            // Collect platform fee
+                            platformFeeBalance += escrow.platformFee;
                             
                             let resolvedEscrow = {
                                 escrow with
@@ -366,8 +406,10 @@ persistent actor EscrowBank {
         };
     };
     
-    // Check for overdue projects and automatically raise disputes
-    public shared(_) func checkOverdueProjects() : async Result.Result<[EscrowId], Text> {
+    // Check for overdue projects and automatically raise disputes (admin only)
+    public shared(_msg) func checkOverdueProjects() : async Result.Result<[EscrowId], Text> {
+        // TODO: Add proper admin authorization check
+        // For now, we'll allow any caller but this should be restricted to admin principals
         let currentTime = Time.now();
         var overdueEscrows: [EscrowId] = [];
         
@@ -408,13 +450,19 @@ persistent actor EscrowBank {
                     return #err("Cannot dispute before deadline without valid reason");
                 };
                 
-                let disputedEscrow = {
-                    escrow with
-                    status = #Disputed;
+                // Check if arbitrator is assigned
+                switch (escrow.arbitrator) {
+                    case null { #err("No arbitrator assigned to this escrow") };
+                    case (?_) {
+                        let disputedEscrow = {
+                            escrow with
+                            status = #Disputed;
+                        };
+                        
+                        escrows.put(escrowId, disputedEscrow);
+                        #ok("Client dispute raised successfully")
+                    };
                 };
-                
-                escrows.put(escrowId, disputedEscrow);
-                #ok("Client dispute raised successfully")
             };
         };
     };
@@ -434,13 +482,19 @@ persistent actor EscrowBank {
                     return #err("Can only dispute pending escrows");
                 };
                 
-                let disputedEscrow = {
-                    escrow with
-                    status = #Disputed;
+                // Check if arbitrator is assigned
+                switch (escrow.arbitrator) {
+                    case null { #err("No arbitrator assigned to this escrow") };
+                    case (?_) {
+                        let disputedEscrow = {
+                            escrow with
+                            status = #Disputed;
+                        };
+                        
+                        escrows.put(escrowId, disputedEscrow);
+                        #ok("Freelancer dispute raised successfully")
+                    };
                 };
-                
-                escrows.put(escrowId, disputedEscrow);
-                #ok("Freelancer dispute raised successfully")
             };
         };
     };
@@ -473,20 +527,25 @@ persistent actor EscrowBank {
         })
     };
     
+    // Get platform fee balance (admin function)
+    public query func getPlatformFeeBalance() : async Balance {
+        platformFeeBalance
+    };
+    
     // Get platform fee statistics (admin function)
-    public query func getPlatformFeeStats() : async { totalFees: Balance; totalTransactions: Nat; } {
+    public query func getPlatformFeeStats() : async { totalFees: Balance; totalTransactions: Nat; collectedFees: Balance; } {
         let allEscrows = Iter.toArray(escrows.vals());
         var totalFees: Balance = 0;
         var totalTransactions: Nat = 0;
         
         for (escrow in allEscrows.vals()) {
-            if (escrow.status == #Completed) {
+            if (escrow.status == #Completed or escrow.status == #Refunded or escrow.status == #Cancelled) {
                 totalFees += escrow.platformFee;
                 totalTransactions += 1;
             };
         };
         
-        { totalFees = totalFees; totalTransactions = totalTransactions; }
+        { totalFees = totalFees; totalTransactions = totalTransactions; collectedFees = platformFeeBalance; }
     };
     
     // Get escrows by service ID
