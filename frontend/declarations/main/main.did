@@ -1,10 +1,122 @@
+type UserType = 
+ variant {
+   client;
+   freelancer;
+ };
+type User = 
+ record {
+   email: text;
+   passwordHash: blob;
+   userType: UserType;
+ };
+type TransactionStatus = 
+ variant {
+   cancelled;
+   completed;
+   failed;
+   pending;
+   processing;
+ };
+type TokenSymbol = 
+ variant {
+   BTC;
+   EOS;
+   ETH;
+   ICP;
+   USDC;
+   USDT;
+ };
+type TokenInfo = 
+ record {
+   canisterId: opt text;
+   contractAddress: opt text;
+   decimals: nat8;
+   name: text;
+   symbol: TokenSymbol;
+ };
+type Timestamp = int;
+type SwapTransaction = 
+ record {
+   amount: text;
+   converted: text;
+   createdAt: int;
+   from: TokenSymbol;
+   id: text;
+   rate: float64;
+   status: TransactionStatus;
+   to: TokenSymbol;
+   txHash: opt text;
+   updatedAt: int;
+   userEmail: text;
+ };
 type SessionInfo = 
  record {
    expiresAt: int;
    sessionId: text;
    userType: text;
  };
+type Result_8 = 
+ variant {
+   err: Error;
+   ok: Message;
+ };
+type Result_7 = 
+ variant {
+   err: Error;
+   ok: record {
+         sessionId: text;
+         user: User;
+       };
+ };
+type Result_6 = 
+ variant {
+   err: Error;
+   ok: Bounty;
+ };
 type Result_5 = 
+ variant {
+   err: Error;
+   ok: FreelancerProfile;
+ };
+type Result_4 = 
+ variant {
+   err: Error;
+   ok: Hackathon;
+ };
+type Result_32 = 
+ variant {
+   err: Error;
+   ok: vec EscrowId;
+ };
+type Result_31 = 
+ variant {
+   err: Error;
+   ok: ConversionResponse;
+ };
+type Result_30 = 
+ variant {
+   err: Error;
+   ok: EscrowId;
+ };
+type Result_3 = 
+ variant {
+   err: Error;
+   ok: SessionInfo;
+ };
+type Result_29 = 
+ variant {
+   err: Error;
+   ok: SwapTransaction;
+ };
+type Result_28 = 
+ variant {
+   err: Error;
+   ok: vec record {
+             text;
+             FreelancerProfile;
+           };
+ };
+type Result_27 = 
  variant {
    err: Error;
    ok: vec record {
@@ -12,7 +124,7 @@ type Result_5 =
              Client;
            };
  };
-type Result_4 = 
+type Result_26 = 
  variant {
    err: Error;
    ok: vec record {
@@ -20,25 +132,381 @@ type Result_4 =
              Freelancer;
            };
  };
-type Result_3 = 
+type Result_25 = 
  variant {
    err: Error;
    ok: Client;
  };
-type Result_2 = 
+type Result_24 = 
+ variant {
+   err: Error;
+   ok: vec Message;
+ };
+type Result_23 = 
+ variant {
+   err: Error;
+   ok: opt EscrowAgreement;
+ };
+type Result_22 = 
  variant {
    err: Error;
    ok: Freelancer;
  };
+type Result_21 = 
+ variant {
+   err: Error;
+   ok: vec EscrowAgreement;
+ };
+type Result_20 = 
+ variant {
+   err: Error;
+   ok: OnboardingRecord;
+ };
+type Result_2 = 
+ variant {
+   err: Error;
+   ok: text;
+ };
+type Result_19 = 
+ variant {
+   err: Error;
+   ok: vec record {
+             text;
+             OnboardingRecord;
+           };
+ };
+type Result_18 = 
+ variant {
+   err: Error;
+   ok:
+    record {
+      clientRecords: nat;
+      completedRecords: nat;
+      freelancerRecords: nat;
+      pendingRecords: nat;
+      totalRecords: nat;
+    };
+ };
+type Result_17 = 
+ variant {
+   err: Error;
+   ok:
+    record {
+      collectedFees: Balance;
+      totalFees: Balance;
+      totalTransactions: nat;
+    };
+ };
+type Result_16 = 
+ variant {
+   err: Error;
+   ok: nat;
+ };
+type Result_15 = 
+ variant {
+   err: Error;
+   ok: vec Bounty;
+ };
+type Result_14 = 
+ variant {
+   err: Error;
+   ok: User;
+ };
+type Result_13 = 
+ variant {
+   err: Error;
+   ok: vec ConversationSummary;
+ };
+type Result_12 = 
+ variant {
+   err: Error;
+   ok: vec Hackathon;
+ };
+type Result_11 = 
+ variant {
+   err: Error;
+   ok: record {
+         email: text;
+         expiresAt: int;
+         userType: text;
+       };
+ };
+type Result_10 = 
+ variant {
+   err: Error;
+   ok: vec SwapTransaction;
+ };
 type Result_1 = 
  variant {
    err: Error;
-   ok;
+   ok: Balance;
  };
 type Result = 
  variant {
    err: Error;
-   ok: SessionInfo;
+   ok;
+ };
+type RequirementPlans = 
+ record {
+   advanced: PlanDetails;
+   basic: PlanDetails;
+   premium: PlanDetails;
+ };
+type ProfileMethod = 
+ variant {
+   manual;
+   resume;
+ };
+type ProfileData = 
+ record {
+   phoneNumber: opt text;
+   phoneVerified: bool;
+   profilePhoto: opt text;
+ };
+type PlanDetails = 
+ record {
+   deliveryTime: text;
+   description: text;
+   features: vec text;
+   price: text;
+ };
+type PersonalInfo = 
+ record {
+   firstName: opt text;
+   lastName: opt text;
+ };
+type ParticipantStatus = 
+ variant {
+   Disqualified;
+   Registered;
+   Submitted;
+   Winner;
+ };
+type Participant = 
+ record {
+   registeredAt: int;
+   status: ParticipantStatus;
+   submissionDescription: opt text;
+   submissionUrl: opt text;
+   submittedAt: opt int;
+   userId: text;
+ };
+type OnboardingRecord = 
+ record {
+   address: opt AddressData;
+   companyData: opt CompanyData;
+   completedAt: opt int;
+   createdAt: int;
+   email: text;
+   final: opt FinalData;
+   isComplete: bool;
+   personalInfo: opt PersonalInfo;
+   profile: opt ProfileData;
+   profileMethod: opt ProfileMethod;
+   skills: vec text;
+   updatedAt: int;
+   userType: text;
+ };
+type MessageType = 
+ variant {
+   file;
+   image;
+   systemMessage;
+   "text";
+ };
+type Message = 
+ record {
+   content: text;
+   from: text;
+   id: text;
+   isDelivered: bool;
+   isRead: bool;
+   messageType: MessageType;
+   serverTimestamp: int;
+   timestamp: int;
+   to: text;
+ };
+type HackathonUpdate = 
+ record {
+   bannerUrl: opt text;
+   deliverables: opt vec text;
+   description: opt text;
+   discord: opt text;
+   endDate: opt int;
+   featured: opt bool;
+   imageUrl: opt text;
+   judgingCriteria: opt vec text;
+   location: opt text;
+   maxParticipants: opt nat;
+   maxTeamSize: opt nat;
+   prizePool: opt text;
+   prizes: opt vec HackathonPrize;
+   registrationDeadline: opt int;
+   requirements: opt vec text;
+   startDate: opt int;
+   status: opt HackathonStatus;
+   submissionDeadline: opt int;
+   tags: opt vec text;
+   timeline: opt text;
+   title: opt text;
+   twitter: opt text;
+   website: opt text;
+ };
+type HackathonStatus = 
+ variant {
+   Cancelled;
+   Completed;
+   Ongoing;
+   RegistrationOpen;
+   Upcoming;
+ };
+type HackathonStats = 
+ record {
+   activeHackathons: nat;
+   completedHackathons: nat;
+   totalHackathons: nat;
+   totalParticipants: nat;
+   totalPrizePool: text;
+   totalWinners: nat;
+ };
+type HackathonSearchFilters = 
+ record {
+   category: opt HackathonCategory;
+   featured: opt bool;
+   maxParticipants: opt nat;
+   minPrizePool: opt text;
+   mode: opt HackathonMode;
+   organizer: opt text;
+   status: opt HackathonStatus;
+   tags: opt vec text;
+ };
+type HackathonPrize = 
+ record {
+   amount: text;
+   description: opt text;
+   position: text;
+   token: opt text;
+ };
+type HackathonParticipantStatus = 
+ variant {
+   Disqualified;
+   Registered;
+   RunnerUp;
+   Submitted;
+   Winner;
+   Withdrawn;
+ };
+type HackathonParticipant = 
+ record {
+   demoUrl: opt text;
+   githubRepo: opt text;
+   presentationUrl: opt text;
+   registeredAt: int;
+   status: HackathonParticipantStatus;
+   submissionDescription: opt text;
+   submissionUrl: opt text;
+   submittedAt: opt int;
+   teamMembers: vec text;
+   userEmail: text;
+   userId: text;
+ };
+type HackathonMode = 
+ variant {
+   Hybrid;
+   InPerson;
+   Virtual;
+ };
+type HackathonInput = 
+ record {
+   bannerUrl: opt text;
+   category: HackathonCategory;
+   deliverables: vec text;
+   description: text;
+   discord: opt text;
+   endDate: int;
+   featured: bool;
+   imageUrl: opt text;
+   judgingCriteria: vec text;
+   location: opt text;
+   maxParticipants: opt nat;
+   maxTeamSize: opt nat;
+   mode: HackathonMode;
+   organizer: text;
+   prizePool: text;
+   prizes: vec HackathonPrize;
+   registrationDeadline: int;
+   requirements: vec text;
+   startDate: int;
+   submissionDeadline: int;
+   tags: vec text;
+   timeline: text;
+   title: text;
+   twitter: opt text;
+   website: opt text;
+ };
+type HackathonCategory = 
+ variant {
+   AI;
+   Backend;
+   DeFi;
+   Frontend;
+   Infrastructure;
+   Mobile;
+   NFT;
+   Other: text;
+   Security;
+   SmartContracts;
+   Web3;
+ };
+type Hackathon = 
+ record {
+   bannerUrl: opt text;
+   category: HackathonCategory;
+   createdAt: int;
+   deliverables: vec text;
+   description: text;
+   discord: opt text;
+   endDate: int;
+   featured: bool;
+   id: text;
+   imageUrl: opt text;
+   judgingCriteria: vec text;
+   location: opt text;
+   maxParticipants: opt nat;
+   maxTeamSize: opt nat;
+   mode: HackathonMode;
+   organizer: text;
+   organizerId: text;
+   participants: vec HackathonParticipant;
+   prizePool: text;
+   prizes: vec HackathonPrize;
+   registrationDeadline: int;
+   requirements: vec text;
+   startDate: int;
+   status: HackathonStatus;
+   submissionDeadline: int;
+   tags: vec text;
+   timeline: text;
+   title: text;
+   twitter: opt text;
+   updatedAt: int;
+   website: opt text;
+   winnerIds: vec text;
+ };
+type FreelancerProfile = 
+ record {
+   additionalCharges: AdditionalCharges;
+   additionalQuestions: vec text;
+   createdAt: int;
+   description: text;
+   email: text;
+   isActive: bool;
+   mainCategory: text;
+   portfolioImages: vec text;
+   requirementPlans: RequirementPlans;
+   serviceTitle: text;
+   subCategory: text;
+   updatedAt: int;
  };
 type Freelancer = 
  record {
@@ -53,14 +521,117 @@ type Freelancer =
    streetAddress: text;
    zipCode: text;
  };
+type FinalData = 
+ record {
+   linkedinProfile: opt text;
+   resume: opt text;
+ };
+type EscrowStatus = 
+ variant {
+   Cancelled;
+   Completed;
+   Disputed;
+   Pending;
+   Refunded;
+ };
+type EscrowId = nat;
+type EscrowAgreement = 
+ record {
+   amount: Balance;
+   arbitrator: opt principal;
+   buyer: principal;
+   buyerApproved: bool;
+   completedAt: opt Timestamp;
+   createdAt: Timestamp;
+   deadline: Timestamp;
+   description: text;
+   id: EscrowId;
+   netAmount: Balance;
+   platformFee: Balance;
+   projectTitle: text;
+   seller: principal;
+   sellerApproved: bool;
+   serviceId: text;
+   status: EscrowStatus;
+ };
 type Error = 
  variant {
+   AlreadyApproved;
    AuthenticationFailed;
+   CannotDisputeBeforeDeadline;
    EmailRequired;
+   EscrowNotDisputed;
+   EscrowNotFound;
+   EscrowNotPending;
+   InsufficientBalance;
+   InsufficientEscrowBalance;
+   InsufficientLiquidity;
+   InvalidAmount;
+   InvalidCredentials;
+   InvalidDeadline;
+   InvalidEmail;
+   InvalidEscrowAmount;
+   InvalidPool;
+   InvalidRate;
    InvalidSession;
+   InvalidToken;
    InvalidUserType;
+   NoArbitratorAssigned;
+   OnlyArbitratorCanResolve;
+   OnlyBuyerCanApprove;
+   OnlyBuyerCanCancel;
+   OnlyBuyerCanDispute;
+   OnlySellerCanApprove;
+   OnlySellerCanDispute;
+   PoolNotFound;
    RegistrationFailed;
+   SlippageTooHigh;
    StorageError: text;
+   TransactionFailed;
+   TransactionNotFound;
+   Unauthorized;
+   UserAlreadyExists;
+   UserNotFound;
+   WeakPassword;
+ };
+type CreateEscrowArgs = 
+ record {
+   amount: Balance;
+   arbitrator: opt principal;
+   deadline: Timestamp;
+   description: text;
+   projectTitle: text;
+   seller: principal;
+   serviceId: text;
+ };
+type ConversionResponse = 
+ record {
+   converted: text;
+   estimatedGas: opt text;
+   rate: float64;
+   slippage: float64;
+ };
+type ConversionRequest = 
+ record {
+   amount: text;
+   from: TokenSymbol;
+   to: TokenSymbol;
+ };
+type ConversationSummary = 
+ record {
+   lastActivity: int;
+   lastMessage: opt Message;
+   participantA: text;
+   participantB: text;
+   unreadCount: nat;
+ };
+type CompanyData = 
+ record {
+   businessType: opt text;
+   companyName: opt text;
+   companyWebsite: opt text;
+   employeeCount: opt text;
+   industry: opt text;
  };
 type Client = 
  record {
@@ -74,23 +645,256 @@ type Client =
    numberOfEmployees: nat;
    phoneNumber: text;
  };
+type ChargeDetails = 
+ record {
+   description: text;
+   isEnabled: bool;
+   price: text;
+ };
+type BountyUpdate = 
+ record {
+   deliverables: opt vec text;
+   description: opt text;
+   featured: opt bool;
+   judgesCriteria: opt vec text;
+   maxParticipants: opt nat;
+   prizePool: opt text;
+   registrationDeadline: opt int;
+   requirements: opt vec text;
+   status: opt BountyStatus;
+   submissionDeadline: opt int;
+   tags: opt vec text;
+   timeline: opt text;
+   title: opt text;
+ };
+type BountyStatus = 
+ variant {
+   Closed;
+   Completed;
+   InProgress;
+   Open;
+ };
+type BountyStats = 
+ record {
+   completedBounties: nat;
+   openBounties: nat;
+   totalBounties: nat;
+   totalParticipants: nat;
+   totalPrizePool: text;
+ };
+type BountyMode = 
+ variant {
+   Hybrid;
+   InPerson;
+   Virtual;
+ };
+type BountyInput = 
+ record {
+   category: BountyCategory;
+   deliverables: vec text;
+   description: text;
+   featured: bool;
+   judgesCriteria: vec text;
+   maxParticipants: opt nat;
+   mode: BountyMode;
+   organizer: text;
+   prizePool: text;
+   registrationDeadline: opt int;
+   requirements: vec text;
+   submissionDeadline: opt int;
+   tags: vec text;
+   timeline: text;
+   title: text;
+ };
+type BountyCategory = 
+ variant {
+   Backend;
+   Design;
+   Documentation;
+   Frontend;
+   Other: text;
+   Security;
+   SmartContracts;
+   UserTesting;
+ };
+type Bounty = 
+ record {
+   category: BountyCategory;
+   createdAt: int;
+   deliverables: vec text;
+   description: text;
+   featured: bool;
+   id: text;
+   judgesCriteria: vec text;
+   maxParticipants: opt nat;
+   mode: BountyMode;
+   organizer: text;
+   organizerId: text;
+   participants: vec Participant;
+   prizePool: text;
+   registrationDeadline: opt int;
+   requirements: vec text;
+   status: BountyStatus;
+   submissionDeadline: opt int;
+   tags: vec text;
+   timeline: text;
+   title: text;
+   updatedAt: int;
+   winnerIds: vec text;
+ };
+type Balance = nat;
+type AddressData = 
+ record {
+   city: text;
+   country: text;
+   isPublic: bool;
+   state: text;
+   streetAddress: text;
+   zipCode: text;
+ };
+type AdditionalCharges = 
+ record {
+   additionalChanges: opt ChargeDetails;
+   fastDelivery: opt ChargeDetails;
+   perExtraChange: opt ChargeDetails;
+ };
 service : {
-  createClientProfile: (sessionId: text, client: Client) -> (Result_1);
+  buyerApproveEscrow: (sessionId: text, escrowId: EscrowId) -> (Result_2);
+  cancelEscrow: (sessionId: text, escrowId: EscrowId) -> (Result_2);
+  changePassword: (_userId: text, _otp: text, _newPassword: text) ->
+   (Result_2);
+  checkOverdueProjects: (sessionId: text) -> (Result_32);
+  completeOnboarding: (sessionId: text) -> (Result);
+  convertCurrency: (sessionId: text, request: ConversionRequest) ->
+   (Result_31);
+  createBounty: (sessionId: text, input: BountyInput) -> (Result_6);
+  createClientProfile: (sessionId: text, client: Client) -> (Result);
+  createEscrow: (sessionId: text, args: CreateEscrowArgs) -> (Result_30);
+  createFreelancerDashboardProfile: (sessionId: text, profile:
+   FreelancerProfile) -> (Result_5);
   createFreelancerProfile: (sessionId: text, freelancer: Freelancer) ->
-   (Result_1);
+   (Result);
+  createHackathon: (sessionId: text, input: HackathonInput) -> (Result_4);
+  createOnboardingRecord: (sessionId: text, userType: text) -> (Result);
+  createSwapTransaction: (sessionId: text, from: TokenSymbol, to:
+   TokenSymbol, amount: text, converted: text, rate: float64) -> (Result_29);
+  deleteBounty: (sessionId: text, bountyId: text) -> (Result);
+  deleteFreelancerDashboardProfile: (sessionId: text) -> (Result);
+  deleteHackathon: (sessionId: text, hackathonId: text) -> (Result);
+  deleteMessage: (sessionId: text, messageId: text) -> (Result);
+  depositToEscrow: (sessionId: text, amount: Balance) -> (Result_1);
   getActiveSessionCount: () -> (nat);
-  getAllClients: (sessionId: text) -> (Result_5);
-  getAllFreelancers: (sessionId: text) -> (Result_4);
-  getClientProfile: (sessionId: text) -> (Result_3);
-  getFreelancerProfile: (sessionId: text) -> (Result_2);
-  getUserRole: (email: text) -> (opt text);
-  login: (email: text, password: text) -> (bool);
-  loginUser: (userType: text, email: text, password: text) -> (Result);
-  logoutUser: (sessionId: text) -> (Result_1);
-  registerUser: (userType: text, email: text, password: text) -> (Result_1);
-  setUserRole: (email: text, role: text) -> (Result_1);
-  updateClientProfile: (sessionId: text, client: Client) -> (Result_1);
+  getAllActiveFreelancerProfiles: (sessionId: text) -> (Result_28);
+  getAllBounties: () -> (vec Bounty);
+  getAllClients: (sessionId: text) -> (Result_27);
+  getAllFreelancers: (sessionId: text) -> (Result_26);
+  getAllHackathons: () -> (vec Hackathon);
+  getAllOnboardingRecords: (sessionId: text) -> (Result_19);
+  getAllSupportedTokens: () -> (vec record {
+                                      TokenSymbol;
+                                      TokenInfo;
+                                    });
+  getArbitrationEscrows: (sessionId: text) -> (Result_21);
+  getBountiesByCategory: (category: BountyCategory) -> (vec Bounty);
+  getBountiesByOrganizer: (sessionId: text) -> (Result_15);
+  getBountiesByStatus: (status: BountyStatus) -> (vec Bounty);
+  getBounty: (bountyId: text) -> (opt Bounty);
+  getBountyStats: () -> (BountyStats);
+  getClientProfile: (sessionId: text) -> (Result_25);
+  getConversationMessages: (sessionId: text, otherUser: text, limit: 
+   opt nat, offset: opt nat) -> (Result_24);
+  getEscrow: (sessionId: text, escrowId: EscrowId) -> (Result_23);
+  getEscrowBalance: (sessionId: text) -> (Result_1);
+  getEscrowsByService: (sessionId: text, serviceId: text) -> (Result_21);
+  getFeaturedBounties: () -> (vec Bounty);
+  getFeaturedHackathons: () -> (vec Hackathon);
+  getFreelancerDashboardProfile: (sessionId: text) -> (Result_5);
+  getFreelancerProfile: (sessionId: text) -> (Result_22);
+  getHackathon: (hackathonId: text) -> (opt Hackathon);
+  getHackathonStatistics: () -> (HackathonStats);
+  getHackathonsByCategory: (category: HackathonCategory) -> (vec Hackathon);
+  getHackathonsByOrganizer: (sessionId: text) -> (Result_12);
+  getHackathonsByStatus: (status: HackathonStatus) -> (vec Hackathon);
+  getMyEscrows: (sessionId: text) -> (Result_21);
+  getOnboardingRecord: (sessionId: text) -> (Result_20);
+  getOnboardingRecordsByStatus: (sessionId: text, isComplete: bool) ->
+   (Result_19);
+  getOnboardingRecordsByUserType: (sessionId: text, userType: text) ->
+   (Result_19);
+  getOnboardingStats: (sessionId: text) -> (Result_18);
+  getPlatformFeeBalance: (sessionId: text) -> (Result_1);
+  getPlatformFeeStats: (sessionId: text) -> (Result_17);
+  getSessionInfo: (sessionId: text) -> (opt SessionInfo);
+  getSwapStatistics: () ->
+   (record {
+      activePools: nat;
+      totalLiquidity: text;
+      totalTransactions: nat;
+      totalVolume: text;
+    });
+  getSwapTransaction: (id: text) -> (opt SwapTransaction);
+  getSwapTransactionsByStatus: (status: TransactionStatus) ->
+   (vec SwapTransaction);
+  getTokenInfo: (symbol: TokenSymbol) -> (opt TokenInfo);
+  getUnreadMessageCount: (sessionId: text) -> (Result_16);
+  getUserBounties: (sessionId: text) -> (Result_15);
+  getUserByEmail: (email: text) -> (Result_14);
+  getUserByEmailWithSession: (sessionId: text, email: text) -> (Result_14);
+  getUserConversations: (sessionId: text) -> (Result_13);
+  getUserHackathons: (sessionId: text) -> (Result_12);
+  getUserInfo: (sessionId: text) -> (Result_11);
+  getUserSwapTransactions: (sessionId: text) -> (Result_10);
+  isSessionValid: (sessionId: text) -> (bool);
+  login: (email: text, password: text) -> (Result_7);
+  loginUser: (userType: text, email: text, password: text) -> (Result_3);
+  logoutUser: (sessionId: text) -> (Result);
+  markMessageAsRead: (sessionId: text, messageId: text) -> (Result);
+  raiseClientDispute: (sessionId: text, escrowId: EscrowId, reason: text) ->
+   (Result_2);
+  raiseEscrowDispute: (sessionId: text, escrowId: EscrowId) -> (Result_2);
+  raiseFreelancerDispute: (sessionId: text, escrowId: EscrowId, reason:
+   text) -> (Result_2);
+  registerForBounty: (sessionId: text, bountyId: text) -> (Result);
+  registerForHackathon: (sessionId: text, hackathonId: text, teamMembers:
+   vec text) -> (Result);
+  registerUser: (userType: text, email: text, password: text) -> (Result);
+  resendOTP: (_userId: text) -> (Result_2);
+  resolveEscrowDispute: (sessionId: text, escrowId: EscrowId, favorBuyer:
+   bool) -> (Result_2);
+  searchHackathons: (filters: HackathonSearchFilters) -> (vec Hackathon);
+  sellerApproveEscrow: (sessionId: text, escrowId: EscrowId) -> (Result_2);
+  sendMessage: (sessionId: text, to: text, content: text, messageType:
+   MessageType, clientTimestamp: int) -> (Result_8);
+  setHackathonWinners: (sessionId: text, hackathonId: text, winnerIds:
+   vec text) -> (Result);
+  signup: (email: text, password: text, userType: text) -> (Result_7);
+  submitToBounty: (sessionId: text, bountyId: text, submissionUrl: text,
+   description: text) -> (Result);
+  submitToHackathon: (sessionId: text, hackathonId: text, submissionUrl:
+   text, description: text, githubRepo: opt text, demoUrl: opt text,
+   presentationUrl: opt text) -> (Result);
+  updateBounty: (sessionId: text, bountyId: text, update: BountyUpdate) ->
+   (Result_6);
+  updateCanisterIds: (_freelancerId: opt text, _clientId: opt text,
+   _messageId: opt text, _onboardingId: opt text, _bountiesId: opt text) ->
+   (Result);
+  updateClientProfile: (sessionId: text, client: Client) -> (Result);
+  updateFreelancerDashboardProfile: (sessionId: text, profile:
+   FreelancerProfile) -> (Result_5);
   updateFreelancerProfile: (sessionId: text, freelancer: Freelancer) ->
-   (Result_1);
-  validateUserSession: (sessionId: text) -> (Result);
+   (Result);
+  updateHackathon: (sessionId: text, hackathonId: text, update:
+   HackathonUpdate) -> (Result_4);
+  updateHackathonParticipantStatus: (sessionId: text, hackathonId: text,
+   userEmail: text, status: HackathonParticipantStatus) -> (Result);
+  updateOnboardingStep: (sessionId: text, profileMethod: opt ProfileMethod,
+   personalInfo: opt PersonalInfo, skills: opt vec text, address:
+   opt AddressData, profile: opt ProfileData, final: opt FinalData,
+   companyData: opt CompanyData) -> (Result);
+  updateSwapTransactionStatus: (sessionId: text, id: text, status:
+   TransactionStatus, txHash: opt text) -> (Result);
+  validateUserSession: (sessionId: text) -> (Result_3);
+  verifyOTP: (_userId: text, _otp: text) -> (Result_2);
+  withdrawFromEscrow: (sessionId: text, amount: Balance) -> (Result_1);
+  withdrawFromHackathon: (sessionId: text, hackathonId: text) -> (Result);
 }

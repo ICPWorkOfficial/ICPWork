@@ -5,8 +5,7 @@ import { idlFactory } from '@/declarations/main';
 async function getMainActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
-    verifyQuerySignatures: false,
-    fetchRootKey: true
+    verifyQuerySignatures: false
   });
   
   await agent.fetchRootKey();
@@ -42,7 +41,7 @@ export async function GET(
     }
 
     const actor = await getMainActor();
-    const result = await actor.getEscrow(sessionId, escrowId);
+    const result = await actor.getEscrow(sessionId, escrowId) as any;
 
     if ('ok' in result && result.ok) {
       // Serialize the escrow data
@@ -95,7 +94,7 @@ export async function POST(
     }
 
     const actor = await getMainActor();
-    let result;
+    let result: any;
 
     switch (action) {
       case 'buyerApprove':

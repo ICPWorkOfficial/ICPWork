@@ -5,8 +5,7 @@ import { idlFactory } from '@/declarations/main';
 async function getMainActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
-    verifyQuerySignatures: false,
-    fetchRootKey: true
+    verifyQuerySignatures: false
   });
   
   await agent.fetchRootKey();
@@ -42,7 +41,7 @@ export async function POST(request: NextRequest) {
     const amountE8s = BigInt(Math.floor(amount * 100_000_000));
     
     // Deposit to escrow account
-    const result = await actor.depositToEscrow(sessionId, amountE8s);
+    const result = await actor.depositToEscrow(sessionId, amountE8s) as any;
 
     if ('ok' in result) {
       return NextResponse.json({
