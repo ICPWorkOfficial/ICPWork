@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/escrow';
+import { idlFactory } from '@/declarations/main';
 
-async function getEscrowActor() {
+async function getMainActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
     verifyQuerySignatures: false,
@@ -11,20 +11,37 @@ async function getEscrowActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'rrkah-fqaaa-aaaah-qcujq-cai'; // Escrow canister ID
+  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // Main canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
 // GET - Get user's balance
 export async function GET(request: NextRequest) {
   try {
-    const actor = await getEscrowActor();
-    const balance = await actor.getMyBalance();
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { success: false, error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ 
-      success: true,
-      balance: balance.toString()
-    });
+    const actor = await getMainActor();
+    const result = await actor.getEscrowBalance(sessionId);
+
+    if ('ok' in result) {
+      return NextResponse.json({ 
+        success: true,
+        balance: result.ok.toString()
+      });
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Failed to get balance' },
+        { status: 400 }
+      );
+    }
   } catch (error: any) {
     console.error('Get balance error:', error);
     return NextResponse.json(
@@ -38,11 +55,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, amount } = body;
+    const { sessionId, action, amount } = body;
 
-    if (!action || !amount) {
+    if (!sessionId || !action || !amount) {
       return NextResponse.json(
-        { success: false, error: 'Action and amount are required' },
+        { success: false, error: 'Session ID, action and amount are required' },
         { status: 400 }
       );
     }
@@ -54,15 +71,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const actor = await getEscrowActor();
+    const actor = await getMainActor();
     let result;
 
     switch (action) {
       case 'deposit':
-        result = await actor.deposit(BigInt(amount));
+        result = await actor.depositToEscrow(sessionId, BigInt(amount));
         break;
       case 'withdraw':
-        result = await actor.withdraw(BigInt(amount));
+        result = await actor.withdrawFromEscrow(sessionId, BigInt(amount));
         break;
       default:
         return NextResponse.json(
@@ -79,7 +96,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       return NextResponse.json(
-        { success: false, error: result.err },
+        { success: false, error: 'Failed to process balance operation' },
         { status: 400 }
       );
     }

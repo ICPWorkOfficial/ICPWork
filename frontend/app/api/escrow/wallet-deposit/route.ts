@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/escrow';
+import { idlFactory } from '@/declarations/main';
 
-async function getEscrowActor() {
+async function getMainActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
     verifyQuerySignatures: false,
@@ -11,64 +11,52 @@ async function getEscrowActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'yeeiw-3qaaa-aaaah-qcvmq-cai'; // Escrow canister ID
+  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // Main canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { amount, transactionId, fromPrincipal, escrowId } = body;
+    const { sessionId, amount } = body;
 
-    console.log('Wallet deposit request:', { amount, transactionId, fromPrincipal, escrowId });
+    console.log('Wallet deposit request:', { sessionId, amount });
 
-    if (!amount || !transactionId || !fromPrincipal) {
+    if (!sessionId || !amount) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required fields: amount, transactionId, fromPrincipal'
+        error: 'Missing required fields: sessionId, amount'
       }, { status: 400 });
     }
 
-    const actor = await getEscrowActor();
+    if (amount <= 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Amount must be greater than 0'
+      }, { status: 400 });
+    }
+
+    const actor = await getMainActor();
     
     // Convert amount to e8s (ICP uses 8 decimal places)
     const amountE8s = BigInt(Math.floor(amount * 100_000_000));
     
-    // Create escrow entry with wallet deposit
-    const escrowData = {
-      id: escrowId || `escrow_${Date.now()}`,
-      buyer: fromPrincipal,
-      seller: '', // Will be set when creating the full escrow
-      amount: amountE8s,
-      status: 'pending',
-      createdAt: BigInt(Date.now()),
-      deadline: BigInt(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 7 days default
-      description: 'Wallet deposit for service payment',
-      transactionId: transactionId
-    };
+    // Deposit to escrow account
+    const result = await actor.depositToEscrow(sessionId, amountE8s);
 
-    // For now, we'll simulate the deposit by storing it in a local file
-    // In a real implementation, this would interact with the escrow canister
-    const depositRecord = {
-      transactionId,
-      amount,
-      amountE8s: amountE8s.toString(),
-      fromPrincipal,
-      escrowId: escrowData.id,
-      timestamp: new Date().toISOString(),
-      status: 'completed'
-    };
-
-    // Store the deposit record (in a real app, this would be in the canister)
-    console.log('Wallet deposit completed:', depositRecord);
-
-    return NextResponse.json({
-      success: true,
-      transactionId,
-      escrowId: escrowData.id,
-      amount: amount,
-      message: 'Wallet deposit successful'
-    });
+    if ('ok' in result) {
+      return NextResponse.json({
+        success: true,
+        newBalance: result.ok.toString(),
+        amount: amount,
+        message: 'Wallet deposit successful'
+      });
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to deposit to escrow'
+      }, { status: 400 });
+    }
 
   } catch (error: any) {
     console.error('Wallet deposit error:', error);

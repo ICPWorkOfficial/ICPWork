@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/escrow';
+import { idlFactory } from '@/declarations/main';
 
-async function getEscrowActor() {
+async function getMainActor() {
   try {
-    console.log('Creating escrow actor...');
+    console.log('Creating main actor...');
     const agent = new HttpAgent({ 
       host: 'http://127.0.0.1:4943',
       verifyQuerySignatures: false,
@@ -14,15 +14,15 @@ async function getEscrowActor() {
     console.log('Fetching root key...');
     await agent.fetchRootKey();
     
-    const canisterId = 'rrkah-fqaaa-aaaah-qcujq-cai'; // Escrow canister ID
+    const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // Main canister ID
     console.log('Creating actor with canister ID:', canisterId);
     
     const actor = Actor.createActor(idlFactory, { agent, canisterId });
-    console.log('Escrow actor created successfully');
+    console.log('Main actor created successfully');
     return actor;
   } catch (error) {
-    console.error('Failed to create escrow actor:', error);
-    throw new Error(`Failed to create escrow actor: ${error.message}`);
+    console.error('Failed to create main actor:', error);
+    throw new Error(`Failed to create main actor: ${error.message}`);
   }
 }
 
@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Request body:', body);
     
-    const { seller, arbitrator, amount, description, deadline, serviceId, projectTitle } = body;
+    const { sessionId, seller, arbitrator, amount, description, deadline, serviceId, projectTitle } = body;
 
     // Validate required fields
-    if (!seller || !amount || !description || !deadline || !serviceId || !projectTitle) {
-      console.error('Missing required fields:', { seller, amount, description, deadline, serviceId, projectTitle });
+    if (!sessionId || !seller || !amount || !description || !deadline || !serviceId || !projectTitle) {
+      console.error('Missing required fields:', { sessionId, seller, amount, description, deadline, serviceId, projectTitle });
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -58,25 +58,8 @@ export async function POST(request: NextRequest) {
     const deadlineInNanoseconds = BigInt(deadline) * BigInt(1000000);
     console.log('Converted deadline:', deadlineInNanoseconds.toString());
 
-    // For now, let's simulate the escrow creation instead of calling the actual canister
-    // This will prevent the internal server error while we debug the canister connection
-    console.log('Simulating escrow creation...');
-    
-    // Generate a mock escrow ID
-    const mockEscrowId = `escrow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    console.log('Mock escrow created with ID:', mockEscrowId);
-    
-    return NextResponse.json({ 
-      success: true,
-      escrowId: mockEscrowId,
-      message: 'Escrow created successfully (simulated)'
-    });
-
-    // TODO: Uncomment this when canister connection is working
-    /*
-    const actor = await getEscrowActor();
-    const result = await actor.createEscrow({
+    const actor = await getMainActor();
+    const result = await actor.createEscrow(sessionId, {
       seller: seller,
       arbitrator: arbitrator || null,
       amount: BigInt(amount),
@@ -89,16 +72,15 @@ export async function POST(request: NextRequest) {
     if ('ok' in result) {
       return NextResponse.json({ 
         success: true,
-        escrowId: result.ok,
+        escrowId: result.ok.toString(),
         message: 'Escrow created successfully'
       });
     } else {
       return NextResponse.json(
-        { success: false, error: result.err },
+        { success: false, error: 'Failed to create escrow' },
         { status: 400 }
       );
     }
-    */
   } catch (error: any) {
     console.error('Create escrow error:', error);
     return NextResponse.json(

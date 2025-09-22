@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '@/declarations/escrow';
+import { idlFactory } from '@/declarations/main';
 
-async function getEscrowActor() {
+async function getMainActor() {
   const agent = new HttpAgent({ 
     host: 'http://127.0.0.1:4943',
     verifyQuerySignatures: false,
@@ -11,7 +11,7 @@ async function getEscrowActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'rrkah-fqaaa-aaaah-qcujq-cai'; // Escrow canister ID
+  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // Main canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 
@@ -22,6 +22,16 @@ export async function GET(
 ) {
   try {
     const { id } = params;
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { success: false, error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
+
     const escrowId = parseInt(id);
 
     if (isNaN(escrowId)) {
@@ -31,12 +41,12 @@ export async function GET(
       );
     }
 
-    const actor = await getEscrowActor();
-    const result = await actor.getEscrow(escrowId);
+    const actor = await getMainActor();
+    const result = await actor.getEscrow(sessionId, escrowId);
 
-    if (result) {
+    if ('ok' in result && result.ok) {
       // Serialize the escrow data
-      const serializedEscrow = JSON.parse(JSON.stringify(result, (key, value) =>
+      const serializedEscrow = JSON.parse(JSON.stringify(result.ok, (key, value) =>
         typeof value === 'bigint' ? value.toString() : value
       ));
       
@@ -68,7 +78,14 @@ export async function POST(
     const { id } = params;
     const escrowId = parseInt(id);
     const body = await request.json();
-    const { action, reason, favorBuyer } = body;
+    const { sessionId, action, reason, favorBuyer } = body;
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { success: false, error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
 
     if (isNaN(escrowId)) {
       return NextResponse.json(
@@ -77,27 +94,27 @@ export async function POST(
       );
     }
 
-    const actor = await getEscrowActor();
+    const actor = await getMainActor();
     let result;
 
     switch (action) {
       case 'buyerApprove':
-        result = await actor.buyerApprove(escrowId);
+        result = await actor.buyerApproveEscrow(sessionId, escrowId);
         break;
       case 'sellerApprove':
-        result = await actor.sellerApprove(escrowId);
+        result = await actor.sellerApproveEscrow(sessionId, escrowId);
         break;
       case 'cancel':
-        result = await actor.cancelEscrow(escrowId);
+        result = await actor.cancelEscrow(sessionId, escrowId);
         break;
       case 'raiseDispute':
-        result = await actor.raiseDispute(escrowId);
+        result = await actor.raiseEscrowDispute(sessionId, escrowId);
         break;
       case 'raiseClientDispute':
-        result = await actor.raiseClientDispute(escrowId, reason || '');
+        result = await actor.raiseClientDispute(sessionId, escrowId, reason || '');
         break;
       case 'raiseFreelancerDispute':
-        result = await actor.raiseFreelancerDispute(escrowId, reason || '');
+        result = await actor.raiseFreelancerDispute(sessionId, escrowId, reason || '');
         break;
       case 'resolveDispute':
         if (typeof favorBuyer !== 'boolean') {
@@ -106,7 +123,7 @@ export async function POST(
             { status: 400 }
           );
         }
-        result = await actor.resolveDispute(escrowId, favorBuyer);
+        result = await actor.resolveEscrowDispute(sessionId, escrowId, favorBuyer);
         break;
       default:
         return NextResponse.json(
@@ -122,7 +139,7 @@ export async function POST(
       });
     } else {
       return NextResponse.json(
-        { success: false, error: result.err },
+        { success: false, error: 'Failed to update escrow' },
         { status: 400 }
       );
     }
