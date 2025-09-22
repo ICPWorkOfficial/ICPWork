@@ -1404,7 +1404,7 @@ persistent actor Main {
     public func getAllFreelancers(sessionId: Text) : async Result.Result<[(Text, Freelancer)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 // Add admin check here if needed
                 try {
                     let result = await getFreelancerStorage().getAllFreelancers();
@@ -1499,7 +1499,7 @@ persistent actor Main {
     public func getAllClients(sessionId: Text) : async Result.Result<[(Text, Client)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 // Add admin check here if needed
                 try {
                     let result = await getClientStorage().getAllClients();
@@ -1562,7 +1562,7 @@ persistent actor Main {
     public func getUserByEmailWithSession(sessionId: Text, email: Text) : async Result.Result<User, Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 // Add admin check here if needed
                 switch (auth.getUserByEmail(email)) {
                     case null { #err(#UserNotFound) };
@@ -1865,7 +1865,7 @@ persistent actor Main {
     public func getAllOnboardingRecords(sessionId: Text) : async Result.Result<[(Text, OnboardingRecord)], Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 try {
                     let result = await getOnboardingStorage().getAllOnboardingRecords();
                     switch (result) {
@@ -1888,7 +1888,7 @@ persistent actor Main {
     public func getOnboardingRecordsByStatus(sessionId: Text, isComplete: Bool) : async Result.Result<[(Text, OnboardingRecord)], Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 try {
                     let result = await getOnboardingStorage().getOnboardingRecordsByStatus(isComplete);
                     switch (result) {
@@ -1911,7 +1911,7 @@ persistent actor Main {
     public func getOnboardingRecordsByUserType(sessionId: Text, userType: Text) : async Result.Result<[(Text, OnboardingRecord)], Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 try {
                     let result = await getOnboardingStorage().getOnboardingRecordsByUserType(userType);
                     switch (result) {
@@ -1941,7 +1941,7 @@ persistent actor Main {
     }, Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 try {
                     let result = await getOnboardingStorage().getOnboardingStats();
                     switch (result) {
@@ -2234,7 +2234,7 @@ persistent actor Main {
     public func getAllActiveFreelancerProfiles(sessionId: Text) : async Result.Result<[(Text, FreelancerProfile)], Error> {
         switch (validateSessionAndGetUser(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 try {
                     let result = await getFreelancerDashboardStorage().getActiveProfiles();
                     switch (result) {
@@ -2283,7 +2283,7 @@ persistent actor Main {
     public func convertCurrency(sessionId: Text, request: ConversionRequest): async Result.Result<ConversionResponse, Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 try {
                     let result = await getICPSwapStorage().convertCurrency(request);
                     switch (result) {
@@ -2378,7 +2378,7 @@ persistent actor Main {
     ): async Result.Result<(), Error> {
         switch (sessionManager.validateSession(sessionId)) {
             case null { return #err(#InvalidSession) };
-            case (?session) {
+            case (?_session) {
                 try {
                     let result = await getICPSwapStorage().updateTransactionStatus(id, status, txHash);
                     switch (result) {
