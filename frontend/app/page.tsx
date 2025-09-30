@@ -55,17 +55,11 @@ export default function FreelancerOnboarding() {
           <Image
             src="/logo.svg"
             alt="ICPWork logo"
-            width={132}
-            height={132}
+            width={150}
+            height={150}
           />
         </div>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="rounded-full px-6 shadow-sm hover:shadow-md transition-shadow"
-        >
-          Exit
-        </Button>
+   
       </header>
 
       {/* Main Content */}

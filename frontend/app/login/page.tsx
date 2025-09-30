@@ -265,9 +265,12 @@ export default function AuthForm() {
             <Image src="logo.svg" alt="Logo" width={132} height={132} />
           </Link>
           <div className="text-gray-700">
-            <span>Want to Hire? </span>
-            <Link href="/login?user=client" className="text-green-600 hover:text-green-700 font-medium hover:underline">
-              Join As Client
+            <span>{userType === 'client' ? 'Looking for Talent? ' : 'Want to Hire? '}</span>
+            <Link
+              href={userType === 'client' ? '/login?user=freelancer' : '/login?user=client'}
+              className="text-green-600 hover:text-green-700 font-medium hover:underline"
+            >
+              {userType === 'client' ? 'Join As Freelancer' : 'Join As Client'}
             </Link>
           </div>
         </CardContent>
@@ -282,7 +285,7 @@ export default function AuthForm() {
               <h1 className="text-3xl font-semibold text-[#212121] leading-tight">
                 {authMode === 'login' ? (
                   <>
-                    LogIn Here
+                    Login Here
                     <br />
                     Fill the details
                   </>
