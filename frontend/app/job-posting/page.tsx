@@ -437,7 +437,8 @@ export default function JobPostingPage() {
     <div>
       <nav className="bg-white shadow-lg border-b px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-           <img src="/logo.svg" alt="ICPWork Logo" className="w-36 " />
+          <a href='/client-dashboard'>
+           <img src="/logo.svg" alt="ICPWork Logo" className="w-36 " /></a>
         </div>
       </nav>
       <div className="min-h-screen max-w-7xl mx-auto ">
