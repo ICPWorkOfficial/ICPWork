@@ -133,7 +133,7 @@ async function getJobPostingActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // Job posting canister ID
+  const canisterId = 'vt46d-j7777-77774-qaagq-cai'; // Job posting canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 

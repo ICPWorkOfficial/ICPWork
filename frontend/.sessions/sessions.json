@@ -118,5 +118,41 @@
     "userType": "freelancer",
     "createdAt": 1758293377457,
     "expiresAt": 1758898177457
+  },
+  "session_1758597497687_8oiv9zje2": {
+    "email": "gursagar@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758597497687,
+    "expiresAt": 1759202297687
+  },
+  "session_1758610604495_rvskftzha": {
+    "email": "test@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758610604495,
+    "expiresAt": 1759215404495
+  },
+  "session_1758636840910_zjsf042fh": {
+    "email": "gursagar@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758636840910,
+    "expiresAt": 1759241640910
+  },
+  "session_1758643317387_ti74e9ojj": {
+    "email": "gursagar@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758643317387,
+    "expiresAt": 1759248117387
+  },
+  "session_1758652074061_7v0izfefp": {
+    "email": "test@example.com",
+    "userType": "freelancer",
+    "createdAt": 1758652074061,
+    "expiresAt": 1759256874061
+  },
+  "session_1758652533150_syngguyzz": {
+    "email": "gursagar@gmail.com",
+    "userType": "freelancer",
+    "createdAt": 1758652533150,
+    "expiresAt": 1759257333150
   }
 }

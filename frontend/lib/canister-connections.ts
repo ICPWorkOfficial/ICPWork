@@ -4,11 +4,12 @@ import { Principal } from '@dfinity/principal';
 // ===== CANISTER CONFIGURATION =====
 
 export const CANISTER_IDS = {
-  main: 'rrkah-fqaaa-aaaaa-aaaaq-cai', // Replace with actual main canister ID
-  freelancerData: 'rdmx6-jaaaa-aaaaa-aaadq-cai', // Replace with actual freelancer canister ID
-  clientData: 'ryjl3-tyaaa-aaaaa-aaaba-cai', // Replace with actual client canister ID
-  escrow: 'r7inp-6aaaa-aaaaa-aaabq-cai', // Replace with actual escrow canister ID
-  workStore: 'rdmx6-jaaaa-aaaaa-aaadq-cai', // Replace with actual work store canister ID
+  main: 'vpyes-67777-77774-qaaeq-cai', // Main canister ID
+  freelancerData: 'ulvla-h7777-77774-qaacq-cai', // Freelancer data canister ID
+  clientData: 'u6s2n-gx777-77774-qaaba-cai', // Client data canister ID
+  escrow: 'uzt4z-lp777-77774-qaabq-cai', // Escrow canister ID
+  workStore: 'vu5yx-eh777-77774-qaaga-cai', // Work store canister ID
+  messageStore: 've5qf-uaaaa-aaaaa-qaaka-cai', // Message store canister ID
 } as const;
 
 export const NETWORK = process.env.NODE_ENV === 'production' 
@@ -134,6 +135,30 @@ export interface WorkProject {
   deadline?: bigint;
 }
 
+// Message Store Canister Types
+export interface Message {
+  id: string;
+  text: string;
+  timestamp: bigint;
+  receiver_id: string;
+  sender_id: string;
+}
+
+export type MessageError =
+  | { NotFound: null }
+  | { Unauthorized: null }
+  | { InvalidMessage: null }
+  | { InvalidEmail: null }
+  | { StorageError: string };
+
+export interface ConversationSummary {
+  participantA: string;
+  participantB: string;
+  lastMessage?: Message;
+  unreadCount: number;
+  lastActivity: bigint;
+}
+
 // Result type for canister calls
 export type Result<T, E> = 
   | { ok: T }
@@ -215,6 +240,17 @@ export interface WorkStoreCanister {
   getProject: (id: bigint) => Promise<Result<WorkProject, string>>;
   getAllProjects: () => Promise<Result<WorkProject[], string>>;
   deleteProject: (id: bigint) => Promise<Result<null, string>>;
+}
+
+// Message Store Canister Interface
+export interface MessageStoreCanister {
+  storeMessage: (sender_id: string, receiver_id: string, text: string, timestamp: bigint) => Promise<Result<Message, MessageError>>;
+  getConversationMessages: (userA: string, userB: string, limit?: number, offset?: number) => Promise<Result<Message[], MessageError>>;
+  getUserConversations: (userId: string) => Promise<Result<ConversationSummary[], MessageError>>;
+  deleteMessage: (messageId: string, userId: string) => Promise<Result<null, MessageError>>;
+  getMessage: (messageId: string, userId: string) => Promise<Result<Message, MessageError>>;
+  getTotalMessageCount: () => Promise<number>;
+  healthCheck: () => Promise<boolean>;
 }
 
 // ===== CONNECTION UTILITIES =====
@@ -567,6 +603,54 @@ export class WorkStoreCanisterConnection {
   }
 }
 
+export class MessageStoreCanisterConnection {
+  private actor: MessageStoreCanister | null = null;
+
+  private async getActor(): Promise<MessageStoreCanister> {
+    if (!this.actor) {
+      // You'll need to import the interface factory from your generated .did.js file
+      // this.actor = await createActor<MessageStoreCanister>(CANISTER_IDS.messageStore, messageStoreCanisterInterfaceFactory);
+      throw new Error('Message store canister interface factory not implemented. Generate from .did file.');
+    }
+    return this.actor;
+  }
+
+  async storeMessage(sender_id: string, receiver_id: string, text: string, timestamp: bigint): Promise<Result<Message, MessageError>> {
+    const actor = await this.getActor();
+    return await actor.storeMessage(sender_id, receiver_id, text, timestamp);
+  }
+
+  async getConversationMessages(userA: string, userB: string, limit?: number, offset?: number): Promise<Result<Message[], MessageError>> {
+    const actor = await this.getActor();
+    return await actor.getConversationMessages(userA, userB, limit, offset);
+  }
+
+  async getUserConversations(userId: string): Promise<Result<ConversationSummary[], MessageError>> {
+    const actor = await this.getActor();
+    return await actor.getUserConversations(userId);
+  }
+
+  async deleteMessage(messageId: string, userId: string): Promise<Result<null, MessageError>> {
+    const actor = await this.getActor();
+    return await actor.deleteMessage(messageId, userId);
+  }
+
+  async getMessage(messageId: string, userId: string): Promise<Result<Message, MessageError>> {
+    const actor = await this.getActor();
+    return await actor.getMessage(messageId, userId);
+  }
+
+  async getTotalMessageCount(): Promise<number> {
+    const actor = await this.getActor();
+    return await actor.getTotalMessageCount();
+  }
+
+  async healthCheck(): Promise<boolean> {
+    const actor = await this.getActor();
+    return await actor.healthCheck();
+  }
+}
+
 // ===== SINGLETON INSTANCES =====
 
 export const mainCanister = new MainCanisterConnection();
@@ -574,6 +658,7 @@ export const freelancerCanister = new FreelancerCanisterConnection();
 export const clientCanister = new ClientCanisterConnection();
 export const escrowCanister = new EscrowCanisterConnection();
 export const workStoreCanister = new WorkStoreCanisterConnection();
+export const messageStoreCanister = new MessageStoreCanisterConnection();
 
 // ===== DEMO API FUNCTIONS =====
 

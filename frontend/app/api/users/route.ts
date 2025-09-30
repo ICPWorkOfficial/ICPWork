@@ -87,7 +87,7 @@ async function handleSignup(request: NextRequest, { email, password, confirmPass
     
     await agent.fetchRootKey();
     
-    const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
+    const canisterId = 'vt46d-j7777-77774-qaagq-cai'; // User management canister ID
     const userManagementActor = Actor.createActor(idlFactory, { agent, canisterId });
     
     // Register user in user_management canister
@@ -169,7 +169,7 @@ async function handleLogin(request: NextRequest, { email, password }: any) {
     
     await agent.fetchRootKey();
     
-    const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
+    const canisterId = 'vt46d-j7777-77774-qaagq-cai'; // User management canister ID
     const userManagementActor = Actor.createActor(idlFactory, { agent, canisterId });
     
     // Login user in user_management canister
@@ -236,12 +236,16 @@ function validatePassword(password: string): { isValid: boolean } {
 // Helper functions for signup error messages
 function getSignupErrorMessage(error: any): string {
   switch (error) {
-    case 'UserAlreadyExists':
+    case 'AlreadyExists':
       return 'An account with this email already exists';
     case 'InvalidEmail':
       return 'Please enter a valid email address';
-    case 'WeakPassword':
+    case 'InvalidPassword':
       return 'Password must be at least 8 characters with uppercase, lowercase, number, and special character';
+    case 'InvalidUserType':
+      return 'Invalid user type';
+    case 'InvalidData':
+      return 'Invalid data provided';
     default:
       return 'Signup failed. Please try again.';
   }
@@ -249,11 +253,13 @@ function getSignupErrorMessage(error: any): string {
 
 function getSignupFieldErrors(error: any): { [key: string]: string } {
   switch (error) {
-    case 'UserAlreadyExists':
+    case 'AlreadyExists':
     case 'InvalidEmail':
       return { email: getSignupErrorMessage(error) };
-    case 'WeakPassword':
+    case 'InvalidPassword':
       return { password: getSignupErrorMessage(error) };
+    case 'InvalidUserType':
+      return { userType: getSignupErrorMessage(error) };
     default:
       return {};
   }
@@ -262,12 +268,14 @@ function getSignupFieldErrors(error: any): { [key: string]: string } {
 // Helper functions for login error messages
 function getLoginErrorMessage(error: any): string {
   switch (error) {
-    case 'UserNotFound':
+    case 'NotFound':
       return 'No account found with this email address';
-    case 'InvalidCredentials':
+    case 'Unauthorized':
       return 'Invalid email or password';
     case 'InvalidEmail':
       return 'Please enter a valid email address';
+    case 'InvalidPassword':
+      return 'Invalid password';
     default:
       return 'Login failed. Please try again.';
   }
@@ -275,10 +283,11 @@ function getLoginErrorMessage(error: any): string {
 
 function getLoginFieldErrors(error: any): { email?: string; password?: string } {
   switch (error) {
-    case 'UserNotFound':
+    case 'NotFound':
     case 'InvalidEmail':
       return { email: getLoginErrorMessage(error) };
-    case 'InvalidCredentials':
+    case 'Unauthorized':
+    case 'InvalidPassword':
       return { password: getLoginErrorMessage(error) };
     default:
       return {};

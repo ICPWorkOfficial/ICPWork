@@ -1,0 +1,469 @@
+{
+  "info": {
+    "name": "ICP Canisters API Tests",
+    "description": "Comprehensive API testing collection for 3 ICP canisters: User Management, Project Store, and Hackathon Store",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:4943",
+      "type": "string"
+    },
+    {
+      "key": "userManagementCanisterId",
+      "value": "vg3po-ix777-77774-qaafa-cai",
+      "type": "string"
+    },
+    {
+      "key": "projectStoreCanisterId", 
+      "value": "vu5yx-eh777-77774-qaaga-cai",
+      "type": "string"
+    },
+    {
+      "key": "hackathonStoreCanisterId",
+      "value": "hackathon_store_canister_id",
+      "type": "string"
+    },
+    {
+      "key": "testUserEmail",
+      "value": "testuser@example.com",
+      "type": "string"
+    },
+    {
+      "key": "testClientEmail",
+      "value": "testclient@example.com", 
+      "type": "string"
+    },
+    {
+      "key": "testPassword",
+      "value": "TestPassword123!",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "User Management Canister",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{userManagementCanisterId}}\",\n  \"method_name\": \"registerUser\",\n  \"arg\": {\n    \"email\": \"{{testUserEmail}}\",\n    \"password\": \"{{testPassword}}\",\n    \"userType\": \"freelancer\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{userManagementCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{userManagementCanisterId}}", "call"]
+            }
+          }
+        },
+        {
+          "name": "Register Client",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{userManagementCanisterId}}\",\n  \"method_name\": \"registerUser\",\n  \"arg\": {\n    \"email\": \"{{testClientEmail}}\",\n    \"password\": \"{{testPassword}}\",\n    \"userType\": \"client\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{userManagementCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{userManagementCanisterId}}", "call"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{userManagementCanisterId}}\",\n  \"method_name\": \"loginUser\",\n  \"arg\": {\n    \"email\": \"{{testUserEmail}}\",\n    \"password\": \"{{testPassword}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{userManagementCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{userManagementCanisterId}}", "call"]
+            }
+          }
+        },
+        {
+          "name": "Get User by Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{userManagementCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{userManagementCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{userManagementCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getUser"
+                },
+                {
+                  "key": "arg",
+                  "value": "{\"email\":\"{{testUserEmail}}\"}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{userManagementCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{userManagementCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{userManagementCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getAllUsers"
+                },
+                {
+                  "key": "arg",
+                  "value": "{}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{userManagementCanisterId}}\",\n  \"method_name\": \"updateUserProfile\",\n  \"arg\": {\n    \"email\": \"{{testUserEmail}}\",\n    \"profileData\": {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"phoneNumber\": \"+1234567890\",\n      \"companyName\": null,\n      \"companyWebsite\": null,\n      \"industry\": null,\n      \"businessType\": null,\n      \"numberOfEmployees\": null,\n      \"description\": \"Experienced blockchain developer\",\n      \"skills\": [\"React\", \"TypeScript\", \"Motoko\", \"ICP\"],\n      \"country\": \"United States\",\n      \"state\": \"California\",\n      \"city\": \"San Francisco\",\n      \"zipCode\": \"94105\",\n      \"streetAddress\": \"123 Main St\",\n      \"photo\": \"https://example.com/photo.jpg\",\n      \"linkedinProfile\": \"https://linkedin.com/in/johndoe\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{userManagementCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{userManagementCanisterId}}", "call"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Project Store Canister",
+      "item": [
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{projectStoreCanisterId}}\",\n  \"method_name\": \"createProject\",\n  \"arg\": {\n    \"title\": \"Build DeFi Dashboard\",\n    \"description\": \"Create a comprehensive DeFi analytics dashboard with real-time data visualization\",\n    \"requirements\": \"Must use React, TypeScript, and Web3 libraries. Include charts, portfolio tracking, and yield farming analytics.\",\n    \"budget\": \"$5000\",\n    \"timeline\": \"4 weeks\",\n    \"category\": \"Web Development\",\n    \"skills\": [\"React\", \"TypeScript\", \"Web3\", \"Chart.js\"],\n    \"clientEmail\": \"{{testClientEmail}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{projectStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{projectStoreCanisterId}}", "call"]
+            }
+          }
+        },
+        {
+          "name": "Get All Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{projectStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{projectStoreCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{projectStoreCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getAllProjects"
+                },
+                {
+                  "key": "arg",
+                  "value": "{}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Open Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{projectStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{projectStoreCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{projectStoreCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getOpenProjects"
+                },
+                {
+                  "key": "arg",
+                  "value": "{}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Apply to Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{projectStoreCanisterId}}\",\n  \"method_name\": \"applyToProject\",\n  \"arg\": {\n    \"projectId\": \"proj_1\",\n    \"freelancerEmail\": \"{{testUserEmail}}\",\n    \"proposal\": \"I have 5+ years of experience in React and DeFi development. I've built similar dashboards before and understand the requirements.\",\n    \"whyFit\": \"I'm the perfect fit because I have extensive experience with Web3 libraries, real-time data visualization, and DeFi protocols.\",\n    \"estimatedTime\": \"3 weeks\",\n    \"bidAmount\": \"$4500\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{projectStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{projectStoreCanisterId}}", "call"]
+            }
+          }
+        },
+        {
+          "name": "Get Project Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{projectStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{projectStoreCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{projectStoreCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getProjectStats"
+                },
+                {
+                  "key": "arg",
+                  "value": "{}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hackathon Store Canister",
+      "item": [
+        {
+          "name": "Create Hackathon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{hackathonStoreCanisterId}}\",\n  \"method_name\": \"createHackathon\",\n  \"arg\": {\n    \"organizerEmail\": \"{{testClientEmail}}\",\n    \"input\": {\n      \"title\": \"ICP DeFi Hackathon 2024\",\n      \"description\": \"Build innovative DeFi applications on the Internet Computer Protocol. Create lending protocols, DEXs, yield farming, or other DeFi primitives.\",\n      \"organizer\": \"ICP Foundation\",\n      \"mode\": {\"Virtual\": null},\n      \"prizePool\": \"$50,000\",\n      \"prizes\": [\n        {\"position\": \"1st\", \"amount\": \"$20,000\", \"description\": \"First place winner\", \"token\": \"ICP\"},\n        {\"position\": \"2nd\", \"amount\": \"$15,000\", \"description\": \"Second place winner\", \"token\": \"ICP\"},\n        {\"position\": \"3rd\", \"amount\": \"$10,000\", \"description\": \"Third place winner\", \"token\": \"ICP\"},\n        {\"position\": \"Participation\", \"amount\": \"$5,000\", \"description\": \"Participation rewards\", \"token\": \"ICP\"}\n      ],\n      \"timeline\": \"48 hours of intense coding\",\n      \"startDate\": 1704067200000000000,\n      \"endDate\": 1704240000000000000,\n      \"registrationDeadline\": 1703980800000000000,\n      \"submissionDeadline\": 1704240000000000000,\n      \"tags\": [\"DeFi\", \"ICP\", \"Web3\", \"Blockchain\"],\n      \"category\": {\"DeFi\": null},\n      \"featured\": true,\n      \"requirements\": [\n        \"Must use Internet Computer Protocol\",\n        \"Must be a DeFi application\",\n        \"Must include smart contracts\",\n        \"Must have a working demo\"\n      ],\n      \"deliverables\": [\n        \"Source code on GitHub\",\n        \"Live demo URL\",\n        \"Presentation slides\",\n        \"Technical documentation\"\n      ],\n      \"judgingCriteria\": [\n        \"Innovation and creativity\",\n        \"Technical implementation\",\n        \"User experience\",\n        \"Potential impact\"\n      ],\n      \"maxParticipants\": 100,\n      \"maxTeamSize\": 5,\n      \"location\": null,\n      \"website\": \"https://icp-defi-hackathon.com\",\n      \"discord\": \"https://discord.gg/icpdefi\",\n      \"twitter\": \"@ICPDeFiHack\",\n      \"imageUrl\": \"https://example.com/hackathon-banner.jpg\",\n      \"bannerUrl\": \"https://example.com/hackathon-banner-wide.jpg\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{hackathonStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{hackathonStoreCanisterId}}", "call"]
+            }
+          }
+        },
+        {
+          "name": "Get All Hackathons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{hackathonStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{hackathonStoreCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{hackathonStoreCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getAllHackathons"
+                },
+                {
+                  "key": "arg",
+                  "value": "{}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register for Hackathon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"call\",\n  \"canister_id\": \"{{hackathonStoreCanisterId}}\",\n  \"method_name\": \"registerForHackathon\",\n  \"arg\": {\n    \"hackathonId\": \"hack_1\",\n    \"userEmail\": \"{{testUserEmail}}\",\n    \"teamMembers\": [\"teammate1@example.com\", \"teammate2@example.com\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{hackathonStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{hackathonStoreCanisterId}}", "call"]
+            }
+          }
+        },
+        {
+          "name": "Get Featured Hackathons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{hackathonStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{hackathonStoreCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{hackathonStoreCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getFeaturedHackathons"
+                },
+                {
+                  "key": "arg",
+                  "value": "{}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Hackathon Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/canister/{{hackathonStoreCanisterId}}/call",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v2", "canister", "{{hackathonStoreCanisterId}}", "call"],
+              "query": [
+                {
+                  "key": "request_type",
+                  "value": "call"
+                },
+                {
+                  "key": "canister_id",
+                  "value": "{{hackathonStoreCanisterId}}"
+                },
+                {
+                  "key": "method_name",
+                  "value": "getHackathonStats"
+                },
+                {
+                  "key": "arg",
+                  "value": "{}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

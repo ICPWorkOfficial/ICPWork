@@ -111,14 +111,14 @@ const SidebarItem: React.FC<{ item: SidebarItem; onClick: () => void }> = ({ ite
   return (
     <button
       onClick={onClick}
-      className={`w-52 pl-5 pr-[45px] py-3 rounded-lg flex items-center gap-2 ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${!item.active ? 'hover:bg-gray-50' : ''}`}
+      className={`w-full pl-5 pr-[45px] py-3 rounded-lg flex items-center gap-2 ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${!item.active ? 'hover:bg-gray-50' : ''}`}
       disabled={item.disabled}
       style={activeStyle}
     >
-      <div className="w-6 h-6 flex items-center justify-center">
+      <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
         {item.icon}
       </div>
-      <span className={`text-[16px] leading-[24px] ${item.active ? 'text-[#041D37]' : item.disabled ? 'text-[#525252]' : 'text-[#555555]'}`}>
+      <span className={`text-[16px] leading-[24px] truncate ${item.active ? 'text-[#041D37]' : item.disabled ? 'text-[#525252]' : 'text-[#555555]'}`}>
         {item.label}
       </span>
     </button>
@@ -324,14 +324,14 @@ const FreelancerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FCFCFC] flex">
+    <div className="min-h-screen bg-[#FCFCFC] flex overflow-hidden">
       {/* Sidebar (desktop) */}
-      <div className="hidden md:flex w-64 bg-white border-r border-[#E0E0E0] flex flex-col">
+      <div className="hidden md:flex w-64 bg-white border-r border-[#E0E0E0] flex-col flex-shrink-0">
         <div className="p-6">
           <Logo />
         </div>
         
-        <nav className="flex-1 px-4 py-5">
+        <nav className="flex-1 px-4 py-5 overflow-y-auto">
           <div className="space-y-1">
             {sidebarItems.map((item) => (
               <SidebarItem
@@ -345,9 +345,9 @@ const FreelancerDashboard: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-[#E0E0E0] h-[84px] flex items-center justify-between px-4 md:px-6">
+        <header className="bg-white border-b border-[#E0E0E0] h-[84px] flex items-center justify-between px-4 md:px-6 flex-shrink-0">
           <div className="flex items-center gap-4">
             {/* Mobile menu button */}
             <button className="md:hidden p-2 rounded-md" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
@@ -356,7 +356,7 @@ const FreelancerDashboard: React.FC = () => {
             <div className="hidden md:block flex-1" />
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Notification */}
             <div className="relative">
               <button
@@ -380,19 +380,19 @@ const FreelancerDashboard: React.FC = () => {
                       <span className="text-sm font-medium">Notifications</span>
                       <button onClick={() => setShowNotifications(false)} className="text-gray-500 hover:text-gray-700">Close</button>
                     </div>
-                    <div className="divide-y">
+                    <div className="divide-y max-h-[60vh] overflow-y-auto">
                       <div className="p-3 flex gap-3 items-start">
-                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">🔔</div>
-                        <div>
-                          <div className="text-[14px] font-medium">New message from client</div>
-                          <div className="text-sm text-gray-500">You received a new message regarding your proposal.</div>
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">🔔</div>
+                        <div className="min-w-0">
+                          <div className="text-[14px] font-medium truncate">New message from client</div>
+                          <div className="text-sm text-gray-500 truncate">You received a new message regarding your proposal.</div>
                         </div>
                       </div>
                       <div className="p-3 flex gap-3 items-start">
-                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">🏆</div>
-                        <div>
-                          <div className="text-[14px] font-medium">Hackathon win</div>
-                          <div className="text-sm text-gray-500">Your submission was shortlisted — check details.</div>
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">🏆</div>
+                        <div className="min-w-0">
+                          <div className="text-[14px] font-medium truncate">Hackathon win</div>
+                          <div className="text-sm text-gray-500 truncate">Your submission was shortlisted — check details.</div>
                         </div>
                       </div>
                     </div>
@@ -401,29 +401,29 @@ const FreelancerDashboard: React.FC = () => {
               )}
             </div>
             
-            {/* Client Dropdown */}
-            <div className="bg-[#FCFCFC] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-5 flex items-center gap-2 hover:bg-gray-100 transition-colors duration-150 cursor-pointer">
+            {/* Client Dropdown - Hidden on small screens */}
+            <div className="hidden sm:flex bg-[#FCFCFC] rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-5 items-center gap-2 hover:bg-gray-100 transition-colors duration-150 cursor-pointer flex-shrink-0">
               <div className="w-6 h-6 rounded-full bg-gray-200" />
-              <span className="hidden sm:inline text-[14px] text-black tracking-[-0.1px]">{
-                  currentUser?.userType || 'User'
-                }</span>
+              <span className="text-[14px] text-black tracking-[-0.1px] truncate max-w-[80px]">
+                {currentUser?.userType || 'User'}
+              </span>
               <ChevronDown size={12} className="text-black rotate-[270deg]" />
             </div>
             
             {/* User Dropdown */}
             <button
               onClick={() => router.push('/profile')}
-              className="bg-white rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-4 flex items-center gap-2 hover:bg-gray-100 transition-colors duration-150"
+              className="bg-white rounded-[30px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] h-10 px-4 flex items-center gap-2 hover:bg-gray-100 transition-colors duration-150 flex-shrink-0"
               aria-label="Open profile"
             >
               <div className="w-[37px] h-[37px] rounded-full bg-gray-200" />
-              <span className="hidden sm:inline text-[14px] font-medium text-[#272D37] tracking-[-0.1px]">
+              <span className="hidden sm:inline text-[14px] font-medium text-[#272D37] tracking-[-0.1px] truncate max-w-[100px]">
                 {userData ? 
                   (Array.isArray(userData.firstName) && userData.firstName.length > 0 ? userData.firstName[0] : userData.email) : 
                   currentUser?.email || 'User'
                 }
               </span>
-              <ChevronDown size={12} className="text-black rotate-[270deg]" />
+              <ChevronDown size={12} className="text-black rotate-[270deg] flex-shrink-0" />
             </button>
           </div>
         </header>
@@ -433,13 +433,13 @@ const FreelancerDashboard: React.FC = () => {
           <div className="fixed inset-0 z-50 md:hidden">
             <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
             <div className="absolute left-0 top-0 bottom-0 w-64 bg-white border-r border-[#E0E0E0] p-6 overflow-auto">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-6">
                 <Logo />
                 <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-md hover:bg-gray-100">
                   <X size={18} />
                 </button>
               </div>
-              <nav className="mt-6">
+              <nav>
                 <div className="space-y-2">
                   {sidebarItems.map((item) => (
                     <SidebarItem
@@ -455,7 +455,7 @@ const FreelancerDashboard: React.FC = () => {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           {renderContent(activeNav)}
         </main>
       </div>

@@ -99,27 +99,27 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
   ];
 
   return (
-    <>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl text-gray-800 font-bold">Browse Projects</h1>
-          <p className="text-md text-gray-600">Join Exciting Hackathons and win prizes</p>
+    <div className="overflow-hidden flex flex-col h-full">
+      <div className="mb-6 flex flex-col sm:flex-row items-start justify-between gap-4 flex-shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl text-gray-800 font-bold truncate">Browse Projects</h1>
+          <p className="text-sm sm:text-md text-gray-600 truncate">Join Exciting Hackathons and win prizes</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="bg-[rgba(104,255,102,0.14)] px-2 py-1 rounded-lg h-[28px] flex items-center justify-center">
-          <span className="text-[11px] md:text-[12px] font-medium text-[#058700] capitalize">Available</span>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="bg-[rgba(104,255,102,0.14)] px-2 py-1 rounded-lg h-[28px] flex items-center justify-center shadow-sm">
+          <span className="text-[11px] md:text-[12px] font-medium text-[#058700] capitalize truncate">Available</span>
         </div>
-            <button onClick={() => router.push("/service/register")} className="text-sm font-semibold px-4 py-2 rounded-md cursor-pointer text-white flex items-center gap-2" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
+            <button onClick={() => router.push("/service/register")} className="text-sm font-semibold px-4 py-2 rounded-md cursor-pointer text-white flex items-center gap-2 whitespace-nowrap shadow-md transition-all duration-300 hover:shadow-lg transform hover:scale-105" style={{ background: 'linear-gradient(30deg, #44B0FF 0%, #973EEE 25%, #F12AE6 50%, #FF7039 75%, #F3BC3B 100%)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              New Service
+              <span className="truncate">New Service</span>
             </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 items-stretch">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 items-stretch flex-shrink-0">
         {loading ? (
           // Loading skeleton
           Array.from({ length: 4 }).map((_, index) => (
@@ -136,9 +136,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
         {/* Recent Orders */}
-        <div className="col-span-2">
+        <div className="col-span-2 overflow-hidden flex flex-col">
           <OrdersDisplay 
             userEmail={user?.email || ''} 
             userType="client"
@@ -147,55 +147,55 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onBrowseAll }) => {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-hidden flex flex-col">
           {/* Performance Card */}
-          <div className="bg-white rounded-2xl border border-[#EAEAEA] p-5">
-            <h3 className="text-[20px] font-medium text-black tracking-[-0.4px] leading-[32px] mb-2">Performance</h3>
+          <div className="bg-white rounded-2xl border border-[#EAEAEA] p-5 overflow-hidden flex-shrink-0 shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="text-lg sm:text-[20px] font-medium text-black tracking-[-0.4px] leading-[32px] mb-2 truncate">Performance</h3>
             <div className="space-y-6">
               <div className="space-y-[23px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Category</span>
-                  <span className="text-[14px] font-medium text-[#4C4C4C] leading-[22px]">ICP Development</span>
+                  <span className="text-[14px] font-medium text-[#535353] leading-[22px] truncate">Category</span>
+                  <span className="text-[14px] font-medium text-[#4C4C4C] leading-[22px] truncate">ICP Development</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Timeline</span>
-                  <span className="text-[14px] font-medium text-[#535353] leading-[22px]">3–4 weeks</span>
+                  <span className="text-[14px] font-medium text-[#535353] leading-[22px] truncate">Timeline</span>
+                  <span className="text-[14px] font-medium text-[#535353] leading-[22px] truncate">3–4 weeks</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Level</span>
-                  <span className="text-[14px] font-medium text-green-500 bg-clip-text leading-[22px]">$75K - $100K</span>
+                  <span className="text-[14px] font-medium text-[#535353] leading-[22px] truncate">Level</span>
+                  <span className="text-[14px] font-medium text-green-500 bg-clip-text leading-[22px] truncate">$75K - $100K</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-medium text-[#535353] leading-[22px]">Proposals</span>
-                  <span className="text-[14px] font-medium text-[#535353] leading-[22px]">5</span>
+                  <span className="text-[14px] font-medium text-[#535353] leading-[22px] truncate">Proposals</span>
+                  <span className="text-[14px] font-medium text-[#535353] leading-[22px] truncate">5</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl border border-[#EDEDED] p-5">
-            <h3 className="text-[20px] font-medium text-black tracking-[-0.4px] leading-[32px] mb-6">Quick Actions</h3>
-            <div className="space-y-4">
-              <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-all">
-                <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center"><PlusCircle size={18} /></div>
-                <span className="text-lg">Create New Proposal</span>
+          <div className="bg-white rounded-xl border border-[#EDEDED] p-5 overflow-hidden flex-1 flex flex-col shadow-sm transition-all duration-300 hover:shadow-md">
+            <h3 className="text-lg sm:text-[20px] font-medium text-black tracking-[-0.4px] leading-[32px] mb-6 truncate">Quick Actions</h3>
+            <div className="space-y-4 flex-1">
+              <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-all duration-200 hover:shadow-sm">
+                <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 bg-gray-50"><PlusCircle size={18} /></div>
+                <span className="text-base sm:text-lg truncate">Create New Proposal</span>
               </button>
 
-              <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-all">
-                <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center"><FileText size={16} /></div>
-                <span className="text-lg">View Active Projects</span>
+              <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-all duration-200 hover:shadow-sm">
+                <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 bg-gray-50"><FileText size={16} /></div>
+                <span className="text-base sm:text-lg truncate">View Active Projects</span>
               </button>
 
-              <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-all">
-                <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center"><Eye size={16} /></div>
-                <span className="text-lg">Check Analytics</span>
+              <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-all duration-200 hover:shadow-sm">
+                <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0 bg-gray-50"><Eye size={16} /></div>
+                <span className="text-base sm:text-lg truncate">Check Analytics</span>
               </button>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

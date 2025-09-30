@@ -14,7 +14,7 @@ async function getMainActor() {
     console.log('Fetching root key...');
     await agent.fetchRootKey();
     
-    const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // Main canister ID
+    const canisterId = 'uzt4z-lp777-77774-qaabq-cai'; // Escrow canister ID
     console.log('Creating actor with canister ID:', canisterId);
     
     const actor = Actor.createActor(idlFactory, { agent, canisterId });

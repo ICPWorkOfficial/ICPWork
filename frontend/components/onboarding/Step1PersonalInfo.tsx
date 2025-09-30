@@ -103,11 +103,11 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
 
       <div className="space-y-6">
         {/* Profile Photo */}
-        <div className="rounded-xl border-[0.6px] border-[#8D8D8D] p-6 bg-white">
-          <label className={`${designTokens.typography.labelSmall} text-[#6F6F6F] block mb-3`}>
+        <div className="rounded-xl mx-auto border-[0.6px] border-[#8D8D8D] p-6 bg-white">
+          <label className={`${designTokens.typography.labelSmall} text-center text-[#6F6F6F] block mb-3`}>
             PROFILE PHOTO
           </label>
-          <div className="flex items-center gap-4">
+          <div className="flex mx-auto items-center gap-4">
             <div className="w-28 h-28 rounded-full bg-[#F4F4F4] overflow-hidden flex items-center justify-center">
               {formData.profilePhoto ? (
                 <img src={formData.profilePhoto} alt="profile" className="w-full h-full object-cover" />
@@ -126,7 +126,7 @@ const Step1PersonalInfo: React.FC<Step1PersonalInfoProps> = ({
                 onUploadError={(error) => {
                   console.error('Profile photo upload failed:', error);
                 }}
-                className="w-60"
+                className=""
               />
               <span className="text-sm text-[#6F6F6F]">Recommended size: 400x400px. JPG or PNG.</span>
             </div>

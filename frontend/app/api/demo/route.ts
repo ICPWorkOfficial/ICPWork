@@ -7,7 +7,7 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     data: {
       canisters: {
-        user_management: 'vg3po-ix777-77774-qaafa-cai',
+        user_management: 'vt46d-j7777-77774-qaagq-cai',
         message_store: 'vizcg-th777-77774-qaaea-cai',
         onboarding_store: 'vpyes-67777-77774-qaaeq-cai',
         bounties_store: 'uxrrr-q7777-77774-qaaaq-cai',

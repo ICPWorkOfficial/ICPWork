@@ -10,7 +10,7 @@ async function getMainActor() {
   
   await agent.fetchRootKey();
   
-  const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // Main canister ID
+  const canisterId = 'vt46d-j7777-77774-qaagq-cai'; // Main canister ID
   return Actor.createActor(idlFactory, { agent, canisterId });
 }
 

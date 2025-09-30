@@ -1,6 +1,17 @@
 {
   "contacts": [
     {
+      "id": "c-1758654340878",
+      "name": "t3chnobromo",
+      "email": "t3chnobromo@gmail.com",
+      "memberType": "Freelancer",
+      "companyWebsite": "",
+      "invited": true,
+      "invitedAt": "2025-09-23T19:05:40.878Z",
+      "lastMessage": "",
+      "unread": 0
+    },
+    {
       "id": "c1",
       "name": "Alice Johnson",
       "lastMessage": "See you tomorrow",
@@ -47,6 +58,20 @@
       "to": "c2",
       "text": "retggfgd",
       "createdAt": "2025-09-08T20:56:35.959Z"
+    },
+    {
+      "id": "1758654346786",
+      "from": "me",
+      "to": "c-1758654340878",
+      "text": "hey",
+      "createdAt": "2025-09-23T19:05:46.786Z"
+    },
+    {
+      "id": "1758654367159",
+      "from": "me",
+      "to": "c-1758654340878",
+      "text": "hello",
+      "createdAt": "2025-09-23T19:06:07.159Z"
     }
   ]
 }

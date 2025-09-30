@@ -79,7 +79,7 @@ const createAgent = () => {
 
 const createActor = async () => {
   const agent = createAgent();
-  const canisterId = process.env.NEXT_PUBLIC_CANISTER_ID || 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
+  const canisterId = process.env.NEXT_PUBLIC_CANISTER_ID || 'vt46d-j7777-77774-qaagq-cai'; // User management canister ID
   
   await agent.fetchRootKey();
   

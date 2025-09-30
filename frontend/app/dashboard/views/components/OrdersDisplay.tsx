@@ -239,100 +239,102 @@ const OrdersDisplay: React.FC<OrdersDisplayProps> = ({ userEmail, userType = 'cl
   }
 
   return (
-    <div className="bg-white rounded-xl border border-[#EDEDED] p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-[22px] md:text-[24px] font-semibold text-gray-800">Recent Orders</h2>
+    <div className="bg-white rounded-xl border border-[#EDEDED] p-4 sm:p-6 flex flex-col h-full shadow-sm transition-all duration-300">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0">
+        <h2 className="text-xl sm:text-[22px] md:text-[24px] font-semibold text-gray-800 truncate">Recent Orders</h2>
         {onViewAll && (
           <button 
             onClick={onViewAll} 
-            className="flex items-center gap-2 text-[12px] md:text-[13px] font-medium uppercase tracking-[0.4px] text-black bg-transparent rounded-full px-3 py-2 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-2 text-[12px] md:text-[13px] font-medium uppercase tracking-[0.4px] text-black bg-transparent rounded-full px-3 py-2 hover:bg-gray-100 transition-all duration-200 hover:shadow-sm flex-shrink-0"
           >
             <Eye size={14} />
-            View All
+            <span className="hidden sm:inline truncate">View All</span>
           </button>
         )}
       </div>
 
       {orders.length === 0 ? (
-        <div className="text-center py-8">
-          <Package size={48} className="text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-2">No orders found</p>
-          <p className="text-gray-500 text-sm">
-            {userType === 'client' 
-              ? "You haven't placed any orders yet." 
-              : "You don't have any orders yet."
-            }
-          </p>
+        <div className="text-center py-8 flex-1 flex items-center justify-center">
+          <div className="max-w-xs">
+            <Package size={48} className="text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 mb-2 truncate">No orders found</p>
+            <p className="text-gray-500 text-sm truncate">
+              {userType === 'client' 
+                ? "You haven't placed any orders yet." 
+                : "You don't have any orders yet."
+              }
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-2">
           {orders.map((order) => (
             <div 
               key={order.id} 
-              className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="border border-gray-100 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-all duration-200 cursor-pointer hover:shadow-sm hover:border-gray-200"
               onClick={() => router.push(`/orders/${order.id}`)}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3">
+                <div className="flex-1 min-w-0 mb-2 sm:mb-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                     <h3 className="text-[16px] font-medium text-gray-800 truncate">
                       {order.projectName || order.serviceTitle}
                     </h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(order.status)}`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(order.status)} flex-shrink-0 self-start sm:self-auto shadow-sm`}>
                       {getStatusIcon(order.status)}
-                      {order.status.replace('_', ' ')}
+                      <span className="truncate">{order.status.replace('_', ' ')}</span>
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-1">
+                  <p className="text-sm text-gray-600 mb-1 truncate">
                     {userType === 'client' 
                       ? `Service Provider: ${order.serviceProvider}`
                       : `Client: ${order.clientName || order.clientEmail}`
                     }
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 truncate">
                     Order #{order.orderNumber} • {formatDate(order.createdAt)}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-[16px] font-semibold text-gray-800">
+                <div className="text-right flex-shrink-0 ml-0 sm:ml-2">
+                  <p className="text-[16px] font-semibold text-gray-800 truncate">
                     {formatAmount(order.totalAmount)}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 truncate">
                     {order.selectedTier} Tier
                   </p>
                 </div>
               </div>
               
               {order.projectDescription && (
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3 truncate">
                   {order.projectDescription}
                 </p>
               )}
               
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Timeline: {order.timeline}</span>
-                <span>Payment: {order.paymentMethod}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 gap-1">
+                <span className="truncate">Timeline: {order.timeline}</span>
+                <span className="flex-shrink-0 truncate">Payment: {order.paymentMethod}</span>
               </div>
               
               {/* Quick Actions */}
               {order.status === 'pending' || order.status === 'in_progress' ? (
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Quick Actions</span>
+                    <span className="text-xs text-gray-500 truncate">Quick Actions</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleQuickComplete(order.id, order.totalAmount);
                       }}
                       disabled={completingOrder === order.id}
-                      className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-1"
+                      className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-1 transition-all duration-200 hover:shadow-sm flex-shrink-0"
                     >
                       {completingOrder === order.id ? (
                         <div className="animate-spin rounded-full h-3 w-3 border-b border-white"></div>
                       ) : (
                         <Zap size={12} />
                       )}
-                      {completingOrder === order.id ? 'Completing...' : 'Complete'}
+                      <span className="truncate">{completingOrder === order.id ? 'Completing...' : 'Complete'}</span>
                     </button>
                   </div>
                 </div>

@@ -5,27 +5,17 @@ import Result "mo:base/Result";
 import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Int "mo:base/Int";
+import Nat "mo:base/Nat";
 
 persistent actor MessageStore {
     
-    // Message data structure
+    // Message data structure matching the provided schema
     public type Message = {
         id: Text;
-        from: Text;
-        to: Text;
-        content: Text;
+        text: Text;
         timestamp: Int;
-        serverTimestamp: Int;
-        messageType: MessageType;
-        isRead: Bool;
-        isDelivered: Bool;
-    };
-
-    public type MessageType = {
-        #text;
-        #file;
-        #image;
-        #systemMessage;
+        receiver_id: Text;
+        sender_id: Text;
     };
 
     public type MessageError = {
@@ -71,8 +61,10 @@ persistent actor MessageStore {
     };
 
     // Helper function to generate message ID
-    private func generateMessageId(from: Text, to: Text, timestamp: Int) : Text {
-        from # "_" # to # "_" # Int.toText(timestamp)
+    private func generateMessageId() : Text {
+        let timestamp = Int.toText(Time.now());
+        let counter = Nat.toText(messages.size() + 1);
+        "msg_" # timestamp # "_" # counter
     };
 
     // Helper function to get conversation key (consistent ordering)
@@ -117,41 +109,35 @@ persistent actor MessageStore {
 
     // Store a new message
     public func storeMessage(
-        from: Text,
-        to: Text,
-        content: Text,
-        clientTimestamp: Int,
-        messageType: MessageType
+        sender_id: Text,
+        receiver_id: Text,
+        text: Text,
+        timestamp: Int
     ) : async Result.Result<Message, MessageError> {
         
         // Validate inputs
-        if (not isValidEmail(from)) {
+        if (not isValidEmail(sender_id)) {
             return #err(#InvalidEmail);
         };
-        if (not isValidEmail(to)) {
+        if (not isValidEmail(receiver_id)) {
             return #err(#InvalidEmail);
         };
-        if (Text.size(content) == 0) {
+        if (Text.size(text) == 0) {
             return #err(#InvalidMessage);
         };
 
-        let serverTimestamp = Time.now();
-        let messageId = generateMessageId(from, to, serverTimestamp);
+        let messageId = generateMessageId();
 
         let message : Message = {
             id = messageId;
-            from = from;
-            to = to;
-            content = content;
-            timestamp = clientTimestamp;
-            serverTimestamp = serverTimestamp;
-            messageType = messageType;
-            isRead = false;
-            isDelivered = false;
+            text = text;
+            timestamp = timestamp;
+            receiver_id = receiver_id;
+            sender_id = sender_id;
         };
 
         messages.put(messageId, message);
-        updateUserConversations(from, to);
+        updateUserConversations(sender_id, receiver_id);
 
         #ok(message)
     };
@@ -170,13 +156,13 @@ persistent actor MessageStore {
 
         let conversationMessages = Array.filter<Message>(
             Iter.toArray(messages.vals()),
-            func(msg) = (msg.from == userA and msg.to == userB) or (msg.from == userB and msg.to == userA)
+            func(msg) = (msg.sender_id == userA and msg.receiver_id == userB) or (msg.sender_id == userB and msg.receiver_id == userA)
         );
 
-        // Sort by server timestamp (newest first)
+        // Sort by timestamp (newest first)
         let sortedMessages = Array.sort<Message>(
             conversationMessages,
-            func(a, b) = Int.compare(b.serverTimestamp, a.serverTimestamp)
+            func(a, b) = Int.compare(b.timestamp, a.timestamp)
         );
 
         // Apply pagination
@@ -205,42 +191,6 @@ persistent actor MessageStore {
         #ok(paginatedMessages)
     };
 
-    // Mark message as read
-    public func markMessageAsRead(messageId: Text, userId: Text) : async Result.Result<(), MessageError> {
-        if (not isValidEmail(userId)) {
-            return #err(#InvalidEmail);
-        };
-
-        switch (messages.get(messageId)) {
-            case null { #err(#NotFound) };
-            case (?message) {
-                if (message.to != userId) {
-                    return #err(#Unauthorized);
-                };
-
-                let updatedMessage = {
-                    message with isRead = true
-                };
-                messages.put(messageId, updatedMessage);
-                #ok(())
-            };
-        }
-    };
-
-    // Mark message as delivered
-    public func markMessageAsDelivered(messageId: Text) : async Result.Result<(), MessageError> {
-        switch (messages.get(messageId)) {
-            case null { #err(#NotFound) };
-            case (?message) {
-                let updatedMessage = {
-                    message with isDelivered = true
-                };
-                messages.put(messageId, updatedMessage);
-                #ok(())
-            };
-        }
-    };
-
     // Get user's conversations with summary
     public query func getUserConversations(userId: Text) : async Result.Result<[ConversationSummary], MessageError> {
         if (not isValidEmail(userId)) {
@@ -253,12 +203,12 @@ persistent actor MessageStore {
                 let summaries = Array.map<Text, ConversationSummary>(partners, func(partner) {
                     let conversationMessages = Array.filter<Message>(
                         Iter.toArray(messages.vals()),
-                        func(msg) = (msg.from == userId and msg.to == partner) or (msg.from == partner and msg.to == userId)
+                        func(msg) = (msg.sender_id == userId and msg.receiver_id == partner) or (msg.sender_id == partner and msg.receiver_id == userId)
                     );
 
                     let sortedMessages = Array.sort<Message>(
                         conversationMessages,
-                        func(a, b) = Int.compare(b.serverTimestamp, a.serverTimestamp)
+                        func(a, b) = Int.compare(b.timestamp, a.timestamp)
                     );
 
                     let lastMessage = if (sortedMessages.size() > 0) {
@@ -267,21 +217,16 @@ persistent actor MessageStore {
                         null
                     };
 
-                    let unreadMessages = Array.filter<Message>(
-                        conversationMessages,
-                        func(msg) = msg.to == userId and not msg.isRead
-                    );
-
                     let lastActivity = switch (lastMessage) {
                         case null { 0 };
-                        case (?msg) { msg.serverTimestamp };
+                        case (?msg) { msg.timestamp };
                     };
 
                     {
                         participantA = userId;
                         participantB = partner;
                         lastMessage = lastMessage;
-                        unreadCount = unreadMessages.size();
+                        unreadCount = 0; // We'll implement read status later if needed
                         lastActivity = lastActivity;
                     }
                 });
@@ -297,20 +242,6 @@ persistent actor MessageStore {
         }
     };
 
-    // Get unread message count for a user
-    public query func getUnreadMessageCount(userId: Text) : async Result.Result<Nat, MessageError> {
-        if (not isValidEmail(userId)) {
-            return #err(#InvalidEmail);
-        };
-
-        let unreadMessages = Array.filter<Message>(
-            Iter.toArray(messages.vals()),
-            func(msg) = msg.to == userId and not msg.isRead
-        );
-
-        #ok(unreadMessages.size())
-    };
-
     // Delete a message (only sender can delete)
     public func deleteMessage(messageId: Text, userId: Text) : async Result.Result<(), MessageError> {
         if (not isValidEmail(userId)) {
@@ -320,7 +251,7 @@ persistent actor MessageStore {
         switch (messages.get(messageId)) {
             case null { #err(#NotFound) };
             case (?message) {
-                if (message.from != userId) {
+                if (message.sender_id != userId) {
                     return #err(#Unauthorized);
                 };
                 messages.delete(messageId);
@@ -338,7 +269,7 @@ persistent actor MessageStore {
         switch (messages.get(messageId)) {
             case null { #err(#NotFound) };
             case (?message) {
-                if (message.from != userId and message.to != userId) {
+                if (message.sender_id != userId and message.receiver_id != userId) {
                     return #err(#Unauthorized);
                 };
                 #ok(message)

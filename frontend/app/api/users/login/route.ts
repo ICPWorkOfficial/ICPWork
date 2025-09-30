@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     
     await agent.fetchRootKey();
     
-    const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
+    const canisterId = 'vt46d-j7777-77774-qaagq-cai'; // User management canister ID
     const userManagementActor = Actor.createActor(idlFactory, { agent, canisterId });
     
     // Login user in user_management canister
@@ -124,12 +124,18 @@ export async function POST(request: NextRequest) {
 // Helper function to convert backend errors to user-friendly messages
 function getErrorMessage(error: any): string {
   switch (error) {
-    case 'UserNotFound':
+    case 'NotFound':
       return 'No account found with this email address';
-    case 'InvalidCredentials':
+    case 'Unauthorized':
       return 'Invalid email or password';
     case 'InvalidEmail':
       return 'Please enter a valid email address';
+    case 'InvalidPassword':
+      return 'Invalid password';
+    case 'InvalidUserType':
+      return 'Invalid user type';
+    case 'InvalidData':
+      return 'Invalid data provided';
     default:
       return 'Login failed. Please try again.';
   }
@@ -138,10 +144,11 @@ function getErrorMessage(error: any): string {
 // Helper function to map errors to specific form fields
 function getFieldErrors(error: any): { email?: string; password?: string } {
   switch (error) {
-    case 'UserNotFound':
+    case 'NotFound':
     case 'InvalidEmail':
       return { email: getErrorMessage(error) };
-    case 'InvalidCredentials':
+    case 'Unauthorized':
+    case 'InvalidPassword':
       return { password: getErrorMessage(error) };
     default:
       return {};

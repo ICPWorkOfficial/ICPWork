@@ -13,7 +13,7 @@ export async function GET() {
     
     await agent.fetchRootKey();
     
-    const canisterId = 'vg3po-ix777-77774-qaafa-cai'; // User management canister ID
+    const canisterId = 'vt46d-j7777-77774-qaagq-cai'; // User management canister ID
     const actor = Actor.createActor(idlFactory, { agent, canisterId });
     
     // Try to call a simple method
